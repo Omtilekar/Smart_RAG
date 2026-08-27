@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "normalizer_version": "v1",
+  "input_manifest": "results/phase_1_1_development_corpus.json",
+  "input_development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+  "source": "edgar_corpus",
+  "section_ordering_policy": "Fixed SEC Item order, taken directly from the source parquet column order (verified, not assumed): section_1, section_1A, section_1B, section_2, section_3, section_4, section_5, section_6, section_7, section_7A, section_8, section_9, section_9A, section_9B, section_10, section_11, section_12, section_13, section_14, section_15",
+  "empty_section_policy": "Null/empty/whitespace-only sections are omitted entirely - no heading, no body. If ALL sections for a filing are empty, the document is written as frontmatter-only (empty body, zero Item headings) rather than dropped, replaced, or substituted - see known_empty_body_document_ids.",
+  "known_empty_body_document_ids": [
+    "1110803_2019.htm",
+    "1324424_2018.htm",
+    "1388410_2016.htm",
+    "1388410_2018.htm",
+    "18498_2018.htm",
+    "71691_2016.htm",
+    "883241_2017.htm"
+  ],
+  "newline_policy": "CRLF/CR normalized to LF; exactly one trailing newline per file; UTF-8 encoding.",
+  "frontmatter_schema_version": "1.0",
+  "frontmatter_keys": [
+    "cik",
+    "company",
+    "form_type",
+    "fiscal_year",
+    "source",
+    "source_filename",
+    "document_id",
+    "source_split",
+    "development_manifest_sha256"
+  ]
+}

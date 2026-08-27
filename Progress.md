@@ -2990,3 +2990,206 @@ Phase 1 — Make It Work End to End — IN PROGRESS
   1.1 Select Development Corpus   — COMPLETE
   1.2 Minimal Normalization       — NEXT
 ```
+
+## 2026-08-27 — Phase 1.2 Minimal Document Normalization
+
+### Objective
+
+Converts the frozen 1,500-document Task 1.1 corpus into the first
+deterministic Markdown representation consumed by Task 1.3's fixed-window
+chunker. Whole normalized filings only - no tokenization, chunking,
+embedding, or indexing.
+
+### Initial State
+
+```text
+Task 1.1 commit: c776998, manifest results/phase_1_1_development_corpus.json,
+  development_manifest_sha256:
+  d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b
+  1,500 selected filings, verified via `git log --oneline --decorate -5` /
+  `git tag --list` before starting
+src/normalize/: empty __init__.py, no normalizer previously implemented
+doctor / test --portable: re-verified 0 failures before starting
+  (83 passed, 4 deselected)
+```
+
+### Input Verification
+
+```text
+manifest row count:                1,500
+unique document_id:                 1,500
+recomputed development_manifest_sha256:
+  d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b - MATCH
+source rows resolved:                1,500 / 1,500
+identity mismatches (split/cik/year):  0
+```
+
+Recomputed independently via Task 1.1's documented procedure, not trusted
+from the value stored inside the file.
+
+### Normalization Contract
+
+```text
+CRLF/CR -> \n
+leading/trailing whitespace stripped per section
+null/empty/whitespace-only sections omitted (no heading, no body)
+Markdown item headings: "## Item {N|N-letter}" - exact SEC item id from the
+  source column name, no invented titles
+YAML frontmatter, fixed key order, JSON-escaped string values (stdlib json,
+  no new dependency)
+UTF-8, exactly one trailing newline per file
+```
+
+No LLM rewriting, semantic cleaning, OCR, boilerplate removal, table
+reconstruction, or any other advanced transformation - conservative
+normalization only, per the task's explicit non-goals.
+
+**Section order**: taken directly from the source parquet's own column
+order (verified via DuckDB schema inspection), which is already natural
+SEC Item order - no reordering logic needed.
+
+**7 known-empty filings** (all 20 section_* columns present but
+empty-string in EDGAR-CORPUS itself - verified against live data, not a
+bug): 18498_2018.htm (GENESCO), 1324424_2018.htm (EXPEDIA GROUP),
+71691_2016.htm (NEW YORK TIMES), 1388410_2016.htm and 1388410_2018.htm
+(PARALLAX HEALTH SCIENCES, both years), 883241_2017.htm (SYNOPSYS),
+1110803_2019.htm (ILLUMINA). **Stopped and asked** before deciding how to
+handle these, since the Task 1.1 manifest is frozen and none of the
+existing rules covered this case. **User-approved**: normalize as
+frontmatter-only documents (empty body, zero Item headings) - an explicit,
+documented exception to the "at least one heading" output check, rather
+than dropping/replacing/substituting a frozen manifest row.
+
+### Metadata Contract
+
+Frontmatter keys (fixed order): `cik`, `company`, `form_type`,
+`fiscal_year`, `source`, `source_filename`, `document_id`, `source_split`,
+`development_manifest_sha256`. `company` is XBRL-sourced provenance (via
+the Task 1.1 manifest), present for all 1,500 rows - not from EDGAR-CORPUS,
+which has no company-name field.
+
+```text
+fabricated accession fields: NONE
+```
+
+### User Decisions
+
+Two genuine ambiguities where repository documentation did not resolve the
+answer - stopped and asked before implementing:
+
+1. **Normalizer version**: `src/storage.py`'s `normalized_dir(version)` was
+   a path helper only - Task 0.7 never picked a value, and no normalizer
+   existed until now. Decided on `v1`.
+2. **7 known-empty filings**: decided on frontmatter-only documents (see
+   above), not dropping, substituting, or reopening Task 1.1's manifest.
+
+### Output
+
+```text
+normalizer_version:                v1
+generated artifact path:            artifacts/normalized/v1/ (git-ignored)
+Markdown document count:             1,500
+total normalized size:               430,712,686 bytes (~410.8 MiB)
+normalization_build_sha256:          fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b
+```
+
+### Corpus Statistics
+
+```text
+character count:        min=282  median=271,065  p95=543,714  max=2,364,857
+non-empty sections:      min=0  median=20  p95=20  max=20
+known-empty documents:   7
+```
+
+Per-section presence ranges 93.93% (Item 11) to 99.00% (Item 3/5) across
+the selected 1,500 - materially higher than the full EDGAR-CORPUS
+population's rates in `DATA_READINESS_REPORT.md` (e.g. Item 1A 25.6%
+overall vs 94.67% here), because the 2016-2020 XBRL-aligned selection skews
+toward larger, more completely-scraped filers.
+
+### Determinism
+
+```text
+run 1 normalization_build_sha256: fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b
+run 2 normalization_build_sha256: fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b
+identical: YES (file count, filenames, and byte content all verified
+  identical via `diff -rq` on both output directories, in addition to the
+  checksum match)
+```
+
+### Manual Inspection
+
+11 documents traced (2 per year, 2016-2020, plus one known-empty filing)
+through the full chain: Task 1.1 manifest row -> raw EDGAR-CORPUS source
+row -> normalized Markdown. All 11/11 passed, including one sparse case
+(1004702_2020.md, 16/20 sections present, missing Item 1/1A) and the
+known-empty case (18498_2018.md, 0 body characters, 0 headings, valid
+frontmatter, matching the approved policy exactly).
+
+### Tests
+
+```text
+new Task 1.2 tests:  30 (section ordering, empty-section omission,
+  multiline/Unicode/CRLF preservation, safe YAML quoting, frontmatter key
+  order, output filename mapping, normalization_build_sha256 determinism)
+doctor:              PASS
+portable suite:       113 passed, 4 deselected, 0 failed
+full suite:            117 passed, 0 failed, 0 skipped (was 87)
+```
+
+### Frozen Data
+
+```text
+data/xbrl.duckdb:      7,011,053,568 bytes - unchanged
+raw XBRL ZIPs:           36 - unchanged
+primary filings:          990 - unchanged
+EDGAR Parquet files:       3 - unchanged
+```
+
+### Files Created / Modified
+
+```text
+src/normalize/edgar_markdown.py                  (new)
+scripts/normalize_development_corpus.py          (new)
+configs/normalize_development_corpus.json        (new, tracked)
+results/phase_1_2_normalization_summary.json     (new, tracked)
+tests/test_document_normalization.py              (new, 30 tests)
+project_plan/PHASE1_NORMALIZATION.md              (new)
+project_plan/REPOSITORY_STRUCTURE.md              (updated: src/normalize/
+  marked implemented, configs/ and scripts/ listings updated)
+Progress.md                                        (this entry)
+```
+
+1,500 generated `.md` files under `artifacts/normalized/v1/` are git-ignored
+and not listed individually. No `src/ingest/` file modified. No dependency
+files modified - stdlib + `duckdb` only, both already present.
+
+### Git
+
+```text
+git status --short before commit: 6 new untracked tracked-worthy files
+  (prompt, module, script, config, summary, tests) plus doc updates - 0
+  artifacts/data/venv content stageable (confirmed via git status --ignored)
+secret scan:            clean (no api_key/password/secret/bearer/SEC email/
+  personal-path patterns found in any new file)
+```
+
+Committed as one coherent Task 1.2 commit: "Add minimal Markdown
+normalization". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — 1,500 development filings normalized deterministically to Markdown
+```
+
+### Phase Status
+
+```text
+Data Preparation                  — COMPLETE
+Phase 0 — Foundation              — COMPLETE
+Phase 1 — Make It Work End to End — IN PROGRESS
+  1.1 Select Development Corpus   — COMPLETE
+  1.2 Minimal Normalization       — COMPLETE
+  1.3 Fixed-Window Chunker        — NEXT
+```

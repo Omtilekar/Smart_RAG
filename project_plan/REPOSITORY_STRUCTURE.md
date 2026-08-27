@@ -16,7 +16,7 @@ implemented versus planned.
 SEC-RAG/
 ├── src/
 │   ├── ingest/          # IMPLEMENTED — data acquisition + validation + audit
-│   ├── normalize/       # planned responsibility: source docs -> normalized Markdown/OKF layer
+│   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter
 │   ├── chunk/           # planned responsibility: normalized docs -> chunks
 │   ├── embeddings/      # planned responsibility: embedding model wrappers, batch embedding
 │   ├── index/           # planned responsibility: vector/sparse/graph index construction
@@ -30,10 +30,12 @@ SEC-RAG/
 │   ├── api/             # planned responsibility: FastAPI-facing layer
 │   └── cli/             # planned responsibility: command-line entry points
 │
-├── configs/             # implemented (partial): serving_spike.json, Task 0.10
+├── configs/             # implemented (partial): serving_spike.json (Task 0.10),
+│                         # normalize_development_corpus.json (Task 1.2)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
-├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10)
+├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
+│                         # normalize_development_corpus.py (Task 1.2)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -63,7 +65,7 @@ intentionally omitted from the tree above.
 | Package | Status | Will eventually contain |
 |---|---|---|
 | `ingest/` | **implemented** | MS MARCO / EDGAR-CORPUS / XBRL / primary-doc fetchers, `validate.py`, `audit_data.py` |
-| `normalize/` | structure only | OKF Markdown-with-frontmatter writer (Phase 1.2) |
+| `normalize/` | **implemented** | `edgar_markdown.py` — minimal EDGAR-CORPUS -> Markdown/YAML-frontmatter renderer (Task 1.2), see `project_plan/PHASE1_NORMALIZATION.md` |
 | `chunk/` | structure only | Fixed-window baseline chunker (Phase 1.3), later section-aware (Phase 3.2) |
 | `embeddings/` | structure only | Embedding model wrapper, batch GPU embedding (Phase 1.4) |
 | `index/` | structure only | LanceDB vector index, BM25/FTS, graph tables (Phase 1.5, 3.4, 5.4) |

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "spike_config_hash": "6dcdff763323d2b1",
+  "note": "Config that produced results/phase_0_10_serving_spike.json. Regenerated deterministically by scripts/serving_spike.py via default_config(); tracked here separately per task_0.10 Step 34 so every benchmark result can be traced to the config that produced it without opening the results file.",
+  "corpus": {
+    "source": "EDGAR-CORPUS (data/edgar_corpus/*.parquet)",
+    "selection_method": "deterministic ORDER BY hash(filename)",
+    "sections": ["section_1", "section_1A", "section_7", "section_7A", "section_8"],
+    "target_chunk_count": 100000,
+    "label": "DISPOSABLE SERVING-SPIKE CORPUS - NOT PHASE 1 DEVELOPMENT CORPUS"
+  },
+  "chunking": {
+    "tokenizer": "BAAI/bge-small-en-v1.5",
+    "chunk_tokens": 512,
+    "overlap_tokens": 0,
+    "note": "benchmark-local chunking only - not src/chunk/ production code"
+  },
+  "embedding": {
+    "model": "BAAI/bge-small-en-v1.5",
+    "corpus_build_device": "cuda",
+    "serving_device": "cpu"
+  },
+  "lancedb": {
+    "flat": { "index": "none (brute-force exact search)" },
+    "quantized": { "index_type": "IVF_PQ", "num_partitions": 100, "num_sub_vectors": 48, "num_bits": 8 }
+  },
+  "retrieval": { "top_k": 50 },
+  "reranker": {
+    "repo": "Xenova/ms-marco-MiniLM-L-6-v2",
+    "onnx_file": "onnx/model_int8.onnx",
+    "runtime": "onnxruntime",
+    "provider": "CPUExecutionProvider",
+    "quantization": "int8 (pre-quantized, published by Xenova)"
+  },
+  "queries": {
+    "count_target": 180,
+    "label": "SERVING LATENCY PROBES ONLY - not a Phase 1/2 eval set, not LLM-generated"
+  },
+  "warmup": { "count": 10 },
+  "measurement": { "warm_query_count_target": 180, "cold_process_samples": 10 },
+  "resource_controls": {
+    "cpu_threads": 2,
+    "note": "torch/onnxruntime intra-op threads constrained for serving-like realism; this laptop's full core count is not used for the primary benchmark"
+  }
+}

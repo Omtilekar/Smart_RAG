@@ -1,0 +1,13 @@
+# Development/testing dependencies. Install runtime deps first:
+#   python -m pip install -r requirements-gpu.txt
+#   python -m pip install -r requirements.txt
+#   python -m pip install -r requirements-dev.txt
+
+pytest==9.1.1
+
+# Task 0.10 serving feasibility spike only - CPU reranker runtime + process
+# memory measurement. Not used by any src/ production code (nothing exists
+# there yet). onnxruntime here is the plain CPU build (not onnxruntime-gpu) -
+# deliberate, since the spike measures CPU serving latency.
+onnxruntime==1.29.0
+psutil==7.2.2

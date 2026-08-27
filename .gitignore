@@ -1,0 +1,76 @@
+# SEC RAG — root .gitignore
+# Data is frozen and reproducible from src/ingest/ + prompts/ — never committed.
+# See DATA_READINESS_REPORT.md for what's on disk and Progress.md for how it got there.
+
+# ---- Raw / derived data ----
+data/*
+!data/.gitkeep
+
+# ---- Temporary files ----
+.tmp/
+tmp/
+temp/
+
+# ---- Root-level acquisition/audit logs (local historical artifacts only) ----
+# Resolves the Phase 0 Checkup's root-log ambiguity: these are one-time
+# data-acquisition/audit run logs (stage*.log, phase1_data_audit.log), not
+# the application's runtime logging/ directory (already ignored above).
+# They stay on disk but are not committed - GIT_CONVENTIONS.md's general
+# stance is that generated/runtime logs are not Git content.
+*.log
+
+# ---- Large generated artifacts ----
+artifacts/
+logs/
+
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.zip
+*.idx
+*.part
+*.lance/
+
+# ---- Models / model caches ----
+models/
+.cache/
+**/.huggingface/
+*.onnx
+*.safetensors
+*.bin
+
+# ---- Secrets ----
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*
+secrets*
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- IDE / OS ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---- Local tooling state ----
+.claude/
+
+# ---- Results: keep small, public result files; do not ignore the whole directory ----
+results/*
+!results/.gitkeep
+!results/*.csv
+!results/*.json
+!results/*.md

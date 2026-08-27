@@ -1,0 +1,15 @@
+# Tested CUDA-enabled PyTorch installation only. Install this FIRST, before
+# requirements.txt or requirements-dev.txt — sentence-transformers/transformers
+# declare a generic `torch` dependency that would otherwise let pip replace this
+# exact CUDA build with a default (often CPU-only) wheel. See
+# project_plan/DEPENDENCIES.md for the full explanation.
+#
+# Validated 2026-08-26 (Task 0.2) on:
+#   NVIDIA GeForce RTX 5060 Laptop GPU, driver 610.74, driver-supported CUDA 13.3
+#   torch.version.cuda == 13.0, torch.cuda.is_available() == True
+#
+# Install with:
+#   python -m pip install -r requirements-gpu.txt
+--index-url https://download.pytorch.org/whl/cu130
+
+torch==2.13.0+cu130

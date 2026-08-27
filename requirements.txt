@@ -1,0 +1,31 @@
+# Direct runtime/project dependencies. torch is intentionally NOT listed here —
+# it is owned by requirements-gpu.txt, which must be installed first (see
+# project_plan/DEPENDENCIES.md).
+#
+# Install with (after requirements-gpu.txt):
+#   python -m pip install -r requirements.txt
+
+# --- HTTP / data acquisition (src/ingest/) ---
+requests==2.34.2
+huggingface_hub==1.28.0
+
+# --- database / columnar storage ---
+duckdb==1.5.5
+pyarrow==25.0.1
+
+# --- HTML parsing (src/ingest/validate.py, audit_data.py) ---
+beautifulsoup4==4.15.0
+lxml==6.1.2
+
+# --- embeddings (Task 0.2 validated; Phase 1.4 embedding pipeline) ---
+sentence-transformers==6.0.0
+
+# --- vector index (Phase 1.5) ---
+lancedb==0.37.1
+
+# --- API serving (Phase 4.10) ---
+fastapi==0.141.1
+uvicorn==0.52.4
+
+# --- environment configuration (Task 0.5) ---
+python-dotenv==1.2.3

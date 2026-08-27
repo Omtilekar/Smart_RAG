@@ -1,0 +1,302 @@
+{
+  "spike_config_hash": "6dcdff763323d2b1",
+  "timestamp_utc": "2026-08-27T02:59:10.951466+00:00",
+  "config": {
+    "schema_version": 1,
+    "corpus": {
+      "source": "EDGAR-CORPUS (data/edgar_corpus/*.parquet)",
+      "selection_method": "deterministic ORDER BY hash(filename)",
+      "sections": [
+        "section_1",
+        "section_1A",
+        "section_7",
+        "section_7A",
+        "section_8"
+      ],
+      "target_chunk_count": 100000,
+      "label": "DISPOSABLE SERVING-SPIKE CORPUS - NOT PHASE 1 DEVELOPMENT CORPUS"
+    },
+    "chunking": {
+      "tokenizer": "BAAI/bge-small-en-v1.5",
+      "chunk_tokens": 512,
+      "overlap_tokens": 0,
+      "note": "benchmark-local chunking only - not src/chunk/ production code"
+    },
+    "embedding": {
+      "model": "BAAI/bge-small-en-v1.5",
+      "corpus_build_device": "cuda",
+      "serving_device": "cpu"
+    },
+    "lancedb": {
+      "flat": {
+        "index": "none (brute-force exact search)"
+      },
+      "quantized": {
+        "index_type": "IVF_PQ",
+        "num_partitions": 100,
+        "num_sub_vectors": 48,
+        "num_bits": 8
+      }
+    },
+    "retrieval": {
+      "top_k": 50
+    },
+    "reranker": {
+      "repo": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "onnx_file": "onnx/model_int8.onnx",
+      "runtime": "onnxruntime",
+      "provider": "CPUExecutionProvider",
+      "quantization": "int8 (pre-quantized, published by Xenova)"
+    },
+    "queries": {
+      "count_target": 180,
+      "label": "SERVING LATENCY PROBES ONLY - not a Phase 1/2 eval set, not LLM-generated"
+    },
+    "warmup": {
+      "count": 10
+    },
+    "measurement": {
+      "warm_query_count_target": 180,
+      "cold_process_samples": 10
+    },
+    "resource_controls": {
+      "cpu_threads": 2,
+      "note": "torch/onnxruntime intra-op threads constrained for serving-like realism; this laptop's full core count is not used for the primary benchmark"
+    }
+  },
+  "environment": {
+    "os": "Windows-10-10.0.26200-SP0",
+    "python_version": "3.11.9",
+    "cpu_model": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "logical_cpu_count": 32,
+    "torch_version": "2.13.0+cu130",
+    "torch_version_cuda": "13.0",
+    "gpu_model": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "lancedb_version": "0.37.1",
+    "sentence_transformers_version": "6.0.0",
+    "system_ram_gb": 33.3,
+    "gpu_vram_gb": 8.55
+  },
+  "corpus": {
+    "chunk_count": 100000,
+    "unique_filings": 2504,
+    "mean_token_count": 485.0,
+    "p50_token_count": 512.0,
+    "p95_token_count": 512
+  },
+  "embedding_build": {
+    "device": "cuda",
+    "note": "offline corpus-build step, GPU used deliberately to save time - NOT the serving latency path",
+    "dimension": 384,
+    "chunk_count": 100000,
+    "elapsed_s": 1197.42,
+    "peak_vram_mb": 2656.7
+  },
+  "lancedb": {
+    "flat": {
+      "build_time_s": 1.243,
+      "vector_count": 100000,
+      "dimension": 384,
+      "on_disk_size_mb": 287.59,
+      "quantized": false,
+      "path": "artifacts\\serving_spike\\6dcdff763323d2b1\\lancedb_flat"
+    },
+    "quantized": {
+      "build_time_s": 23.263,
+      "vector_count": 100000,
+      "dimension": 384,
+      "on_disk_size_mb": 292.86,
+      "quantized": true,
+      "path": "artifacts\\serving_spike\\6dcdff763323d2b1\\lancedb_quantized"
+    }
+  },
+  "reranker": {
+    "model": "Xenova/ms-marco-MiniLM-L-6-v2",
+    "onnx_file": "onnx/model_int8.onnx",
+    "runtime": "onnxruntime 1.29.0",
+    "execution_provider": "CPUExecutionProvider",
+    "quantization": "int8",
+    "model_file_size_mb": 23.01
+  },
+  "component_timing_ms": {
+    "embedding_ms": {
+      "count": 170,
+      "mean": 21.161,
+      "median": 20.251,
+      "p50": 20.249,
+      "p90": 27.081,
+      "p95": 32.21,
+      "p99": 39.905,
+      "min": 14.597,
+      "max": 65.836
+    },
+    "retrieval_flat_ms": {
+      "count": 170,
+      "mean": 111.473,
+      "median": 101.433,
+      "p50": 101.101,
+      "p90": 152.488,
+      "p95": 171.407,
+      "p99": 199.249,
+      "min": 84.775,
+      "max": 214.074
+    },
+    "retrieval_quantized_ms": {
+      "count": 170,
+      "mean": 13.023,
+      "median": 10.041,
+      "p50": 9.978,
+      "p90": 21.196,
+      "p95": 28.614,
+      "p99": 39.804,
+      "min": 6.324,
+      "max": 46.74
+    },
+    "rerank_ms": {
+      "count": 170,
+      "mean": 2690.704,
+      "median": 2808.801,
+      "p50": 2801.72,
+      "p90": 3399.34,
+      "p95": 3830.197,
+      "p99": 3961.102,
+      "min": 552.659,
+      "max": 4024.491
+    }
+  },
+  "path_timing_ms": {
+    "vector_only_flat": {
+      "count": 170,
+      "mean": 132.634,
+      "median": 120.388,
+      "p50": 120.205,
+      "p90": 184.428,
+      "p95": 205.464,
+      "p99": 231.067,
+      "min": 102.115,
+      "max": 247.062
+    },
+    "vector_only_quantized": {
+      "count": 170,
+      "mean": 34.184,
+      "median": 30.511,
+      "p50": 30.385,
+      "p90": 50.649,
+      "p95": 56.728,
+      "p99": 74.613,
+      "min": 21.684,
+      "max": 82.635
+    },
+    "vector_plus_rerank": {
+      "count": 170,
+      "mean": 2823.337,
+      "median": 2945.598,
+      "p50": 2939.428,
+      "p90": 3545.473,
+      "p95": 4014.161,
+      "p99": 4138.439,
+      "min": 666.555,
+      "max": 4229.954
+    }
+  },
+  "path_timing_ms_reproducibility_run2": {
+    "vector_only_flat": {
+      "count": 170,
+      "mean": 175.458,
+      "median": 172.646,
+      "p50": 172.637,
+      "p90": 196.818,
+      "p95": 209.299,
+      "p99": 256.673,
+      "min": 122.171,
+      "max": 301.57
+    },
+    "vector_plus_rerank": {
+      "count": 170,
+      "mean": 3807.711,
+      "median": 4010.957,
+      "p50": 4010.208,
+      "p90": 4373.673,
+      "p95": 4544.01,
+      "p99": 4858.137,
+      "min": 795.73,
+      "max": 5077.282
+    }
+  },
+  "cold_process_proxy": {
+    "raw_samples_ms": [
+      18649.7,
+      14124.2,
+      14985.7,
+      14164.5,
+      14764.9,
+      14066.5,
+      14830.2,
+      14140.1,
+      14678.1,
+      14255.3
+    ],
+    "stats_ms": {
+      "count": 10,
+      "mean": 14865.914,
+      "median": 14466.685,
+      "p50": 14255.28,
+      "p90": 14985.69,
+      "p95": 18649.7,
+      "p99": null,
+      "min": 14066.53,
+      "max": 18649.7
+    },
+    "stats_s": {
+      "count": 0.01,
+      "mean": 14.865914,
+      "median": 14.466685,
+      "p50": 14.25528,
+      "p90": 14.98569,
+      "p95": 18.6497,
+      "p99": null,
+      "min": 14.06653,
+      "max": 18.6497
+    },
+    "label": "local process-cold proxy - NOT real Lambda cold-start measurement"
+  },
+  "memory_rss_mb": {
+    "baseline": 2897.8,
+    "after_imports": 2897.9,
+    "after_lancedb_open": 2900.3,
+    "after_embedding_model_load": 2939.5,
+    "after_reranker_load": 2975.2,
+    "after_one_query": 5052.2,
+    "peak_during_warm_benchmark": 7347.1
+  },
+  "artifact_sizes_mb": {
+    "lancedb_flat_mb": 287.59,
+    "lancedb_quantized_mb": 292.86,
+    "reranker_onnx_mb": 23.01,
+    "note_venv_size": "DEVELOPMENT ENVIRONMENT SIZE - NOT DEPLOYMENT PACKAGE SIZE - not measured here, .venv includes GPU-specific packages not representative of a CPU deployment package"
+  },
+  "decision_thresholds": {
+    "warm_p95_lt_500ms": "Proceed with the serverless design",
+    "warm_p95_500ms_to_2s": "Proceed, but constrain reranker size and candidate pool in Phase 3",
+    "warm_p95_gt_2s": "Change serving target to warm compute; revisit Phase 3 assumptions",
+    "cold_proxy_gt_10s": "Serverless target unsuitable regardless of warm performance"
+  },
+  "decision": {
+    "warm_p95_ms": 4014.2,
+    "warm_action_per_threshold_table": "Change serving target to warm compute; revisit Phase 3 assumptions",
+    "cold_p95_s": 18.65,
+    "cold_exceeds_10s": true,
+    "serving_target_decision": "Fargate / continuously warm service preferred (cold-start proxy exceeds 10s)"
+  },
+  "limitations": [
+    "100000 chunks - a representative subset, not the full ~14M-chunk projected production corpus",
+    "local process-cold proxy, NOT a real AWS Lambda cold start (no container init, no cold ENI/VPC attach, no Lambda runtime bootstrap; OS filesystem page cache may also remain warm across subprocesses on this machine)",
+    "no generation/LLM latency included - retrieval/reranking serving path only",
+    "no relevance-quality evaluation performed or claimed - Phase 2 establishes trustworthy measurement, Phase 3 does scientific ablations",
+    "provisional components (bge-small, MiniLM, 512-token/no-overlap chunking, top-50) - not final Phase 3 selections",
+    "cloud memory-tier scaling (e.g. distinct Lambda 1GB/2GB/4GB allocations) was NOT reproduced - Docker Desktop is installed on this machine but its daemon was not running, and starting it was out of scope for this benchmark; only single-configuration process RSS was measured",
+    "single development machine, single measurement session - laptop thermal/background-load variance is possible"
+  ],
+  "phase3_recheck_required": true,
+  "total_task_elapsed_s": 2802.0
+}

@@ -2799,3 +2799,194 @@ Phase 0 — Foundation              — COMPLETE
 
 Phase 1 — Make It Work End to End — READY
 ```
+
+## 2026-08-27 — Phase 1.1 Select Development Corpus
+
+### Objective
+
+The first Phase 1 engineering task. Freezes the small, reproducible
+1,500-filing development population that all remaining Phase 1 tasks
+(1.2 normalization onward) will consume, per `PROJECT_EXECUTION.md`'s
+"develop small, scale once" principle. This task selects filings; it does
+not normalize, chunk, embed, or index them.
+
+### Initial State
+
+```text
+Phase 0 checkpoint: aeba3b3, tag phase-0-complete - verified via
+  git log --oneline --decorate -5 / git tag --list before starting
+Phase 1: not previously implemented (all 13 Phase 1+ src/ packages still
+  empty __init__.py; no development manifest existed)
+doctor / test --portable: re-verified 0 failures before starting
+  (66 passed, 4 deselected)
+```
+
+### Alignment Method
+
+Reproduced independently from `src/ingest/audit_data.py`'s
+`check2_10k_alignment()` (see `DATA_READINESS_REPORT.md`, "Check 2") rather
+than inventing a new join:
+
+- EDGAR fields: `cik`, `year`, `filename` (from
+  `data/edgar_corpus/{train,test,validation}.parquet`, unioned).
+- XBRL fields: `cik`, `form`, `fiscal_year` (`fy`), `adsh`, `name` (from
+  `data/xbrl.duckdb` `submissions`, read-only).
+- Join grain: `(cik, year)` — eligible if a `form='10-K'` XBRL submission
+  for that `cik` has `fiscal_year == EDGAR year`.
+- Form filter: XBRL `form = '10-K'` only (excludes 10-Q, 10-K/A, 20-F, etc).
+- Year semantics: XBRL `fy` (the chosen semantic alignment field per the
+  original audit — not the field that happened to maximize coverage).
+- Type normalization: `TRY_CAST(cik AS BIGINT)` and
+  `TRY_CAST(year AS INTEGER)` on the EDGAR side, explicit, no implicit
+  coercion; 0 rows rejected in the real run.
+- Duplicate handling: verified 0 EDGAR `(cik, year)` pairs map to more than
+  one `filename` (EDGAR-CORPUS `filename` is exactly `{cik}_{year}.{ext}`,
+  1:1 with `(cik, year)`). Found 29 `(cik, fy)` pairs in the 2016-2020
+  window with more than one candidate XBRL 10-K `adsh` — no approved
+  resolution rule existed anywhere in the repo, so **stopped and asked**
+  before proceeding (see "User decisions" below).
+
+### Eligible Population
+
+```text
+candidate denominator: 6,950
+aligned population:     5,646
+coverage:               81.24%
+```
+
+Reproduced exactly against the frozen authoritative figure, including the
+identical per-year breakdown (2016: 1,454/1,197=82.32%, 2017:
+1,409/1,145=81.26%, 2018: 1,377/1,126=81.77%, 2019: 1,339/1,066=79.61%,
+2020: 1,371/1,112=81.11%). Independently re-run with a standalone DuckDB
+query before writing any selection code, per the task's "validate before
+selecting" requirement.
+
+### User Decisions
+
+Three genuine ambiguities where repository documentation did not resolve
+the answer — stopped and asked before implementing, per the task's
+explicit rule (did not silently pick a reasonable-looking answer):
+
+1. **XBRL duplicate 10-K accessions** (29 of 5,646 aligned pairs): decided
+   not to choose a canonical `adsh` at all — matches the audited Check-2
+   methodology exactly (which only proves alignment `EXISTS`, never picks
+   one). Each manifest row instead carries `xbrl_10k_candidate_count`.
+2. **Selection rule**: PROJECT_EXECUTION.md requires "a deterministic seed
+   or deterministic sampling rule" without specifying which, and no prior
+   Phase 1 rule existed in the repo. Decided on Option A: SHA-256 over each
+   eligible filing's `document_id` (EDGAR `filename`), ascending, first
+   1,500. No seed, no PRNG/RNG-version dependency.
+3. **Manifest location**: none of STORAGE.md/REPOSITORY_STRUCTURE.md/
+   GIT_CONVENTIONS.md defined a location for this artifact type (it doesn't
+   key off a `chunk_config_hash` like `artifacts/chunks/`/`indexes/` do).
+   Decided on `results/phase_1_1_development_corpus.json`, tracked in Git,
+   matching the existing `results/*.json` tracked-exception convention.
+
+### Selection Rule
+
+```text
+method: SHA-256(document_id) ascending, first 1,500, no replacement
+seed:   none (deterministic hash order, not a PRNG)
+sort (storage): filings array canonically sorted by document_id ascending
+  for readability - independent of, and does not affect, selection order
+```
+
+### Selected Corpus
+
+```text
+selected filings:     1,500
+unique CIKs:           1,376
+unique company names:  1,389 (informational only, from XBRL `name` - not
+  EDGAR-CORPUS, which has no company-name field; not used as identity)
+filings per CIK:        min=1  median=1.0  p95=2  max=3 (no pathological
+  concentration)
+development_manifest_sha256: d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b
+```
+
+| Year | Eligible | Eligible % | Selected | Selected % |
+|---|---:|---:|---:|---:|
+| 2016 | 1,197 | 21.20% | 332 | 22.13% |
+| 2017 | 1,145 | 20.28% | 321 | 21.40% |
+| 2018 | 1,126 | 19.94% | 288 | 19.20% |
+| 2019 | 1,066 | 18.88% | 275 | 18.33% |
+| 2020 | 1,112 | 19.70% | 284 | 18.93% |
+
+No stratification applied (not specified by the project plan); mild drift
+from the eligible-population year mix is expected unbiased sampling noise.
+
+### Traceability
+
+Manifest identity is EDGAR-CORPUS `filename` (e.g. `1005817_2016.htm`),
+verified 1:1 with `(cik, year)` and stable under re-scan. 10 rows (2 per
+year, 2016-2020) were manually traced: `document_id` → EDGAR source row
+(`split`/`cik`/`year` match) → XBRL 10-K submission(s) with matching
+`fiscal_year` — all 10/10 passed. Example:
+`1005817_2016.htm` → EDGAR `(validation, cik=1005817, year=2016)` → XBRL
+`adsh=0001005817-17-000004, form=10-K, fiscal_year=2016, name='TOMPKINS
+FINANCIAL CORP'`.
+
+**Accession limitation, stated explicitly**: EDGAR-CORPUS carries no
+accession-number field and none can be reliably reconstructed from it. No
+EDGAR accession is fabricated anywhere in the manifest or its generating
+code; XBRL `adsh` is recorded only as alignment evidence
+(`xbrl_10k_candidate_count`), never labeled as "the EDGAR accession."
+
+### Files Created / Modified
+
+```text
+scripts/select_development_corpus.py       (new)
+results/phase_1_1_development_corpus.json  (new, tracked)
+tests/test_select_development_corpus.py    (new, 17 tests)
+project_plan/PHASE1_DEVELOPMENT_CORPUS.md  (new)
+Progress.md                                 (this entry)
+```
+
+No `src/ingest/` file modified. No dependency files modified — stdlib +
+`duckdb` only, both already present.
+
+### Verification
+
+```text
+determinism:          PASS - re-ran in a fresh process; identical
+  development_manifest_sha256; only the non-hashed `created_at_utc`
+  provenance field differed between runs
+manual traceability:   PASS - 10/10 sampled rows (2 per year, 2016-2020)
+tests:                  17 new tests (selection_hash, select_top_n,
+  canonical_sort, manifest_checksum, distribution stats), all passing;
+  full suite 70 -> 87
+doctor:                 PASS
+portable suite:         83 passed, 4 deselected, 0 failed
+full suite:              87 passed, 0 failed, 0 skipped
+frozen-data invariants:  unchanged - xbrl.duckdb 7,011,053,568 bytes,
+  36 raw XBRL ZIPs, 990 primary filings, edgar_corpus 3 parquet files
+  (identical before/after)
+```
+
+### Git
+
+```text
+git status --short before commit: only 4 new untracked files (the prompt
+  file, the manifest, the script, the test file) - 0 data/artifacts/venv
+  content stageable
+secret scan:            clean (no api_key/password/secret/bearer/SEC email
+  patterns found in any new file)
+```
+
+Committed as one coherent Task 1.1 commit: "Select reproducible Phase 1
+development corpus". No remote configured — push deferred, not attempted.
+
+### Result
+
+```text
+PASS — 1,500-filing Phase 1 development corpus selected reproducibly
+```
+
+### Phase Status
+
+```text
+Data Preparation                  — COMPLETE
+Phase 0 — Foundation              — COMPLETE
+Phase 1 — Make It Work End to End — IN PROGRESS
+  1.1 Select Development Corpus   — COMPLETE
+  1.2 Minimal Normalization       — NEXT
+```

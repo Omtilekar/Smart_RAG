@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-28T13:46:28Z",
+  "git_sha": "b0162fe9f9f5f48b9c979136548520c53ae0d147",
+  "input_normalizer_version": "phase1-minimal-v1",
+  "input_normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+  "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+  "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "tokenizer": {
+    "repo": "BAAI/bge-small-en-v1.5",
+    "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "local_files_only": true
+  },
+  "window_size_tokens": 512,
+  "stride_tokens": 512,
+  "overlap_tokens": 0,
+  "partial_window_policy": "keep",
+  "frontmatter_body_policy": "body_only_frontmatter_to_metadata",
+  "chunk_count": 162357,
+  "documents_total": 1500,
+  "documents_with_chunks": 1493,
+  "documents_without_chunks": 7,
+  "empty_source_document_ids": [
+    "1110803_2019.htm",
+    "1324424_2018.htm",
+    "1388410_2016.htm",
+    "1388410_2018.htm",
+    "18498_2018.htm",
+    "71691_2016.htm",
+    "883241_2017.htm"
+  ],
+  "chunks_per_document": {
+    "min": 1,
+    "median": 103,
+    "p95": 208,
+    "max": 869
+  },
+  "tokens_per_chunk": {
+    "min": 1,
+    "median": 512,
+    "p95": 512,
+    "max": 512
+  },
+  "full_chunks": 160872,
+  "partial_chunks": 1485,
+  "total_emitted_tokens": 82748156,
+  "artifact_path": "artifacts/chunks/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/chunks.parquet",
+  "artifact_size_bytes": 190631710,
+  "build_runtime_seconds": 181.73
+}

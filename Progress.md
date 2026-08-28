@@ -3277,6 +3277,259 @@ PASS — normalizer_version corrected to phase1-minimal-v1, verified
   byte-identical to the prior v1 build, ready for Task 1.3
 ```
 
-This correction is folded into the upcoming Task 1.3 commit rather than
-committed separately, since Task 1.2's own commit (`7e8b77f`) is not being
-amended and the working tree was clean before this correction started.
+Committed separately as its own commit (`b0162fe`), per Task 1.3's own hard
+precondition requiring the corrected Task 1.2 state be committed and the
+working tree clean before chunking begins.
+
+## 2026-08-28 — Phase 1.3 Minimal Fixed-Window Chunker
+
+### Objective
+
+Splits each of the 1,500 corrected Task 1.2 normalized documents into
+deterministic 512-token fixed windows and persists them as Parquet - the
+chunk artifact Task 1.4's baseline embedding pipeline will consume.
+
+### Initial State
+
+```text
+Task 1.2 correction commit: b0162fe, verified clean before starting
+normalizer_version:          phase1-minimal-v1 (confirmed in config/summary)
+normalized document count:    1,500
+src/chunk/: empty __init__.py, no chunker previously implemented
+```
+
+An unexplained working-tree change to `Progress.md` (a broken
+`<actual message>` placeholder fragment, not real content) was found and
+discarded (`git checkout -- Progress.md`) before starting - see the note in
+this session's transcript. Working tree was clean before Task 1.3 began.
+
+### Task 1.2 Corrected Provenance
+
+```text
+normalizer_version:               phase1-minimal-v1 - verified in config
+  and summary
+normalization_build_sha256:        fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b
+  - independently recomputed from the live artifacts/normalized/
+  phase1-minimal-v1/*.md files (not trusted from the stored value), matches
+development_manifest_sha256:        d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b
+  - independently recomputed from results/phase_1_1_development_corpus.json
+```
+
+### User Decisions
+
+Ten genuine chunking-semantics ambiguities, none resolved by existing docs
+- stopped and asked before implementing, in three batches:
+
+1. **Tokenizer**: `BAAI/bge-small-en-v1.5`'s tokenizer (matches Task 1.4's
+   embedding model; window_size=512 matches its context length per
+   `PROJECT_SPEC.md`'s model table, but this was never stated explicitly
+   for Task 1.3, so it was confirmed rather than assumed).
+2. **Overlap/stride**: zero overlap (`stride=512`).
+3. **Partial final window**: kept, never dropped/merged.
+4. **What gets chunked**: body only; frontmatter parsed into metadata.
+5. **Special-token counting**: 512 content tokens only
+   (`add_special_tokens=False`).
+6. **Text preservation**: offset-mapping slicing (exact source substrings),
+   not token-id decode.
+7. **7 empty-source documents**: 0 chunks each, approved exception.
+8. **Parquet layout**: single file.
+9. **Chunk schema**: full traceability set (16 columns).
+10. **Chunk ID / ordinal**: `{document_id}::chunk{ordinal}`, zero-based.
+
+### Tokenizer Contract
+
+```text
+repository:    BAAI/bge-small-en-v1.5
+revision:       5c38ec7c405ec4b44b94cc5a9bb96e735b38267a (cached, Task 0.2)
+offline:         HF_HUB_OFFLINE=1 + local_files_only=True + explicit
+                try_to_load_from_cache() precheck per required asset file
+                before load - BLOCKED (not a silent download) if missing
+fast tokenizer:   verified (tokenizer.is_fast == True) - required for
+                return_offsets_mapping
+special tokens:   add_special_tokens=False
+```
+
+### Chunking Contract
+
+```text
+window_size_tokens:      512
+stride_tokens:             512 (overlap_tokens = 0)
+partial_window_policy:      keep
+frontmatter_body_policy:     body_only_frontmatter_to_metadata
+heading_behavior:             Item headings are ordinary body text, never
+                              treated specially, never duplicated/stripped
+decode_offset_policy:          offset_mapping_slicing
+```
+
+Text preservation verified empirically on a synthetic Unicode/punctuation
+sample before the real build: offset-mapping slicing reconstructs the
+original text exactly except for pure-whitespace runs between tokens
+(confirmed once, documented as a known limitation, never real content
+loss). Window generation verified exhaustive/non-overlapping by unit test
+(`test_windows_cover_every_token_exactly_once_with_zero_overlap`).
+
+### Chunk Schema
+
+16 columns: `chunk_id`, `document_id`, `cik` (int64), `company`,
+`form_type`, `fiscal_year` (int32), `source`, `source_filename`,
+`source_split`, `ordinal` (int32), `text`, `token_count` (int32),
+`chunk_config_hash`, `normalizer_version`, `normalization_build_sha256`,
+`development_manifest_sha256`. Explicitly a **Phase 1 baseline schema**,
+not the later Phase 2 frozen chunk schema (`PROJECT_EXECUTION.md` Task
+2.9) - stated plainly in `PHASE1_CHUNKING.md`, not silently promoted.
+
+### Chunk ID Contract
+
+```text
+chunk_id:   "{document_id}::chunk{ordinal}", e.g. "1005817_2016.htm::chunk0"
+ordinal:     zero-based, sequential per document
+```
+
+### chunk_config_hash
+
+```text
+algorithm: SHA-256 over canonical JSON (sort_keys, no whitespace) of the
+  chunk config dict - the same convention already established by Task
+  1.1's development_manifest_sha256 and Task 1.2's
+  normalization_build_sha256, deliberately reused rather than invented
+chunk_config_hash (real build): f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+```
+
+### Output / Parquet Layout
+
+```text
+artifact path:  artifacts/chunks/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/chunks.parquet
+layout:           single Parquet file
+size:              190,631,710 bytes (~181.8 MiB)
+```
+
+### Chunk Statistics
+
+```text
+chunk count:               162,357
+documents with chunks:      1,493
+documents without chunks:      7 (approved empty-source set, exact match)
+
+chunks/document:  min=1  median=103  p95=208  max=869
+tokens/chunk:      min=1  median=512  p95=512  max=512
+
+full (512-token) chunks:  160,872
+partial chunks:               1,485
+total emitted tokens:       82,748,156
+build runtime:                ~182-199s (two independent runs)
+```
+
+The `tokens/chunk` min of 1 (chunk_id `27673_2016.htm::chunk69`, text
+`"."`) was inspected directly and confirmed genuine - a document's final
+partial window landing on a single trailing token, not a bug.
+
+### Empty-Source Handling
+
+Same 7 documents from Task 1.2 produce exactly 0 chunks each: 18498_2018.htm,
+1324424_2018.htm, 71691_2016.htm, 1388410_2016.htm, 1388410_2018.htm,
+883241_2017.htm, 1110803_2019.htm. Falls out naturally from
+`compute_token_windows(0, ...)` returning `[]` - no special-casing needed
+in the windowing logic. The build script separately cross-checks the
+zero-chunk document set against this exact approved list.
+
+### Determinism
+
+```text
+run 1 chunk_config_hash: f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+run 2 chunk_config_hash: f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+logical dataset identical: YES (162,357 rows both runs; SHA-256 over the
+  newline-joined chunk_id column identical; SHA-256 over the NUL-joined
+  text column identical)
+chunk IDs identical: YES
+```
+
+### Manual Inspection
+
+11 documents traced (2 per year 2016-2020, one known-sparse
+[1004702_2020.htm, first heading correctly `## Item 1B` since Item 1/1A
+were empty], one known-empty [18498_2018.htm, confirmed 0 chunks]) from
+normalized Markdown through to their chunks. All 11/11 passed - correct
+metadata, correct chunk counts, first/last chunk boundaries as expected. A
+token-boundary continuity check on one document confirmed exact, gap-free
+text coverage across a chunk boundary (`"...polyole"` + `"fin-based..."` =
+`"polyolefin-based"` - a genuine mid-word split, no character lost or
+duplicated).
+
+### Tests
+
+```text
+new Task 1.3 tests:  27 (window computation, text slicing, chunk ID,
+  frontmatter/body parsing round-trip, chunk_config_hash determinism,
+  normalization_build_sha256 helper) - tiny synthetic fixtures, no real
+  tokenizer or full-corpus build inside pytest
+doctor:              PASS
+portable suite:       140 passed, 4 deselected, 0 failed
+full suite:            144 passed, 0 failed, 0 skipped (was 117)
+```
+
+### Safety
+
+```text
+data/ unchanged:                     xbrl.duckdb 7,011,053,568 bytes, 36
+                                     raw XBRL ZIPs, 990 primary filings, 3
+                                     EDGAR parquet files - all identical
+normalized Markdown unchanged:         1,500 files, normalization_build_sha256
+                                     re-verified identical
+                                     (fd0abad2...2244b) after the build
+no network downloads:                  tokenizer loaded offline from cache
+                                     only, precheck-guarded
+no embeddings created:                  confirmed - tokenizer/text-processing
+                                     only
+no index created:                        confirmed
+```
+
+### Files Created / Modified
+
+```text
+src/chunk/fixed_window.py                  (new)
+scripts/chunk_development_corpus.py        (new)
+configs/chunk_development_corpus.json       (new, tracked)
+results/phase_1_3_chunking_summary.json     (new, tracked)
+tests/test_fixed_window_chunker.py           (new, 27 tests)
+project_plan/PHASE1_CHUNKING.md               (new)
+project_plan/REPOSITORY_STRUCTURE.md           (updated: src/chunk/ marked
+  implemented, configs/ and scripts/ listings updated)
+Progress.md                                     (this entry; also corrected
+  a stale closing sentence in the prior Phase 1.2 Correction entry that no
+  longer matched reality after that correction was committed separately)
+```
+
+162,357-row `chunks.parquet` under `artifacts/chunks/<hash>/` is
+git-ignored and not listed individually. No `src/normalize/`, `src/ingest/`,
+or normalized Markdown file modified. No dependency files modified -
+`transformers`/`huggingface_hub`/`pyarrow` already present.
+
+### Git
+
+```text
+git status --short before commit: 6 new untracked tracked-worthy files
+  (prompt, module, script, config, summary, tests) plus doc updates - 0
+  artifacts/data/venv content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 1.3 commit: "Add minimal fixed-window
+chunker". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — Phase 1 development corpus chunked deterministically into 512-token fixed windows
+```
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — NEXT
+```

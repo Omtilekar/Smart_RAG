@@ -137,6 +137,20 @@ class StoragePaths:
             / safe_component(embedding_model)
         )
 
+    def embeddings_dir(self, chunk_config_hash: str, embedding_model: str) -> Path:
+        """Task 1.4's raw embedding artifact (vectors + metadata Parquet) -
+        distinct from index_dir(), which is Task 1.5's LanceDB index built
+        from these embeddings. Same (chunk_config_hash, embedding_model)
+        compound-key rationale as index_dir(): neither alone is sufficient
+        identity once Phase 3 benchmarks multiple embedding models against
+        the same chunks."""
+        return (
+            self.artifacts_root
+            / "embeddings"
+            / safe_component(chunk_config_hash)
+            / safe_component(embedding_model)
+        )
+
     def eval_dir(self, eval_version: str) -> Path:
         return self.artifacts_root / "eval" / safe_component(eval_version)
 

@@ -35,6 +35,26 @@ def test_index_dir_identity_requires_both_hash_and_model():
     assert a != c, "different chunk_config_hash must produce a different path"
 
 
+def test_embeddings_dir_identity_requires_both_hash_and_model():
+    storage = get_storage()
+    a = storage.embeddings_dir("hash1", "BAAI/bge-small-en-v1.5")
+    b = storage.embeddings_dir("hash1", "BAAI/bge-base-en-v1.5")
+    c = storage.embeddings_dir("hash2", "BAAI/bge-small-en-v1.5")
+    assert a != b, "different embedding model must produce a different path"
+    assert a != c, "different chunk_config_hash must produce a different path"
+
+
+def test_embeddings_dir_distinct_from_index_dir():
+    storage = get_storage()
+    assert storage.embeddings_dir("hash1", "BAAI/bge-small-en-v1.5") != \
+        storage.index_dir("hash1", "BAAI/bge-small-en-v1.5")
+
+
+def test_embeddings_dir_is_under_artifacts_root():
+    storage = get_storage()
+    assert storage.artifacts_root in storage.embeddings_dir("hash1", "BAAI/bge-small-en-v1.5").parents
+
+
 def test_normalized_and_eval_dirs_are_deterministic():
     storage = get_storage()
     assert storage.normalized_dir("v1") == storage.normalized_dir("v1")

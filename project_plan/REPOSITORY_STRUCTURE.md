@@ -18,7 +18,7 @@ SEC-RAG/
 │   ├── ingest/          # IMPLEMENTED — data acquisition + validation + audit
 │   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter
 │   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet
-│   ├── embeddings/      # planned responsibility: embedding model wrappers, batch embedding
+│   ├── embeddings/      # IMPLEMENTED (Task 1.4) — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding
 │   ├── index/           # planned responsibility: vector/sparse/graph index construction
 │   ├── retrieval/       # planned responsibility: retrieval execution, hybrid fusion, filtering
 │   ├── generation/      # planned responsibility: LLM generation/provider interface
@@ -32,12 +32,14 @@ SEC-RAG/
 │
 ├── configs/             # implemented (partial): serving_spike.json (Task 0.10),
 │                         # normalize_development_corpus.json (Task 1.2),
-│                         # chunk_development_corpus.json (Task 1.3)
+│                         # chunk_development_corpus.json (Task 1.3),
+│                         # embed_development_corpus.json (Task 1.4)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
 │                         # normalize_development_corpus.py (Task 1.2),
-│                         # chunk_development_corpus.py (Task 1.3)
+│                         # chunk_development_corpus.py (Task 1.3),
+│                         # embed_development_corpus.py (Task 1.4)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -69,7 +71,7 @@ intentionally omitted from the tree above.
 | `ingest/` | **implemented** | MS MARCO / EDGAR-CORPUS / XBRL / primary-doc fetchers, `validate.py`, `audit_data.py` |
 | `normalize/` | **implemented** | `edgar_markdown.py` — minimal EDGAR-CORPUS -> Markdown/YAML-frontmatter renderer (Task 1.2), see `project_plan/PHASE1_NORMALIZATION.md` |
 | `chunk/` | **implemented** | `fixed_window.py` — minimal 512-token fixed-window chunker (Task 1.3), see `project_plan/PHASE1_CHUNKING.md`; later section-aware (Phase 3.2) |
-| `embeddings/` | structure only | Embedding model wrapper, batch GPU embedding (Phase 1.4) |
+| `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md` |
 | `index/` | structure only | LanceDB vector index, BM25/FTS, graph tables (Phase 1.5, 3.4, 5.4) |
 | `retrieval/` | structure only | Vector-only baseline retriever (Phase 1.6), hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
 | `generation/` | structure only | `generate(prompt, context) -> answer` provider interface (Phase 1.7) |

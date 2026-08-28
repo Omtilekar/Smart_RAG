@@ -3533,3 +3533,252 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.3 Minimal Fixed-Window Chunker — COMPLETE
   1.4 Baseline Embedding Pipeline  — NEXT
 ```
+
+## 2026-08-28 — Phase 1.4 Baseline Embedding Pipeline
+
+### Objective
+
+Converts all 162,357 Task 1.3 fixed-window chunks into 384-dimensional
+BAAI/bge-small-en-v1.5 dense vectors on GPU - the embedding artifact Task
+1.5's LanceDB vector-only index will consume.
+
+### Initial State
+
+```text
+Task 1.3 commit: 3c30baf
+chunk_config_hash:  f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+chunk artifact:       artifacts/chunks/f1dc04d4.../chunks.parquet
+input row count:       162,357 - verified: unique chunk_id 162,357, single
+                       chunk_config_hash value, 0 empty text rows
+src/embeddings/: empty __init__.py, no embedding pipeline previously
+  implemented
+```
+
+### User Decisions / Clarifications
+
+Two conventions resolved by direct inspection of the cached model's own
+README (an authoritative source per the task's own rule), not assumed or
+asked about:
+
+1. **Passage convention**: raw text, no instruction - "no instruction
+   needs to be added to passages" (model card).
+2. **Query convention** + **normalize_embeddings**: prepend `"Represent
+   this sentence for searching relevant passages: "` to queries;
+   `normalize_embeddings=True` for both - both directly from the model
+   card's own documented usage example, not sentence-transformers'
+   library default (which is `normalize_embeddings=False`).
+
+Six further ambiguities with no resolution anywhere in the repo - asked
+before implementing:
+
+3. **Vector dtype**: `float32`.
+4. **GPU batch size**: `128`.
+5. **Precision policy**: full FP32, no autocast.
+6. **OOM fallback**: halve batch size, retry, record actual batch size(s)
+   used (never triggered - build completed at batch_size=128 throughout).
+7. **Artifact location**: new `storage.embeddings_dir(chunk_config_hash,
+   embedding_model)`, mirroring `index_dir`'s existing compound-key
+   pattern.
+8. **Artifact format / metadata policy**: single self-contained Parquet
+   file, all 16 Task 1.3 chunk columns + a `vector` column.
+
+### Model Contract
+
+```text
+model repository:     BAAI/bge-small-en-v1.5
+resolved revision:      5c38ec7c405ec4b44b94cc5a9bb96e735b38267a (same
+                        cached snapshot as Task 1.3's tokenizer - only one
+                        cached revision existed, unambiguous)
+dimension:               384 (verified via model.get_embedding_dimension())
+sentence-transformers:    6.0.0
+torch:                     2.13.0+cu130 / CUDA 13.0
+GPU:                        NVIDIA GeForce RTX 5060 Laptop GPU
+```
+
+### Query / Passage Contract
+
+`src/embeddings/bge.py` exposes genuinely separate `encode_passages()` /
+`encode_queries()` functions (not a flag on one call site). Verified
+directly that the same text embedded via each path produces measurably
+different vectors. The real 162,357-chunk build used only
+`encode_passages()`; a query-path smoke test (offline, `model`+`gpu`
+marked) verifies the future Task 1.6 query path without performing
+retrieval.
+
+### Vector Contract
+
+```text
+normalize_embeddings:  True
+vector_dtype:            float32
+dimension:                384
+```
+
+Verified across the full artifact: all finite, every norm within `1e-6` of
+`1.0` (measured min 0.9999999, max 1.0000001).
+
+### Build Configuration
+
+```text
+device:              cuda (verified via model parameter device; would raise
+                     rather than silently fall back to CPU)
+batch_size:            128 (no OOM - batch_sizes_used == [128] throughout)
+precision_policy:       full FP32, no autocast
+offline/cache policy:    HF_HUB_OFFLINE=1 + local_files_only=True + explicit
+                     per-file try_to_load_from_cache() precheck across 10
+                     required model assets before construction
+```
+
+### Output
+
+```text
+artifact location:  artifacts/embeddings/f1dc04d4.../BAAI--bge-small-en-v1.5/embeddings.parquet
+format:               single Parquet file - all 16 chunk columns +
+                     vector: fixed_size_list<float32>[384]
+metadata policy:        full self-contained copy, verified column-for-column
+                     identical to chunks.parquet across all 162,357 rows
+vector count:            162,357
+artifact size:            440,703,576 bytes (~420.3 MiB)
+```
+
+`storage.embeddings_dir(chunk_config_hash, embedding_model)` added to
+`src/storage.py` as a new, narrow helper mirroring `index_dir`'s existing
+compound-key pattern, covered by 3 new tests.
+
+### Performance
+
+```text
+model load:            3.66s
+embedding inference:      1154.74s (~19.2 min)
+artifact write:              1.50s
+total wall time:              1161.47s (~19.4 min)
+chunks/sec:                     140.6
+tokens/sec:                       71,659.9 (82,748,156 Task 1.3 tokens /
+                                embedding_inference_seconds)
+peak VRAM allocated:               1,411,858,944 bytes (~1.41 GB)
+peak VRAM reserved:                  1,962,934,272 bytes (~1.96 GB)
+```
+
+Not Task 0.2's tiny 40-sentence smoke throughput - measured against the
+real 162,357-chunk corpus.
+
+### Validation
+
+```text
+row count:                162,357 output vectors for 162,357 input chunks
+unique chunk IDs:            162,357, no missing/duplicate/extra
+dimensions:                    384, verified for every vector
+finite values:                   verified, full corpus (not sampled)
+dtype:                             float32, verified via native PyArrow ->
+                                NumPy conversion (a first check via
+                                .to_pylist() falsely read float64 due to
+                                Python-object boxing - caught and corrected
+                                before trusting it)
+normalization:                     norms within 1e-6 of 1.0, full corpus
+metadata traceability:               all 16 columns compared full-corpus
+                                against chunks.parquet - exact match, plus
+                                chunk_id row order confirmed identical
+                                (index-aligned, not just set-equal)
+```
+
+### Manual Inspection
+
+6 rows inspected: first chunk overall, the single-token chunk found in
+Task 1.3 (`27673_2016.htm::chunk69`), a long document's final partial
+chunk (`1005817_2016.htm::chunk143`), first chunks from 2017/2018/2020
+documents, and the artifact's last row. All 6/6 correct metadata, shape,
+finite values, unit norm.
+
+### Repeat / Numeric-Stability Check
+
+Fresh process re-encoded the first 20 chunk_ids independently:
+
+```text
+same model revision/config/chunk IDs/order: YES
+shape/dtype match:                             YES
+max abs difference:                               2.98e-08
+tolerance used:                                     1e-5 (justified: GPU
+  inference isn't claimed bit-identical across runs, but measured deviation
+  here is within float32 machine epsilon)
+result: PASS
+```
+
+### Tests
+
+```text
+new Task 1.4 tests:  16 (12 in test_baseline_embeddings.py including 1
+  model+gpu-marked offline integration test, 4 new storage tests for
+  embeddings_dir())
+doctor:              PASS
+portable suite:       155 passed, 5 deselected, 0 failed
+full suite:            160 passed, 0 failed, 0 skipped (was 144)
+```
+
+### Safety
+
+```text
+chunks.parquet unchanged:      confirmed - metadata comparison against
+  embeddings.parquet matched exactly, file opened read-only
+normalized Markdown unchanged:    normalization_build_sha256 re-verified
+  identical (fd0abad2...2244b)
+data/ unchanged:                    xbrl.duckdb 7,011,053,568 bytes, 36 raw
+  XBRL ZIPs, 990 primary filings - all identical
+no network download:                  offline guarantee held throughout
+embedding artifact ignored by Git:      confirmed via git status --ignored
+no LanceDB index created:                 confirmed
+no retrieval implemented:                   confirmed
+```
+
+### Files Created / Modified
+
+```text
+src/embeddings/bge.py                      (new)
+scripts/embed_development_corpus.py        (new)
+configs/embed_development_corpus.json      (new, tracked)
+results/phase_1_4_embedding_summary.json   (new, tracked)
+tests/test_baseline_embeddings.py           (new, 12 tests)
+src/storage.py                               (modified: added
+  embeddings_dir(chunk_config_hash, embedding_model))
+tests/test_storage.py                          (modified: 3 new tests for
+  embeddings_dir())
+project_plan/PHASE1_EMBEDDINGS.md               (new)
+project_plan/REPOSITORY_STRUCTURE.md              (updated: src/embeddings/
+  marked implemented, configs/ and scripts/ listings updated)
+Progress.md                                        (this entry)
+```
+
+440,703,576-byte `embeddings.parquet` under `artifacts/embeddings/<hash>/`
+is git-ignored and not listed individually. No `src/chunk/`,
+`src/normalize/`, `src/ingest/`, chunks.parquet, normalized Markdown, or
+frozen `data/` modified. No new dependency added -
+`sentence-transformers`/`torch`/`pyarrow`/`huggingface_hub` already
+present.
+
+### Git
+
+```text
+git status --short before commit: 8 new/modified tracked-worthy files - 0
+  artifacts/data/venv content stageable (confirmed via git status --ignored)
+secret scan:            clean
+```
+
+Committed as one coherent Task 1.4 commit: "Add baseline BGE embedding
+pipeline". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — baseline BGE embeddings generated for all Phase 1 chunks
+```
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — COMPLETE
+  1.5 Vector-Only Index            — NEXT
+```

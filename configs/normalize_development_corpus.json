@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "normalizer_version": "v1",
+  "normalizer_version": "phase1-minimal-v1",
   "input_manifest": "results/phase_1_1_development_corpus.json",
   "input_development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
   "source": "edgar_corpus",

@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
-  "created_at_utc": "2026-08-27T23:42:27Z",
-  "normalizer_version": "v1",
+  "created_at_utc": "2026-08-28T01:09:05Z",
+  "normalizer_version": "phase1-minimal-v1",
   "input_manifest": "results/phase_1_1_development_corpus.json",
   "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
-  "git_sha": "c776998d52d4f82725c60a7bf07e0a7560af2c27",
+  "git_sha": "7e8b77fec4e254f8f7d0048ee4d17f179658b371",
   "document_count": 1500,
   "total_normalized_bytes": 430712686,
   "character_count": {
@@ -103,5 +103,5 @@
   },
   "known_empty_body_document_count": 7,
   "normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
-  "generated_artifact_relative_path": "artifacts/normalized/v1"
+  "generated_artifact_relative_path": "artifacts/normalized/phase1-minimal-v1"
 }

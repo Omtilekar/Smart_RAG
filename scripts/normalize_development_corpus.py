@@ -11,7 +11,10 @@ tokenize, chunk, embed, or index. Whole normalized filings only.
 
 User-approved decisions this script encodes:
 
-1. normalizer_version = "v1" (asked - no prior naming convention existed).
+1. normalizer_version = "phase1-minimal-v1" (asked - no prior naming
+   convention existed; originally built as "v1", corrected to
+   "phase1-minimal-v1" before Task 1.3 started per an explicit follow-up
+   decision - see Progress.md's "Phase 1.2 Correction" entry).
 2. 7 of the 1,500 manifest filings have all 20 EDGAR-CORPUS section_*
    columns present but empty-string (verified against live data, not a
    join bug) - asked how to handle them; approved answer: normalize as
@@ -44,7 +47,7 @@ from src.normalize.edgar_markdown import (  # noqa: E402
     count_item_headings,
 )
 
-NORMALIZER_VERSION = "v1"
+NORMALIZER_VERSION = "phase1-minimal-v1"
 SCHEMA_VERSION = "1.0"
 EXPECTED_MANIFEST_ROWS = 1500
 EXPECTED_MANIFEST_SHA256 = "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b"

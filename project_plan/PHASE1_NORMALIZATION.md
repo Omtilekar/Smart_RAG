@@ -142,14 +142,28 @@ own `filename`, the only trustworthy source identity that exists.
 ## Output location and normalizer version
 
 ```text
-normalizer_version:  v1   (user-approved - no naming convention existed;
-                            src/storage.py's normalized_dir(version) was a
-                            path helper only, never previously given a value)
-artifact path:         artifacts/normalized/v1/
+normalizer_version:  phase1-minimal-v1   (user-approved; src/storage.py's
+                                           normalized_dir(version) was a path
+                                           helper only, never previously
+                                           given a value)
+artifact path:         artifacts/normalized/phase1-minimal-v1/
 ```
 
-Written via `src.storage.get_storage().normalized_dir("v1")` +
-`ensure_dir()` — the existing Task 0.7 storage contract, not a hardcoded
+**Correction note**: originally built and committed as `normalizer_version
+= "v1"` (Task 1.2's own version-naming question offered "phase1-minimal-v1"
+as the recommended option, but `"v1"` was the answer actually approved and
+built at the time). Before Task 1.3 began, this was revisited as a genuine
+follow-up decision and corrected to `phase1-minimal-v1` — see `Progress.md`,
+"Phase 1.2 Correction". The correction only moves the artifact directory and
+updates the `normalizer_version` string in tracked config/summary/docs;
+`normalizer_version` was never part of any document's frontmatter or
+filename, so `normalization_build_sha256` is unchanged
+(`fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b`) —
+verified by byte-diffing the old and new artifact directories before
+deleting the old one.
+
+Written via `src.storage.get_storage().normalized_dir("phase1-minimal-v1")`
++ `ensure_dir()` — the existing Task 0.7 storage contract, not a hardcoded
 path. Git-ignored generated pipeline state, per `STORAGE.md`; only a small
 tracked summary (`results/phase_1_2_normalization_summary.json`) and config
 (`configs/normalize_development_corpus.json`) are committed.
@@ -177,7 +191,7 @@ value is embedded in any normalized document's bytes — `created_at_utc`
 exists only in the tracked summary file, never inside a `.md` file.
 
 Re-running the build is idempotent: it recomputes the same 1,500 files and
-refuses (`FATAL`, does not silently overwrite) if `artifacts/normalized/v1/`
+refuses (`FATAL`, does not silently overwrite) if `artifacts/normalized/phase1-minimal-v1/`
 already contains files that aren't part of the current expected output set.
 
 ## Corpus statistics (real build)
@@ -252,7 +266,7 @@ confirmed to match the approved policy exactly.
 ## Next consumer
 
 Task 1.3 (Minimal Fixed-Window Chunker) reads
-`artifacts/normalized/v1/*.md`, tokenizes, and splits into fixed 512-token
+`artifacts/normalized/phase1-minimal-v1/*.md`, tokenizes, and splits into fixed 512-token
 chunks.
 
 ## Reproducing this build
@@ -263,7 +277,7 @@ python scripts/normalize_development_corpus.py
 
 Reads `results/phase_1_1_development_corpus.json` and
 `data/edgar_corpus/*.parquet` read-only, performs no network access, writes
-only `artifacts/normalized/v1/*.md` (git-ignored),
+only `artifacts/normalized/phase1-minimal-v1/*.md` (git-ignored),
 `results/phase_1_2_normalization_summary.json`, and
 `configs/normalize_development_corpus.json` (both tracked). Verified to
 reproduce an identical `normalization_build_sha256` across independent

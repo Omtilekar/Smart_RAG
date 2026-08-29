@@ -4012,3 +4012,188 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.5 Vector-Only Index            — COMPLETE
   1.6 Baseline Retriever           — NEXT
 ```
+
+## 2026-08-29 — Phase 1.6 Baseline Retriever
+
+### Objective
+
+Composes Task 1.4's BGE query encoder with Task 1.5's exact-cosine LanceDB
+search into the first natural-language retrieval path - independent of
+generation.
+
+### Initial State
+
+```text
+Task 1.5 commit: b744fe7
+index path:        artifacts/indexes/f1dc04d4.../BAAI--bge-small-en-v1.5/
+table:                chunks, 162,357 rows (independently re-verified: 0
+                     ANN indexes, correct 17-column schema)
+model/revision:         BAAI/bge-small-en-v1.5 /
+                     5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+chunk_config_hash:         f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+```
+
+### Frozen User Decisions
+
+Arrived pre-approved with the task prompt; nothing in the repo
+contradicted them (no prior Task 1.6 artifact existed), so accepted as
+given, same policy as Task 1.5's frozen decisions:
+
+```text
+default k = 5, caller-configurable, positive int only
+distance returned (raw LanceDB _distance, lower better)
+score returned (1.0 - distance, higher better), never clamped
+vector never returned
+```
+
+### Retriever Contract
+
+`src/retrieval/baseline.py`'s `BaselineRetriever.retrieve(question, k=5)`:
+validates inputs (rejects non-str/empty/whitespace-only question, rejects
+non-int/bool/non-positive k - never silently coerces), calls
+`encode_queries()` exactly once (query convention, never passage
+convention), calls `exact_cosine_search()` with `limit=k`, and converts
+the result to a list of `RetrievalResult`. `encode_fn`/`search_fn` are
+constructor-injectable (default to the real Task 1.4/1.5 functions) so
+portable tests never need a real model or LanceDB table. A retriever
+instance reuses its model/table handle across calls.
+
+**Long-query behavior** (Step 24): `bge.py` defines no truncation of its
+own - inherited from sentence-transformers' default `encode()`, which
+truncates at the model's `max_seq_length` (verified 512). A 2000+-token
+synthetic query returned a valid `(1,384)` finite vector with no error -
+confirmed as Task 1.4's pre-existing, unmodified behavior, not a new
+policy introduced here.
+
+### Result Schema
+
+`rank`, `score`, `distance`, `chunk_id`, `document_id`, `text`, `cik`,
+`company`, `form_type`, `fiscal_year`, `source`, `source_filename`,
+`source_split`, `ordinal`, `token_count`, `chunk_config_hash`,
+`normalizer_version`, `normalization_build_sha256`,
+`development_manifest_sha256`. No `vector`. Internal `_distance` column
+name never exposed directly.
+
+### Validation
+
+```text
+default k=5:                PASS
+k=10:                           PASS
+invalid k (0/negative/
+  non-int/bool):                    PASS - all rejected
+empty/whitespace/non-str
+  question:                             PASS - all rejected
+score = 1-distance,
+  no clamping:                             PASS - regression-tested incl.
+  negative-distance case (distance=-1e-7 -> score=1.0000001, not clamped)
+rank/order preserved:                       PASS
+vector omitted:                                PASS
+approved metadata fields:                        PASS (exact set match)
+Unicode query:                                      PASS
+determinism (repeated query):                          PASS - identical
+  chunk IDs/order, max score diff 0.00e+00
+```
+
+### Real-Corpus Smoke
+
+6 SEC-style smoke questions (revenue, risk factors, net income, R&D, debt,
+dividends) at k=5, plus explicit k=10 and one Unicode query - all returned
+correct result counts with intact provenance. Example: "What was the
+company's total revenue?" -> `1158114_2016.htm::chunk106` (APPLIED
+OPTOELECTRONICS, INC., FY2016, score=0.7573). Not a relevance-quality
+claim - integration correctness only.
+
+### Performance
+
+```text
+Phase 1 smoke diagnostic - NOT a production benchmark
+query count:        30 (+3 unmeasured warm-up)
+k:                      5
+query embedding:           p50 ~9.9 ms
+exact search:                 p50 ~120.6 ms
+total retrieve:                  p50 ~131.8 ms, p95 ~139.4 ms
+```
+
+Consistent with Task 1.5's standalone search diagnostic (~143-165 ms
+p50/p95 at the same k=5) plus ~10ms query embedding overhead.
+
+### Tests
+
+```text
+new Task 1.6 tests:  29 (k behavior, input validation, encoder-called-once,
+  384-d query vector, rank/order, distance/score regression incl.
+  no-clamping, vector omission, metadata field set, Unicode, plus 1
+  model+gpu+local_data-marked real integration test against the actual
+  Task 1.5 index)
+doctor:              PASS
+GPU smoke:            PASS
+portable suite:        203 passed, 6 deselected, 0 failed
+full suite:              209 passed, 0 failed, 0 skipped (was 180)
+```
+
+### Safety
+
+```text
+index unchanged:          162,357 rows, 0 ANN indexes, re-verified
+embeddings unchanged:        sha256 52210a51... matches Task 1.5's recorded value
+chunks unchanged:              sha256 3bd684c5... matches recorded value
+normalized Markdown unchanged:    normalization_build_sha256 re-verified
+  identical (fd0abad2...2244b)
+data/ unchanged:                    xbrl.duckdb 7,011,053,568 bytes, 36 raw
+  XBRL ZIPs, 990 primary filings - all identical
+no network:                            offline throughout
+no generation:                            confirmed - no LLM call, no prompt
+  formatting
+no BM25/reranker:                             confirmed - vector path only
+```
+
+### Files Created / Modified
+
+```text
+src/retrieval/baseline.py            (new)
+scripts/smoke_retrieval.py           (new)
+results/phase_1_6_retriever_summary.json  (new, tracked)
+tests/test_baseline_retriever.py      (new, 29 tests)
+project_plan/PHASE1_RETRIEVER.md       (new)
+project_plan/REPOSITORY_STRUCTURE.md     (updated: src/retrieval/ marked
+  implemented, scripts/ listing updated)
+Progress.md                                (this entry)
+```
+
+No new config file created (Step 26: no new runtime semantics required
+one beyond what Task 1.5's config/summary already capture). No
+`src/index/`, `src/embeddings/`, `src/chunk/`, `src/normalize/`,
+`src/ingest/`, index data, embeddings, chunks, normalized Markdown, or
+frozen `data/` modified. No new dependency.
+
+### Git
+
+```text
+git status --short before commit: 5 new untracked tracked-worthy files
+  plus doc updates - 0 artifacts/data/venv content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 1.6 commit: "Add baseline vector
+retriever". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — baseline natural-language vector retriever implemented
+```
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — COMPLETE
+  1.5 Vector-Only Index            — COMPLETE
+  1.6 Baseline Retriever           — COMPLETE
+  1.7 Minimal Generation Layer     — NEXT
+```

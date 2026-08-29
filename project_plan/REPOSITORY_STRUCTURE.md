@@ -20,7 +20,7 @@ SEC-RAG/
 │   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet
 │   ├── embeddings/      # IMPLEMENTED (Task 1.4) — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding
 │   ├── index/           # IMPLEMENTED (Task 1.5) — exact-cosine LanceDB vector index
-│   ├── retrieval/       # planned responsibility: retrieval execution, hybrid fusion, filtering
+│   ├── retrieval/       # IMPLEMENTED (Task 1.6) — baseline natural-language vector retriever
 │   ├── generation/      # planned responsibility: LLM generation/provider interface
 │   ├── eval/            # planned responsibility: truth contract, benchmark sets, metrics
 │   ├── router/          # planned responsibility: query classification, path selection
@@ -41,7 +41,8 @@ SEC-RAG/
 │                         # normalize_development_corpus.py (Task 1.2),
 │                         # chunk_development_corpus.py (Task 1.3),
 │                         # embed_development_corpus.py (Task 1.4),
-│                         # build_vector_index.py (Task 1.5)
+│                         # build_vector_index.py (Task 1.5),
+│                         # smoke_retrieval.py (Task 1.6)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -75,7 +76,7 @@ intentionally omitted from the tree above.
 | `chunk/` | **implemented** | `fixed_window.py` — minimal 512-token fixed-window chunker (Task 1.3), see `project_plan/PHASE1_CHUNKING.md`; later section-aware (Phase 3.2) |
 | `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md` |
 | `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
-| `retrieval/` | structure only | Vector-only baseline retriever (Phase 1.6), hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
+| `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
 | `generation/` | structure only | `generate(prompt, context) -> answer` provider interface (Phase 1.7) |
 | `eval/` | structure only | `truth_contract.py`, tag registry, ~3,000-question benchmark, metrics (Phase 1.9, 2.1–2.6) |
 | `router/` | structure only | Rules-first query classification/path selection (Phase 3.8) |

@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-29T02:29:11Z",
+  "git_sha": "b744fe728ef35df4b7938a1d0c6f1ff12b89ada3",
+  "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "embedding_model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "index_path": "artifacts/indexes/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/BAAI--bge-small-en-v1.5",
+  "table_name": "chunks",
+  "search_mode": "exact",
+  "distance_metric": "cosine",
+  "default_k": 5,
+  "score_transform": "1 - distance (no clamping)",
+  "vector_omitted": true,
+  "smoke_query_count": 6,
+  "k_values_tested": [
+    5,
+    10
+  ],
+  "smoke_results": [
+    {
+      "question": "What was the company's total revenue?",
+      "top_chunk_id": "1158114_2016.htm::chunk106",
+      "top_document_id": "1158114_2016.htm",
+      "top_company": "APPLIED OPTOELECTRONICS, INC.",
+      "top_fiscal_year": 2016,
+      "top_score": 0.7572888731956482,
+      "top_distance": 0.2427111268043518
+    },
+    {
+      "question": "What are the main risk factors described in this filing?",
+      "top_chunk_id": "1425627_2018.htm::chunk9",
+      "top_document_id": "1425627_2018.htm",
+      "top_company": "TRANSBIOTEC, INC.",
+      "top_fiscal_year": 2018,
+      "top_score": 0.814378023147583,
+      "top_distance": 0.185621976852417
+    },
+    {
+      "question": "What was net income for the fiscal year?",
+      "top_chunk_id": "764038_2016.htm::chunk69",
+      "top_document_id": "764038_2016.htm",
+      "top_company": "SOUTH STATE CORP",
+      "top_fiscal_year": 2016,
+      "top_score": 0.7756766676902771,
+      "top_distance": 0.2243233323097229
+    },
+    {
+      "question": "How much did the company spend on research and development?",
+      "top_chunk_id": "1566373_2020.htm::chunk226",
+      "top_document_id": "1566373_2020.htm",
+      "top_company": "F-STAR THERAPEUTICS, INC.",
+      "top_fiscal_year": 2020,
+      "top_score": 0.7658547163009644,
+      "top_distance": 0.23414528369903564
+    },
+    {
+      "question": "What is the company's total outstanding debt?",
+      "top_chunk_id": "898174_2020.htm::chunk160",
+      "top_document_id": "898174_2020.htm",
+      "top_company": "REINSURANCE GROUP OF AMERICA INC",
+      "top_fiscal_year": 2020,
+      "top_score": 0.7610996961593628,
+      "top_distance": 0.2389003038406372
+    },
+    {
+      "question": "Did the company pay dividends to shareholders?",
+      "top_chunk_id": "857737_2018.htm::chunk52",
+      "top_document_id": "857737_2018.htm",
+      "top_company": "ICONIX BRAND GROUP, INC.",
+      "top_fiscal_year": 2018,
+      "top_score": 0.806167483329773,
+      "top_distance": 0.19383251667022705
+    }
+  ],
+  "unicode_query_tested": true,
+  "determinism": {
+    "repeated_question": "What are the main risk factors described in this filing?",
+    "same_chunk_ids_and_order": true,
+    "max_score_diff": 0.0
+  },
+  "timing_diagnostic": {
+    "label": "Phase 1 smoke diagnostic - NOT a production benchmark",
+    "query_count": 30,
+    "k": 5,
+    "query_embedding_ms": {
+      "p50": 9.893,
+      "p95": 18.077
+    },
+    "exact_search_ms": {
+      "p50": 120.574,
+      "p95": 126.092
+    },
+    "total_retrieve_ms": {
+      "p50": 131.814,
+      "p95": 139.403
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-29T00:41:01Z",
+  "git_sha": "6cd0b36b4c55db442119ef3312dd3fb917549fc0",
+  "input_embedding_artifact": "artifacts/embeddings/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/BAAI--bge-small-en-v1.5/embeddings.parquet",
+  "input_chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+  "normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+  "normalizer_version": "phase1-minimal-v1",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "embedding_model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "vector_count": 162357,
+  "vector_dimension": 384,
+  "vector_dtype": "float32",
+  "normalize_embeddings": true,
+  "backend": "lancedb",
+  "lancedb_version": "0.37.1",
+  "search_mode": "exact",
+  "distance_metric": "cosine",
+  "table_name": "chunks",
+  "column_count": 17,
+  "database_path": "artifacts/indexes/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/BAAI--bge-small-en-v1.5",
+  "database_size_bytes": 493178075,
+  "build_runtime_seconds": 6.72,
+  "ann_indexes_created": 0,
+  "vector_integrity_check": {
+    "sample_size": 200,
+    "exact_matches": 200,
+    "max_abs_diff": 0.0
+  },
+  "self_retrieval": {
+    "checked": 40,
+    "passed": 40,
+    "anomalies": [],
+    "self_distance_min": -1.1920928955078125e-07,
+    "self_distance_max": 0.0
+  },
+  "search_diagnostic": {
+    "label": "Phase 1 smoke diagnostic - not a production benchmark",
+    "query_count": 50,
+    "top_k": 5,
+    "p50_ms": 154.363,
+    "p95_ms": 165.293
+  }
+}

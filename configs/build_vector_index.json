@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "input_embedding_artifact": "artifacts/embeddings/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/BAAI--bge-small-en-v1.5/embeddings.parquet",
+  "input_chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "embedding_model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "embedding_dimension": 384,
+  "vector_dtype": "float32",
+  "normalize_embeddings": true,
+  "database_backend": "lancedb",
+  "search_mode": "exact",
+  "distance_metric": "cosine",
+  "table_name": "chunks",
+  "column_policy": "all_17_columns"
+}

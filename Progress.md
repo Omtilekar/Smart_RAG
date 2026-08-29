@@ -3782,3 +3782,233 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.4 Baseline Embedding Pipeline  — COMPLETE
   1.5 Vector-Only Index            — NEXT
 ```
+
+## 2026-08-28 — Phase 1.5 Vector-Only Index
+
+### Objective
+
+Creates the first exact LanceDB cosine-search table over all 162,357 Task
+1.4 embeddings - the queryable vector store Task 1.6's baseline retriever
+will use.
+
+### Initial State
+
+```text
+Task 1.4 commit: 6cd0b36
+embedding artifact: artifacts/embeddings/f1dc04d4.../BAAI--bge-small-en-v1.5/embeddings.parquet
+chunk_config_hash:    f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+embedding model/revision: BAAI/bge-small-en-v1.5 / 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+embedding row count:        162,357 - independently re-verified before
+  starting (unique chunk_id 162,357, single chunk_config_hash, vector
+  fixed_size_list<float32>[384], all finite)
+```
+
+### Frozen User Decisions
+
+The task prompt arrived with four decisions marked "explicitly resolved
+before this prompt was drafted": plain LanceDB table / exact search,
+cosine metric, all 17 columns retained, table name `chunks`. Unlike Task
+1.3's earlier false-approval incident, nothing in the repository
+contradicted these (no prior Task 1.5 artifact existed to disagree with),
+so they were accepted as given, per the task's own "do not ask again
+unless the repository materially contradicts them" instruction.
+
+```text
+index type:     plain table / exact search
+metric:            cosine
+table columns:        all 17
+table name:              chunks
+```
+
+### Backend / Storage
+
+```text
+LanceDB version:  0.37.1 (matches pinned requirement)
+database path:      artifacts/indexes/f1dc04d4.../BAAI--bge-small-en-v1.5/
+table name:            chunks
+```
+
+Built via `src.storage.get_storage().index_dir(chunk_config_hash,
+embedding_model)` - the existing Task 0.7 contract, no new path
+convention. No separate index-config hash introduced - the existing
+`(chunk_config_hash, embedding_model)` compound key already captures
+everything that affects index content for Phase 1.
+
+### LanceDB API Verification
+
+Before touching real data, a tiny synthetic 4-vector table (identical,
+near-duplicate, orthogonal, opposite) was built and queried to verify
+actual installed 0.37.1 behavior:
+
+```text
+same-as-query -> _distance 0.0
+near-duplicate -> _distance ~0.006
+orthogonal -> _distance 1.0
+opposite -> _distance 2.0
+```
+
+Confirmed: lower `_distance` = more similar; `.distance_type("cosine")`
+(current API, `.metric()` is a deprecated alias) must be called
+explicitly - untouched default is `"l2"`. `lancedb.connect(path)` uses
+`path` directly as the database root, no nested subdirectory.
+`create_table()` creates zero ANN indexes automatically
+(`list_indices() == []`) - exact search is simply the absence of
+`.create_index()`, never called anywhere in this codebase.
+
+### Search Contract
+
+```text
+mode:          exact (no ANN index on the table)
+metric:           cosine, requested explicitly via .distance_type("cosine")
+distance field:      _distance (LanceDB's own name, never renamed to "score")
+ranking:                lower _distance = more similar
+ANN index count:          0
+```
+
+### Table Schema
+
+17 columns exactly as produced by Task 1.4: `chunk_id`, `document_id`,
+`cik` (int64), `company`, `form_type`, `fiscal_year` (int32), `source`,
+`source_filename`, `source_split`, `ordinal` (int32), `text`,
+`token_count` (int32), `chunk_config_hash`, `normalizer_version`,
+`normalization_build_sha256`, `development_manifest_sha256`,
+`vector` (fixed_size_list<float32>[384]).
+
+### Build
+
+```text
+input rows:      162,357
+table rows:         162,357
+build runtime:        8.94s (first build), 6.72s (idempotent-reuse rerun -
+  detected existing table with correct row count, skipped re-ingestion)
+database size:          493,178,075 bytes (~470.3 MiB)
+ANN indexes created:       0
+```
+
+### Validation
+
+```text
+row-count match:        162,357 == 162,357
+chunk-ID uniqueness:       162,357 unique, no duplicates
+metadata equality:           full corpus (not sampled), all 16 non-vector
+  columns, chunk_id-keyed (not physical row order): exact match
+vector dimension/dtype:        384, float32 - verified via native PyArrow
+  -> NumPy conversion (not Python-object boxing)
+finite vectors:                  verified
+stored-vs-source vectors:          200-row deterministic sample, 200/200
+  exact bit-for-bit matches, max abs diff 0.0 - LanceDB preserves float32
+  exactly, no precision loss
+```
+
+Physical row order not relied upon anywhere - every comparison keyed by
+`chunk_id`.
+
+### Self-Retrieval
+
+```text
+real vectors tested:      40 (deterministic, evenly spaced across the
+  full corpus)
+same chunk at rank 1:        40/40
+anomalies:                       none
+self-distance range:               min -1.19e-07, max 0.0
+```
+
+The tiny negative self-distance is a float32 rounding artifact of
+`1 - cosine_similarity` on a self-comparison - not a bug, far below any
+meaningful tolerance, and noted explicitly rather than silently accepted.
+
+### Search Diagnostics
+
+```text
+label:          Phase 1 smoke diagnostic - not a production benchmark
+query count:       50 (+5 unmeasured warm-up)
+top-k:                5 (reused PROJECT_EXECUTION.md's already-frozen
+                    "top-5 context for generation" constant, not a new
+                    contract invented for this diagnostic)
+p50:                   ~143-154 ms (two build runs)
+p95:                     ~153-165 ms (two build runs)
+```
+
+Brute-force exact scan over 162,357 vectors - expected to be slower than
+an ANN index; not compared against Task 0.10's non-binding IVF_PQ numbers.
+
+### Tests
+
+```text
+new Task 1.5 tests:  20 (table creation/name/columns/no-ANN-index,
+  validate_chunk_table invariants, query-vector rejection cases,
+  exact_cosine_search self-match/orthogonal/opposite ranking, metadata
+  traceability, malformed-query rejection) - temporary LanceDB dirs + tiny
+  synthetic data throughout
+doctor:              PASS
+portable suite:       175 passed, 5 deselected, 0 failed
+full suite:            180 passed, 0 failed, 0 skipped (was 160)
+```
+
+### Safety
+
+```text
+embeddings.parquet unchanged:  opened read-only, never rewritten
+chunks.parquet unchanged:         sha256 3bd684c5... matches Task 1.4's
+  recorded value
+normalized Markdown unchanged:      normalization_build_sha256 re-verified
+  identical (fd0abad2...2244b)
+data/ unchanged:                       xbrl.duckdb 7,011,053,568 bytes, 36
+  raw XBRL ZIPs, 990 primary filings - all identical
+index artifact ignored by Git:           confirmed via git status --ignored
+no ANN index:                                confirmed (list_indices()==[])
+no BM25/FTS:                                   confirmed - vector-only
+no retriever pipeline:                            confirmed - Task 1.6 not
+  started
+```
+
+### Files Created / Modified
+
+```text
+src/index/lancedb_index.py           (new)
+scripts/build_vector_index.py        (new)
+configs/build_vector_index.json      (new, tracked)
+results/phase_1_5_vector_index_summary.json  (new, tracked)
+tests/test_vector_index.py            (new, 20 tests)
+project_plan/PHASE1_VECTOR_INDEX.md    (new)
+project_plan/REPOSITORY_STRUCTURE.md     (updated: src/index/ marked
+  implemented, configs/ and scripts/ listings updated)
+Progress.md                                (this entry)
+```
+
+493,178,075-byte LanceDB dataset under `artifacts/indexes/<hash>/` is
+git-ignored and not listed individually. No `src/embeddings/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, embeddings.parquet,
+chunks.parquet, normalized Markdown, or frozen `data/` modified. No new
+dependency - `lancedb`/`pyarrow` already present.
+
+### Git
+
+```text
+git status --short before commit: 6 new untracked tracked-worthy files
+  plus doc updates - 0 artifacts/data/venv content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 1.5 commit: "Add exact LanceDB vector
+index". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — exact cosine LanceDB index built for all Phase 1 embeddings
+```
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — COMPLETE
+  1.5 Vector-Only Index            — COMPLETE
+  1.6 Baseline Retriever           — NEXT
+```

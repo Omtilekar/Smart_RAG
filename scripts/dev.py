@@ -30,8 +30,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-PORTABLE_MARKER_EXPR = "not local_data and not gpu and not model"
+PORTABLE_MARKER_EXPR = "not local_data and not gpu and not model and not generation_api"
 SMOKE_MARKER_EXPR = "local_data or gpu or model"
+# generation_api (Task 1.7) is deliberately excluded from both expressions
+# above - it makes a real, credentialed OpenRouter network call and must
+# never run merely because a developer's local .env happens to have
+# OPENROUTER_API_KEY/GENERATION_MODEL set. It only runs via the full
+# `dev.py test` (no filter) or by name (`pytest -m generation_api`), and
+# is the dedicated scripts/smoke_generation.py script's job to exercise
+# deliberately.
 
 CORE_PACKAGES = [
     "requests", "duckdb", "pyarrow", "bs4", "lxml",

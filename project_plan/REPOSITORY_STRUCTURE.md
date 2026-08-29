@@ -21,7 +21,7 @@ SEC-RAG/
 │   ├── embeddings/      # IMPLEMENTED (Task 1.4) — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding
 │   ├── index/           # IMPLEMENTED (Task 1.5) — exact-cosine LanceDB vector index
 │   ├── retrieval/       # IMPLEMENTED (Task 1.6) — baseline natural-language vector retriever
-│   ├── generation/      # planned responsibility: LLM generation/provider interface
+│   ├── generation/      # IMPLEMENTED (Task 1.7) — minimal grounded generation, OpenRouter adapter
 │   ├── eval/            # planned responsibility: truth contract, benchmark sets, metrics
 │   ├── router/          # planned responsibility: query classification, path selection
 │   ├── rerank/          # planned responsibility: cross-encoder reranking
@@ -42,7 +42,8 @@ SEC-RAG/
 │                         # chunk_development_corpus.py (Task 1.3),
 │                         # embed_development_corpus.py (Task 1.4),
 │                         # build_vector_index.py (Task 1.5),
-│                         # smoke_retrieval.py (Task 1.6)
+│                         # smoke_retrieval.py (Task 1.6),
+│                         # smoke_generation.py (Task 1.7)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -77,7 +78,7 @@ intentionally omitted from the tree above.
 | `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md` |
 | `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
 | `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
-| `generation/` | structure only | `generate(prompt, context) -> answer` provider interface (Phase 1.7) |
+| `generation/` | **implemented** | `provider.py` (provider-neutral interface), `openrouter.py` (adapter), `minimal.py`, `citations.py` (Task 1.7), see `project_plan/PHASE1_GENERATION.md` |
 | `eval/` | structure only | `truth_contract.py`, tag registry, ~3,000-question benchmark, metrics (Phase 1.9, 2.1–2.6) |
 | `router/` | structure only | Rules-first query classification/path selection (Phase 3.8) |
 | `rerank/` | structure only | Cross-encoder reranking (Phase 3.6) |

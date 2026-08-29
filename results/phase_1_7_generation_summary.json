@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-29T06:21:58Z",
+  "label": "Phase 1 generation smoke diagnostic - NOT a production benchmark",
+  "provider": "openrouter",
+  "requested_model": "openai/gpt-oss-20b",
+  "response_reported_model": "openai/gpt-oss-20b",
+  "retriever_k": 5,
+  "citation_format": "inline [chunk_id]",
+  "abstention_policy": "concise natural-language insufficiency statement, citations=[]",
+  "temperature_requested": 0.0,
+  "live_smoke_performed": true,
+  "live_smoke_count": 5,
+  "results": [
+    {
+      "question": "What was the company's total revenue?",
+      "answer": "The company\u2019s total revenue for 2016 was **$259.4\u202fmillion** (the sum of $201.3\u202fmillion from the internet data center market, $43.6\u202fmillion from the CATV market, $1.6\u202fmillion from the FTTH market, and $12.9\u202fmillion from the telecom market)\u30101158114_2016.htm::chunk106\u3011.",
+      "citations": [],
+      "abstained": false
+    },
+    {
+      "question": "What are the main risk factors described in this filing?",
+      "answer": "The filing lists several key risk factors that could materially affect TRANSBIOTEC\u2019s business, financial condition, and stock price:\n\n1. **Limited operating history and financial information** \u2013 The company has a short track record and no revenue to date, making it difficult for investors to assess performance.  \n2. **Early\u2011stage development uncertainties** \u2013 As a new company, it faces typical risks of early\u2011stage firms, including the possibility that it will not successfully develop or commercialize its products.  \n3. **Failure to meet product development and commercialization goals** \u2013 Delays, inadequate funding, lack of consumer acceptance, competition, and insufficient sales and marketing could harm the business.  \n4. **Inadequate funding and capital needs** \u2013 The company has limited cash liquidity and will likely need additional capital soon; failure to raise funds could force it to reduce or halt operations.  \n5. **Negative cash flows** \u2013 The company has historically generated negative cash flows and expects this to continue, which could impair its ability to operate.  \n\nThese factors are summarized in the risk\u2011factor section of the filing. [chunk9]",
+      "citations": [],
+      "abstained": false
+    },
+    {
+      "question": "What was net income for the fiscal year?",
+      "answer": "I\u2019m sorry, but the supplied context does not provide a net\u2011income figure for the fiscal year in question.",
+      "citations": [],
+      "abstained": true
+    },
+    {
+      "question": "How much did the company spend on research and development?",
+      "answer": "The company reported research and development expenses of **$157.4\u202fmillion** for the year ended December\u202f31,\u202f2017. [chunk63]",
+      "citations": [],
+      "abstained": false
+    },
+    {
+      "question": "Does this filing mention any information about employee stock purchase plans in ancient Rome?",
+      "answer": "No. The filing contains descriptions of modern employee\u2011stock\u2011purchase plans for companies such as Clearfield, Teradyne, and LivePerson, but it does not mention any employee stock purchase plans in ancient Rome. [796505_2018.htm::chunk44] [97210_2017.htm::chunk91] [1102993_2018.htm::chunk138]",
+      "citations": [
+        "796505_2018.htm::chunk44",
+        "97210_2017.htm::chunk91",
+        "1102993_2018.htm::chunk138"
+      ],
+      "abstained": false
+    }
+  ],
+  "retrieval_latency": {
+    "p50_ms": 173.25,
+    "p95_ms": 192.46
+  },
+  "provider_latency": {
+    "p50_ms": 7294.08,
+    "p95_ms": 12372.78
+  },
+  "total_latency": {
+    "p50_ms": 7465.15,
+    "p95_ms": 12856.73
+  },
+  "token_usage": {
+    "prompt_tokens": 14942,
+    "completion_tokens": 2306,
+    "total_tokens": 17248
+  }
+}

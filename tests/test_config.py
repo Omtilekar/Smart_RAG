@@ -14,6 +14,11 @@ _ENV_VARS = (
 def test_defaults_load_without_any_env_override(monkeypatch):
     for var in _ENV_VARS:
         monkeypatch.delenv(var, raising=False)
+    # Isolate from whatever a real local .env file happens to contain (e.g.
+    # a developer's own GENERATION_PROVIDER/GENERATION_MODEL/OPENROUTER_API_KEY
+    # for Task 1.7's live smoke) - clearing os.environ above is not enough,
+    # since load_settings() would otherwise repopulate these vars from .env.
+    monkeypatch.setattr("src.config.load_dotenv", lambda *a, **k: None)
     get_settings.cache_clear()
 
     s = get_settings()

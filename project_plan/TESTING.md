@@ -25,8 +25,8 @@ hide a real failure on a machine that has the capability.
 
 ## Test categories
 
-Registered `pytest.ini` markers: `local_data`, `gpu`, `model`. Unmarked
-tests are the portable set.
+Registered `pytest.ini` markers: `local_data`, `gpu`, `model`,
+`generation_api`. Unmarked tests are the portable set.
 
 | Category | Files | What it protects |
 |---|---|---|
@@ -34,6 +34,7 @@ tests are the portable set.
 | `local_data` | `test_duckdb_smoke.py` | Frozen `data/` paths exist and `xbrl.duckdb` opens read-only with the expected tables/fact count — skips cleanly if the dataset isn't present |
 | `gpu` | `test_gpu_smoke.py` | A real CUDA kernel (matmul) executes and returns a finite result — skips if no CUDA GPU |
 | `model` (+`gpu`) | `test_embedding_smoke.py` | `BAAI/bge-small-en-v1.5` (the Phase 1 baseline) still loads and runs on CUDA through `sentence-transformers`, from the local cache only |
+| `generation_api` | `test_openrouter_live_smoke.py` (Task 1.7) | A real OpenRouter chat-completion call succeeds — requires `OPENROUTER_API_KEY` and an explicit `GENERATION_MODEL` in the process environment; skips cleanly if either is absent, fails if present but the call is broken. Never runs by default — always a real network call and never part of routine `dev.py test`/`test --portable` expectations |
 
 ## Offline policy
 

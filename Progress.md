@@ -4197,3 +4197,279 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.6 Baseline Retriever           — COMPLETE
   1.7 Minimal Generation Layer     — NEXT
 ```
+
+## 2026-08-29 — Phase 1.7 Minimal Generation Layer
+
+### Objective
+
+Composes Task 1.6's top-5 retrieval with a replaceable API generation
+provider - question -> retrieval -> minimal grounded prompt -> one
+provider call -> answer with inline `[chunk_id]` citations.
+
+### Initial State
+
+```text
+Task 1.6 commit: 3d84f74
+retriever:          BaselineRetriever.retrieve(question, k=5)
+index/model:           chunk_config_hash f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd,
+                     BAAI/bge-small-en-v1.5, table chunks, 162,357 rows
+test baseline:           209 passed, 0 failed before starting
+```
+
+### Frozen User Decisions
+
+Arrived pre-approved with the task prompt (Decisions 1-4): OpenRouter as
+the Phase 1 testing provider only (not frozen production, replaceable
+later), model runtime-configurable via `GENERATION_MODEL` (no hardcoded
+default), inline `[chunk_id]` citations, `citations` parsed from inline
+markers, explicit ABSTAIN behavior when context is insufficient (no
+forced citation), lowest deterministic setting (`temperature=0`).
+
+Neither `GENERATION_MODEL` nor `OPENROUTER_API_KEY` was set anywhere in
+this environment at task start, and the task's own rule forbids choosing
+a model from a leaderboard - **stopped and asked**. User supplied
+`GENERATION_MODEL=openai/gpt-oss-20b`.
+
+### Security Near-Miss - Caught Before Commit
+
+While providing the API key, the user's edit landed in the **tracked**
+`.env.example` (visible via the IDE's file-change notification) instead of
+the git-ignored `.env`. This was caught immediately (before any `git add`
+or commit) by inspecting `git status`/`git diff` on `.env.example`. Fixed
+by: creating the proper git-ignored `.env` with the real key, restoring
+`.env.example` to its blank placeholder, and re-verifying via
+`git check-ignore -v .env` and an exhaustive grep for the key string
+across every file about to be staged (0 matches) before proceeding. The
+key was never committed to git history at any point - confirmed via
+`git status --short`/`git diff` showing `.env.example` as only
+working-tree-modified, never staged, throughout the incident.
+
+### Provider Contract
+
+```text
+adapter module:    src/generation/openrouter.py (OpenRouterProvider)
+auth env var:         OPENROUTER_API_KEY (process environment only, read at
+                     call time, never on Settings, never in __repr__)
+endpoint:               POST https://openrouter.ai/api/v1/chat/completions
+                     (verified from OpenRouter's own docs via WebFetch -
+                     https://openrouter.ai/docs/api-reference/chat-completion
+                     and .../authentication - not from memory)
+requested model:          openai/gpt-oss-20b
+response-reported model:    openai/gpt-oss-20b (echoed back exactly)
+```
+
+**Dependency decision**: `requests` (already a project dependency) via raw
+HTTP - no OpenRouter SDK added, not necessary for this simple contract.
+**Timeout**: 60s, reused from `src/ingest/common.py`'s existing API-request
+convention rather than inventing a new value.
+
+### Generation API
+
+```text
+src/generation/provider.py   GenerationProvider protocol, GenerationRequest,
+                             ProviderResponse, GenerationError
+src/generation/openrouter.py OpenRouterProvider(model).generate(request)
+src/generation/citations.py  parse_citations(answer_text) -> list[str]
+src/generation/minimal.py    MinimalGenerator(retriever, provider).answer(question) -> GenerationResult
+```
+
+### Prompt Contract
+
+Grounding: "Use only the supplied context... Do not use outside
+knowledge." Citation: "[chunk_id] (a literal chunk ID inside square
+brackets, nothing else inside the brackets)". Abstention: "If the supplied
+context does not contain enough information to answer, say so directly...
+do not invent an answer or a citation." No chain-of-thought, no tools, no
+browsing instructions.
+
+### Result Contract
+
+```text
+answer: str
+citations: list[str]  - first-occurrence order, duplicates removed
+                        (user-approved recommended default)
+```
+
+Never exposes: raw provider response, API key, full prompt, retrieval
+vectors. Provider/timing metadata available via
+`MinimalGenerator._answer_with_diagnostics()` for smoke-script reporting
+only - not part of the public contract.
+
+### Real Bug Found and Fixed via Live Smoke
+
+First live run: 3 of 5 answers had citations that failed to parse -
+2 used fullwidth `【 】` brackets (a model-side formatting quirk, correctly
+rejected, not silently accepted) and 1 echoed the context block's own
+`[chunk_id: X]` label format verbatim instead of the instructed bare
+`[X]` form. Root cause: `_format_context()`'s own display format
+(`[chunk_id: X]`) visually primed the model to imitate that exact
+bracketed shape. **Fixed**: removed brackets from the context label
+(`Chunk ID: X`, no brackets) and strengthened the system prompt's citation
+instruction. Re-running the same live questions after the fix showed a
+clear improvement (multi-citation answers parsed correctly). Two residual
+model-side quirks remained across reruns (fullwidth brackets on some
+answers; one truncated ID `[chunk63]` missing the document_id prefix) -
+both correctly rejected by the strict parser rather than silently
+accepted as valid, and documented as expected Phase 1 baseline behavior
+for Task 1.8 to investigate systematically, not something Task 1.7's
+"no citation repair loop" scope should paper over.
+
+### Live Smoke (final run)
+
+```text
+model:              openai/gpt-oss-20b (requested == response-reported)
+questions:              5 (revenue, risk factors, net income, R&D, one
+                       intentionally-unanswerable control question)
+answers returned:          5/5 non-empty
+citations parsed:            2/5 with >=1 parsed citation, 1/5 legitimate
+                          abstention (correctly citations=[]), 2/5 had
+                          unparseable model-side citation attempts
+                          (correctly not silently accepted)
+no vector leaked:              confirmed
+```
+
+Not a citation-integrity quality claim - Task 1.8 owns that.
+
+### Determinism Parameters
+
+```text
+temperature: 0.0, sent explicitly every request
+stream: false, sent explicitly (never relies on implicit default)
+temperature=0 supported by openai/gpt-oss-20b via OpenRouter - no fallback
+  needed
+```
+
+### Performance (final run)
+
+```text
+Phase 1 generation smoke diagnostic - NOT a production benchmark
+retrieval latency:    p50 ~173ms, p95 ~209ms
+provider latency:        p50 ~7.3s, p95 ~12.4s
+total latency:              p50 ~7.5s
+token usage:                  prompt 14,942 / completion 2,306 / total 17,248
+                          (5-question smoke run)
+```
+
+### Tests
+
+```text
+new Task 1.7 tests:  47 (26 in test_minimal_generation.py - prompt
+  content, k=5, citation parsing/dedup/ordering, abstention, provider-error
+  propagation, no-vector; 20 in test_openrouter_provider.py - request
+  construction, response parsing, all 10 documented error status codes,
+  malformed response handling, API key never in repr/error messages,
+  monkeypatched requests.post, fake key only; 1 generation_api-marked live
+  integration test)
+doctor:              PASS
+portable suite:        249 passed, 7 deselected, 0 failed (generation_api
+  correctly excluded - see bug fix below)
+full suite:              256 passed, 0 failed, 0 skipped (was 209; includes
+  the real live OpenRouter call since credentials were present)
+live OpenRouter smoke:     PASS (both the pytest-marked test and the
+  dedicated scripts/smoke_generation.py real run)
+```
+
+**Real bug found and fixed**: `scripts/dev.py`'s `PORTABLE_MARKER_EXPR`
+did not exclude the new `generation_api` marker - the live-smoke test
+actually executed (real network call) during a `--portable` run once
+`.env` credentials existed, violating the task's explicit "a live
+OpenRouter call should NOT be part of the default portable pytest suite"
+requirement. Fixed by adding `and not generation_api` to
+`PORTABLE_MARKER_EXPR` and documenting why it's also excluded from
+`SMOKE_MARKER_EXPR` (so `dev.py smoke` never spends API credits either) -
+verified via a rerun showing the test correctly deselected.
+
+**Also fixed**: `tests/test_config.py`'s pre-existing
+`test_defaults_load_without_any_env_override` implicitly assumed no local
+`.env` file existed - broken by creating a real `.env` for this task (the
+correct, intended mechanism for supplying `OPENROUTER_API_KEY` locally).
+Fixed by monkeypatching `src.config.load_dotenv` to a no-op for that one
+test, so it is genuinely isolated from any local `.env` content rather
+than merely clearing already-known variable names from `os.environ`.
+
+### Safety
+
+```text
+API key not logged/committed:        confirmed - never in Settings/repr/
+  logs/tracked files; the near-miss above was caught and fixed before any
+  git add/commit
+only question + top-5 context sent:     confirmed - src/generation/minimal.py
+  sends only the 5 retrieved chunks' text/company/fiscal_year/document_id
+  plus the question; no full filing, no embeddings, no filesystem paths
+index unchanged:                           162,357 rows, re-verified
+embeddings unchanged:                        sha256 52210a51... matches
+chunks unchanged:                              sha256 3bd684c5... matches
+normalized Markdown unchanged:                    1,500 files, unchanged
+data/ unchanged:                                    xbrl.duckdb
+  7,011,053,568 bytes - identical
+no FastAPI, no citation grader, no eval set:          confirmed
+```
+
+### Files Created / Modified
+
+```text
+src/generation/provider.py            (new)
+src/generation/openrouter.py          (new)
+src/generation/citations.py           (new)
+src/generation/minimal.py             (new)
+scripts/smoke_generation.py           (new)
+results/phase_1_7_generation_summary.json  (new, tracked - no raw prompts,
+  no key, no large context dumps)
+tests/test_minimal_generation.py       (new, 26 tests)
+tests/test_openrouter_provider.py       (new, 20 tests)
+tests/test_openrouter_live_smoke.py      (new, 1 generation_api-marked test)
+tests/test_config.py                      (fixed: isolate the pre-existing
+  defaults test from a real local .env)
+pytest.ini                                  (added generation_api marker)
+scripts/dev.py                                (fixed: excluded
+  generation_api from --portable)
+.env.example                                    (documented
+  OPENROUTER_API_KEY variable name only, GENERATION_MODEL left blank -
+  no tracked model default)
+project_plan/PHASE1_GENERATION.md                 (new)
+project_plan/TESTING.md                             (added generation_api
+  marker row)
+project_plan/REPOSITORY_STRUCTURE.md                  (updated:
+  src/generation/ marked implemented, scripts/ listing updated)
+Progress.md                                              (this entry)
+```
+
+`.env` (real `OPENROUTER_API_KEY`/`GENERATION_MODEL`, git-ignored) exists
+locally now but is not a tracked file. No `src/retrieval/`, `src/index/`,
+`src/embeddings/`, `src/chunk/`, `src/normalize/`, `src/ingest/`, index
+data, embeddings, chunks, normalized Markdown, or frozen `data/` modified.
+No new dependency.
+
+### Git
+
+```text
+git status --short before commit: only the files listed above - .env
+  confirmed ignored via git check-ignore -v .env; exhaustive grep for the
+  real key string across every about-to-be-staged file: 0 matches
+secret scan:            clean
+```
+
+Committed as one coherent Task 1.7 commit: "Add minimal grounded
+generation layer". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+PASS — minimal grounded API generation layer implemented and live-smoked
+```
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — COMPLETE
+  1.5 Vector-Only Index            — COMPLETE
+  1.6 Baseline Retriever           — COMPLETE
+  1.7 Minimal Generation Layer     — COMPLETE
+  1.8 Citation Integrity Smoke     — NEXT
+```

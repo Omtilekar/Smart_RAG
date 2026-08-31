@@ -4717,3 +4717,212 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.8 Citation Integrity Smoke     — COMPLETE WITH WARN
   1.9 200-Question Smoke Eval      — PENDING USER DECISION
 ```
+
+---
+
+## 2026-08-31 — Phase 1.7a Citation Format Compliance Correction
+
+### Objective
+
+Prompt-only correction prompted by Task 1.8's 3/10 live result. Numbered
+`1.7a` because the defect belongs to Task 1.7's generation-output contract,
+even though Task 1.8 discovered and measured it. Does not rewrite Task 1.7
+or Task 1.8 history and does not begin Task 1.9.
+
+### Baseline
+
+```text
+source:               results/phase_1_8_citation_integrity_summary.json
+total:                   10
+passed:                     3
+failed:                       7
+malformed_attempts:              7
+unknown_ids:                        0
+out_of_context_ids:                    0
+missing_required_citation:                7
+```
+
+### Root-Cause Evidence
+
+All 7 Task 1.8 failures were `malformed_citation_attempt` +
+`missing_required_citation`: 6 used fullwidth `【】` brackets, 1 used a
+truncated `[chunk63]` ID (missing the `document_id` prefix), one case
+compounded both. **Zero** `unknown_chunk_id` or
+`citation_not_in_supplied_context` failures — every syntactically valid
+citation pointed to a real, correctly-supplied chunk, meaning retrieval and
+grounding were already correct; the defect was narrowly citation-output
+formatting, matching this task's controlled scope (prompt-only).
+
+### Frozen Strategy
+
+```text
+prompt-only
+same provider (openrouter)
+same model (openai/gpt-oss-20b)
+same generation settings (temperature=0.0, stream=false)
+same 10 questions (configs/citation_integrity_smoke.json, unchanged)
+same validator (src/eval/citation_integrity.py, unchanged)
+same parser (src/generation/citations.py, unchanged)
+no normalization/repair of malformed citations
+10/10 required to unblock Task 1.9
+```
+
+### Prompt Change
+
+`src/generation/minimal.py`'s `SYSTEM_PROMPT` gained an explicit
+citation-format block after the existing citation instruction (grounding,
+outside-knowledge, and abstention sentences unchanged verbatim):
+
+```text
+BEFORE: "Cite every factual claim ... using the format [chunk_id]
+  (a literal chunk ID inside square brackets, nothing else inside the
+  brackets), using only chunk IDs that appear in the supplied context."
+  (no explicit ASCII-vs-fullwidth rule, no truncation rule, no examples)
+
+AFTER: same sentence retained, plus 4 numbered mandatory rules (ASCII
+  brackets only; fullwidth 【】 explicitly forbidden; copy the complete
+  Chunk ID exactly, never truncate; nothing else inside the brackets), one
+  valid format example ([1158114_2016.htm::chunk106]), three invalid
+  examples (fullwidth, truncated, extra-text-in-brackets) explicitly
+  labeled formatting-only, and a pre-answer format-check instruction (not a
+  chain-of-thought/reasoning request).
+```
+
+`_format_context()`'s non-bracketed `Chunk ID: X` context label (Task 1.7's
+existing fix) was not reversed or touched.
+
+### Tests
+
+```text
+new Task 1.7a tests:  11 (tests/test_minimal_generation.py - ASCII-required,
+  fullwidth-forbidden, complete-ID-required, truncation-forbidden,
+  extra-content-forbidden, valid/invalid examples present, only-supplied-IDs
+  rule retained, grounding/abstention rules retained, context labels remain
+  non-bracketed)
+focused (test_minimal_generation + test_citation_integrity +
+  test_openrouter_provider):     81 passed, 0 failed
+doctor:                              PASS
+portable suite:                        289 passed, 8 deselected, 0 failed
+full suite:                              297 passed, 0 failed (was 286;
+  +11 new tests)
+```
+
+### Live Rerun
+
+```text
+provider:                 openrouter
+requested model:            openai/gpt-oss-20b
+response-reported model:      openai/gpt-oss-20b
+total cases:                    10 (8 answer + 2 abstention controls)
+passed:                           8
+failed:                             2
+```
+
+Residual failures: citation-smoke-01 and citation-smoke-07, both
+`malformed_citation_attempt` + `missing_required_citation`, both still
+fullwidth `【】` brackets (`【1158114_2016.htm::chunk106】`,
+`【1696898_2019.htm::chunk9】`). Diagnostics: `cases_with_valid_citations` 7,
+`cases_with_malformed_attempts` 2, `cases_with_unknown_ids` 0,
+`cases_with_out_of_context_ids` 0, `cases_missing_required_citation` 2 —
+still zero unknown/out-of-context failures after the correction. Full
+per-case detail:
+`results/phase_1_7a_citation_format_correction_rerun.json`.
+
+### Before / After
+
+```text
+before: 3/10
+after:  8/10
+```
+
+### Safety
+
+```text
+parser (src/generation/citations.py):          unchanged (confirmed via git diff)
+validator (src/eval/citation_integrity.py):       unchanged (confirmed via git diff)
+smoke questions (configs/citation_integrity_smoke.json): unchanged (confirmed via git diff)
+provider/model/settings:                              unchanged (openrouter /
+  openai/gpt-oss-20b / temperature=0.0 / stream=false, re-verified before rerun)
+retrieval:                                                  unchanged (Task 1.6
+  BaselineRetriever, k=5, untouched)
+index:                                                        unchanged
+  (162,357 rows, table ['chunks'], re-verified)
+Task 1.8 historical result:                                       preserved
+  byte-identical (results/phase_1_8_citation_integrity_summary.json never
+  written by this task's rerun - a minimal, additive
+  CITATION_SMOKE_OUTPUT_PATH env-var override was added to
+  scripts/smoke_citation_integrity.py so the rerun wrote to a separate
+  tracked file, results/phase_1_7a_citation_format_correction_rerun.json,
+  instead; default behavior for existing callers is unchanged)
+API key:                                                              never
+  logged/committed (re-verified via targeted grep across all
+  about-to-be-staged files; .env confirmed git-ignored)
+no repair/retry/second LLM call:                                          confirmed
+no model/provider switch:                                                    confirmed
+```
+
+### Result
+
+```text
+WARN — prompt-only correction did not achieve 10/10; Task 1.9 remains
+pending user decision
+```
+
+Prompt-only citation-format correction meaningfully reduced malformed
+citation attempts (7/10 -> 2/10 failing cases) but did not reach the
+required 10/10. Both residual failures are the same fullwidth-bracket habit
+as before, on questions the corrected prompt did not fix. Per the frozen
+strategy, no second prompt revision, model switch, provider switch, or
+citation normalization was attempted in this task - stopping here for a
+decision on how to proceed (e.g. try a different OpenRouter model, attempt
+a second, more targeted prompt revision, or accept the current 8/10 rate as
+a documented Phase 1 limitation) before Task 1.9 begins.
+
+### Files Created / Modified
+
+```text
+src/generation/minimal.py                                          (modified:
+  SYSTEM_PROMPT citation-format block only)
+tests/test_minimal_generation.py                                      (modified:
+  +11 prompt-regression tests)
+scripts/smoke_citation_integrity.py                                      (modified:
+  added optional CITATION_SMOKE_OUTPUT_PATH env-var output-path override,
+  default behavior unchanged)
+results/phase_1_7a_citation_format_correction_rerun.json                    (new,
+  tracked - full 10-case rerun detail)
+results/phase_1_7a_citation_format_correction_summary.json                    (new,
+  tracked - before/after summary)
+project_plan/PHASE1_GENERATION.md                                                (updated:
+  Task 1.7a correction note)
+project_plan/PHASE1_CITATION_INTEGRITY.md                                          (updated:
+  historical before/after note)
+Progress.md                                                                          (this entry)
+```
+
+No `src/eval/`, `src/retrieval/`, `src/embeddings/`, `src/index/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, index data, embeddings,
+chunks, normalized Markdown, or frozen `data/` modified. No new dependency.
+`results/phase_1_8_citation_integrity_summary.json` untouched (byte-identical).
+
+### Git
+
+Committed as one coherent Task 1.7a commit: "Tighten generation citation
+format". No remote configured - push deferred, not attempted.
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — IN PROGRESS
+  1.1 Select Development Corpus               — COMPLETE
+  1.2 Minimal Normalization                   — COMPLETE
+  1.3 Minimal Fixed-Window Chunker            — COMPLETE
+  1.4 Baseline Embedding Pipeline             — COMPLETE
+  1.5 Vector-Only Index                       — COMPLETE
+  1.6 Baseline Retriever                      — COMPLETE
+  1.7 Minimal Generation Layer                — COMPLETE
+  1.8 Citation Integrity Smoke                — COMPLETE WITH HISTORICAL WARN
+  1.7a Citation Format Compliance Correction  — COMPLETE WITH WARN
+  1.9 200-Question Smoke Eval                 — PENDING USER DECISION
+```

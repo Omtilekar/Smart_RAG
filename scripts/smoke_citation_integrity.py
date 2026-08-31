@@ -39,6 +39,12 @@ EXPECTED_ROW_COUNT = 162357
 CONFIG_RELATIVE_PATH = Path("configs") / "citation_integrity_smoke.json"
 SUMMARY_RELATIVE_PATH = Path("results") / "phase_1_8_citation_integrity_summary.json"
 
+# Task 1.7a: optional output-path override so a corrective rerun of this exact
+# same smoke can be written to a separate file instead of overwriting the
+# historical Task 1.8 result. Defaults to the original path unchanged - no
+# behavior change for existing callers.
+OUTPUT_PATH_ENV_VAR = "CITATION_SMOKE_OUTPUT_PATH"
+
 
 def load_question_config(storage) -> list[dict]:
     path = storage.repo_root / CONFIG_RELATIVE_PATH
@@ -197,7 +203,8 @@ def main() -> int:
         ),
         "cases": case_records,
     }
-    summary_path = storage.repo_root / SUMMARY_RELATIVE_PATH
+    output_override = os.environ.get(OUTPUT_PATH_ENV_VAR, "").strip()
+    summary_path = (storage.repo_root / output_override) if output_override else (storage.repo_root / SUMMARY_RELATIVE_PATH)
     storage.ensure_dir(summary_path.parent)
     summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 

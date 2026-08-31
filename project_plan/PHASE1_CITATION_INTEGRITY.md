@@ -228,6 +228,23 @@ stop-for-decision before Task 1.9.
   a property of `openai/gpt-oss-20b`'s output habits, not necessarily of
   every future model.
 
+## Historical note — Task 1.7a prompt-only correction
+
+```text
+original Task 1.8 baseline: 3/10
+post-correction rerun (Task 1.7a, same 10 cases, prompt-only change): 8/10
+```
+
+Task 1.7a changed only the Task 1.7 `SYSTEM_PROMPT` citation-format
+instructions. This module's parser reuse
+(`src.generation.citations.parse_citations`), malformed-attempt detection,
+existence/supplied-context checks, and the integrity rules table above were
+not modified. The 2 residual Task 1.7a failures were both
+`malformed_citation_attempt` (fullwidth `【】` brackets); 0
+`unknown_chunk_id`/`citation_not_in_supplied_context` failures in either
+run. See `results/phase_1_7a_citation_format_correction_summary.json` and
+`Progress.md`'s Task 1.7a entry.
+
 ## Next task
 
 Task 1.9 — ~200-question smoke evaluation (pending the user's decision on

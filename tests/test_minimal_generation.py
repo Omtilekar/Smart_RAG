@@ -120,6 +120,66 @@ def test_no_chain_of_thought_instruction():
     assert "reasoning" not in lowered
 
 
+# --------------------------------------------------------- Task 1.7a citation format
+
+def test_ascii_brackets_required():
+    assert '"[" and "]"' in SYSTEM_PROMPT or "ASCII" in SYSTEM_PROMPT
+
+
+def test_fullwidth_brackets_forbidden():
+    assert "【" in SYSTEM_PROMPT and "】" in SYSTEM_PROMPT
+    assert "never use the fullwidth" in SYSTEM_PROMPT.lower()
+
+
+def test_complete_chunk_id_required():
+    lowered = SYSTEM_PROMPT.lower()
+    assert "copy the complete chunk id exactly" in lowered
+
+
+def test_chunk_abbreviation_forbidden():
+    assert "never shorten or truncate it" in SYSTEM_PROMPT.lower()
+    assert "[chunk106]" in SYSTEM_PROMPT
+
+
+def test_extra_content_inside_brackets_forbidden():
+    lowered = SYSTEM_PROMPT.lower()
+    assert "nothing else inside the brackets" in lowered
+    assert "[chunk_id: 1158114_2016.htm::chunk106]" in SYSTEM_PROMPT
+
+
+def test_valid_citation_format_example_present():
+    assert "[1158114_2016.htm::chunk106]" in SYSTEM_PROMPT
+
+
+def test_invalid_citation_examples_present():
+    assert "【1158114_2016.htm::chunk106】" in SYSTEM_PROMPT
+    assert "[chunk106]" in SYSTEM_PROMPT
+    assert "[chunk_id: 1158114_2016.htm::chunk106]" in SYSTEM_PROMPT
+
+
+def test_only_supplied_chunk_ids_rule_retained():
+    assert "chunk ids that appear in the supplied context" in SYSTEM_PROMPT.lower()
+
+
+def test_grounding_rule_retained_after_correction():
+    assert "only the supplied context" in SYSTEM_PROMPT.lower()
+
+
+def test_abstention_rule_retained_after_correction():
+    lowered = SYSTEM_PROMPT.lower()
+    assert "not enough information" in lowered or "not contain enough information" in lowered
+
+
+def test_context_label_form_is_not_bracketed():
+    provider = FakeProvider()
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    gen.answer("question")
+    prompt = provider.calls[0].user_prompt
+    for i in range(5):
+        assert f"[chunk_id: doc{i}.htm::chunk{i}]" not in prompt
+        assert f"Chunk ID: doc{i}.htm::chunk{i}" in prompt
+
+
 # -------------------------------------------------------------------- result
 
 def test_generation_result_has_answer_and_citations():

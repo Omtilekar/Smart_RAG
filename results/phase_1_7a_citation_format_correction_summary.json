@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-31T17:06:40Z",
+  "baseline": {
+    "source_result_path": "results/phase_1_8_citation_integrity_summary.json",
+    "total": 10,
+    "passed": 3,
+    "failed": 7,
+    "malformed": 7,
+    "unknown": 0,
+    "out_of_context": 0,
+    "missing_required": 7
+  },
+  "correction": {
+    "type": "prompt_only",
+    "provider": "openrouter",
+    "requested_model": "openai/gpt-oss-20b",
+    "generation_settings": {
+      "temperature": 0.0,
+      "stream": false
+    },
+    "smoke_config_path": "configs/citation_integrity_smoke.json"
+  },
+  "rerun": {
+    "source_result_path": "results/phase_1_7a_citation_format_correction_rerun.json",
+    "total": 10,
+    "passed": 8,
+    "failed": 2,
+    "malformed": 2,
+    "unknown": 0,
+    "out_of_context": 0,
+    "missing_required": 2
+  },
+  "resolved": false,
+  "result": "WARN"
+}

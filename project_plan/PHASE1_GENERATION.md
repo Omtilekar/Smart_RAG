@@ -138,6 +138,36 @@ directly in one or two sentences and do not invent an answer or a citation.
 Deliberately minimal — no chain-of-thought instruction, no reasoning
 request, no tools, no browsing.
 
+### Task 1.7a citation-format correction
+
+Task 1.8 found citation-format compliance failures: `openai/gpt-oss-20b`
+predominantly emitted fullwidth `【】` brackets (6/7 failures) instead of the
+instructed ASCII `[]`, plus one truncated ID (`[chunk63]`). No
+unknown-chunk-ID or out-of-context-citation failures were observed — the
+retrieval → prompt → model grounding pipeline itself was already correct;
+the defect was narrowly citation-output formatting.
+
+Task 1.7a changed only the citation-format instructions in `SYSTEM_PROMPT`
+(`src/generation/minimal.py`). Parser (`src/generation/citations.py`),
+validator (`src/eval/citation_integrity.py`), provider, model, generation
+settings, and retrieval stayed unchanged.
+
+The corrected prompt explicitly requires:
+- ASCII `[` `]` only,
+- fullwidth `【` `】` explicitly forbidden,
+- the complete Chunk ID copied exactly as supplied (no truncation),
+- nothing else inside the brackets (no `chunk_id:` prefix or similar),
+- one valid format example and three invalid examples (fullwidth, truncated,
+  extra-text-in-brackets), explicitly labeled as formatting-only.
+
+Rerunning the unchanged 10-case Task 1.8 smoke after this prompt-only
+change: **8/10 passed** (up from the historical 3/10), 2 residual
+`malformed_citation_attempt` failures (both still fullwidth `【】`), 0
+unknown/out-of-context failures. Below the 10/10 threshold required to
+unblock Task 1.9 — see `results/phase_1_7a_citation_format_correction_summary.json`
+and `Progress.md`'s Task 1.7a entry for the full record and the pending
+user decision.
+
 ## Citation contract
 
 ```text

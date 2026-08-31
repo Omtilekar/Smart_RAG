@@ -1,10 +1,14 @@
-"""Task 2.1 - tests for src/eval/truth_contract.py.
+"""Task 2.1/2.2 - tests for src/eval/truth_contract.py.
 
 Portable unit tests use a synthetic in-memory DuckDB database whose
 facts/submissions schema exactly mirrors the real data/xbrl.duckdb schema
 (verified directly against the real database before writing this file -
-see project_plan/PHASE2_TRUTH_CONTRACT.md). A separate local_data-marked
-integration test (bottom of file) exercises the real frozen database.
+see project_plan/PHASE2_TRUTH_CONTRACT.md), together with the real,
+tracked `configs/eval_tags.yaml` registry (a small versioned config file,
+not frozen local data - loading it in a portable test is no different
+from any other test reading a tracked repo file). A separate
+local_data-marked integration test (bottom of file) exercises the real
+frozen XBRL database.
 """
 
 from __future__ import annotations
@@ -13,13 +17,20 @@ import duckdb
 import pytest
 
 from src.eval.truth_contract import (
-    QTRS_BY_TAG,
-    UNRESOLVED_CANDIDATE_TAGS,
     TruthContractError,
     EligibleFact,
     eligible_facts,
     build_contract_config,
     compute_contract_config_hash,
+)
+from src.eval.tag_registry import get_registry
+
+PREVIOUSLY_UNRESOLVED_TAGS = (
+    "RevenueFromContractWithCustomerExcludingAssessedTax",
+    "OperatingExpenses",
+    "EarningsPerShareBasic",
+    "EarningsPerShareDiluted",
+    "IncomeTaxExpenseBenefit",
 )
 
 FACTS_COLUMNS = (
@@ -187,12 +198,20 @@ def test_unknown_unregistered_tag_raises():
         eligible_facts(con, ["SomeUnregisteredTag"])
 
 
-def test_unresolved_candidate_tag_raises():
-    con = _con()
-    _baseline(con)
-    for tag in UNRESOLVED_CANDIDATE_TAGS:
-        with pytest.raises(TruthContractError):
-            eligible_facts(con, [tag])
+def test_previously_unresolved_tags_now_supported():
+    """Task 2.2 resolved all five tags Task 2.1 left unresolved - they
+    must now work with eligible_facts(), not raise."""
+    registry = get_registry()
+    supported = set(registry.supported_tags())
+    for tag in PREVIOUSLY_UNRESOLVED_TAGS:
+        assert tag in supported
+        spec = registry.get(tag)
+        assert spec.period_type == "duration"
+        assert spec.qtrs == 4
+        con = _con()
+        _insert_submission(con)
+        _insert_fact(con, tag=tag, qtrs=4)
+        assert len(eligible_facts(con, [tag])) == 1
 
 
 # ---------------------------------------------------------------- period alignment
@@ -361,9 +380,16 @@ def test_different_tag_selection_different_hash():
     assert h1 != h2
 
 
-def test_build_contract_config_rejects_unresolved_tag():
+def test_build_contract_config_rejects_unknown_tag():
     with pytest.raises(TruthContractError):
-        build_contract_config(["EarningsPerShareBasic"])
+        build_contract_config(["NotARealOrRegisteredTag"])
+
+
+def test_build_contract_config_embeds_tag_registry_hash():
+    from src.eval.tag_registry import compute_registry_hash
+    config = build_contract_config(["Assets"])
+    assert config["tag_registry_hash"] == compute_registry_hash(get_registry())
+    assert config["tag_registry_version"] == get_registry().version
 
 
 def test_empty_tag_list_returns_empty():
@@ -392,22 +418,26 @@ REAL_DB_PATH = "data/xbrl.duckdb"
 
 
 @pytest.mark.local_data
-def test_real_eligible_facts_10_tag_registry():
+def test_real_eligible_facts_full_registry():
     import os
     if not os.path.isfile(REAL_DB_PATH):
         pytest.skip(f"real XBRL database not present at {REAL_DB_PATH}")
 
+    registry = get_registry()
+    tags = registry.supported_tags()
+    assert len(tags) == 15  # the full frozen Task 2.2 registry
+
     con = duckdb.connect(REAL_DB_PATH, read_only=True)
     try:
-        tags = sorted(QTRS_BY_TAG.keys())
         facts = eligible_facts(con, tags)
 
         assert len(facts) > 0
         assert {f.tag for f in facts}.issubset(set(tags))
 
         for f in facts:
-            assert QTRS_BY_TAG[f.tag] == f.qtrs
-            assert f.uom == "USD"
+            spec = registry.get(f.tag)
+            assert spec.qtrs == f.qtrs
+            assert spec.unit == f.uom
             assert 2016 <= f.fiscal_year <= 2020
             assert f.adsh and f.cik and f.company
             assert f.value == f.value  # not NaN
@@ -418,6 +448,7 @@ def test_real_eligible_facts_10_tag_registry():
         random.seed(13)
         sample = random.sample(facts, min(30, len(facts)))
         for f in sample:
+            spec = registry.get(f.tag)
             row = con.execute(
                 "SELECT coreg, segments, version, uom, qtrs, value FROM facts "
                 "WHERE adsh = ? AND tag = ? AND ddate = ? AND qtrs = ? AND uom = ? "
@@ -429,8 +460,20 @@ def test_real_eligible_facts_10_tag_registry():
             assert coreg is None or coreg == ""
             assert segments is None or segments == ""
             assert version.startswith("us-gaap/")
-            assert uom == "USD"
-            assert qtrs == QTRS_BY_TAG[f.tag]
+            assert uom == spec.unit
+            assert qtrs == spec.qtrs
             assert value == f.value
+
+        # all previously-unresolved tags are now actually present in the eligible set
+        eligible_tags = {f.tag for f in facts}
+        for tag in PREVIOUSLY_UNRESOLVED_TAGS:
+            assert tag in eligible_tags
+
+        # deterministic ordering: a second call returns identical rows in
+        # identical order (never DuckDB's incidental physical row order)
+        facts_again = eligible_facts(con, tags)
+        assert facts == facts_again
+        keys = [(f.adsh, f.tag, f.ddate, f.qtrs, f.uom) for f in facts]
+        assert keys == sorted(keys)
     finally:
         con.close()

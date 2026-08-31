@@ -6090,3 +6090,256 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
 ```
+
+---
+
+## 2026-08-31 — Phase 2.2 Freeze Supported Tag Registry
+
+### Objective
+
+Freeze the authoritative Phase 2 evaluation tag registry in
+`configs/eval_tags.yaml`, resolving the five tag/qtrs decisions Task 2.1
+deliberately left open, and remove the architectural mismatch where Task
+2.1 hardcoded `uom='USD'` globally instead of per-tag.
+
+### Initial State
+
+```text
+HEAD:              bc90eac "Add Phase 2 XBRL truth contract"
+portable baseline:      381 passed, 11 deselected, 0 failed
+truth-contract config hash (10-tag): b575ac4b86c7a5fe633bf56ea487215a0ccab4cdfbcad0d448c1601f5efae618
+QTRS_BY_TAG (10 tags):      Assets/Liabilities/StockholdersEquity/
+                          CashAndCashEquivalentsAtCarryingValue -> 0;
+                          Revenues/ResearchAndDevelopmentExpense/
+                          NetIncomeLoss/OperatingIncomeLoss/CostOfRevenue/
+                          GrossProfit -> 4
+UNRESOLVED_CANDIDATE_TAGS (5):  RevenueFromContractWithCustomerExcludingAssessedTax,
+                              OperatingExpenses, EarningsPerShareBasic,
+                              EarningsPerShareDiluted, IncomeTaxExpenseBenefit
+```
+
+### Authoritative Sources
+
+`project_plan/REVIEW_RESOLUTIONS.md` still does not exist (same gap noted
+in Task 2.1). Candidate 15-tag set confirmed identical to
+`src.ingest.audit_data.CANDIDATE_TAGS` (the exact list that produced
+`DATA_READINESS_REPORT.md`'s own 15-tag table) - no concept added beyond
+this set.
+
+### Five Unresolved Decisions - Individually Investigated
+
+All five resolved to **SUPPORTED, qtrs=4, period_type=duration, unit=USD**,
+each verified with real 2016-2020/10-K data (not approved as a group):
+
+```text
+RevenueFromContractWithCustomerExcludingAssessedTax: 6,240/6,244 filings
+  (99.9%) report qtrs=4 when reporting this tag at all. ASC 606 adoption
+  timeline explains near-zero 2016-2017 coverage (2/10 CIKs) vs
+  1,690/2,204/2,332 in 2018/2019/2020 - a real accounting-standard
+  transition, not a defect. Raw rows dominated by segment/product-line
+  dimensional breakdowns (~70 raw rows for one company-period; segments
+  filter correctly keeps exactly 1).
+OperatingExpenses: 13,749/13,822 filings (99.5%), consistent coverage
+  2,561-2,869 CIKs/year.
+EarningsPerShareBasic: 15,769/15,801 filings (99.8%). Real uom
+  distribution confirmed plain "USD" (never "USD/shares") for 613,983 of
+  614,700 raw facts - the Task 2.2 prompt's "especially inspect" concern
+  does not apply to this dataset. Raw ROW counts favor qtrs=1 (quarterly
+  footnote schedules, one accession alone contributing 126 qtrs=1 rows)
+  but per-FILING qtrs=4 dominance (99.8%) is the correct evidence.
+EarningsPerShareDiluted: 15,279/15,305 filings (99.8%), same USD
+  verification. Kept fully distinct from Basic - no alias/equivalence.
+IncomeTaxExpenseBenefit: 20,831/20,898 filings (99.7%), 5,572 unique
+  eligible CIKs - second-highest coverage of all 15 tags after Assets.
+```
+
+### Real-Data qtrs Diagnostics
+
+Sanity-checked the qtrs=4 selection logic against the already-resolved
+`Revenues`/`NetIncomeLoss` tags restricted to form='10-K': both show the
+same dominant-qtrs=4-per-filing pattern (79.7%/65.5% of raw rows, higher
+by distinct-filing count) - confirms the methodology used for the 5 new
+tags is consistent with the already-approved tags, not a new standard.
+
+### Real-Data Unit Diagnostics
+
+Full `uom` distribution pulled for both EPS tags specifically (the task's
+named "especially inspect" concern): `EarningsPerShareBasic` - USD
+613,983, CAD 526, AUD 125, EUR 34, ... (no "USD/shares" or any per-share
+compound unit anywhere in the real data). Same for
+`EarningsPerShareDiluted`. All 15 candidate tags confirmed monetary/
+per-share-in-USD.
+
+### Final Supported Registry
+
+15 SUPPORTED, 0 EXCLUDED, 0 unresolved. No candidate was excluded - every
+one received a defensible semantics-based decision. `configs/eval_tags.yaml`
+(schema version 1) is now the single source of truth for
+qtrs/period_type/unit/enabled per tag.
+
+### Truth-Contract Integration Changes
+
+`src/eval/truth_contract.py` refactored: removed the hardcoded
+`QTRS_BY_TAG`/`UNRESOLVED_CANDIDATE_TAGS`/`MONETARY_UOM` module
+constants; `eligible_facts()` and `build_contract_config()` now consume
+`src.eval.tag_registry.get_registry()` for per-tag qtrs/unit, raising
+`TruthContractError` for any tag not `enabled` in the registry. Unit
+matching in the SQL query changed from a single global `uom = 'USD'` to a
+per-tag `CASE f.tag ... END` expression driven by the registry. No other
+rule (form/window/coreg/segments/taxonomy/period-alignment/dedup/no-
+materiality) was touched - confirmed via `git diff` review of the
+refactor. `CONTRACT_VERSION` bumped `1.0 -> 2.0` (structural change, not
+a semantic weakening).
+
+New module `src/eval/tag_registry.py`: `load_registry()`/`parse_registry()`
+strictly validate schema version, required fields, and qtrs/period_type
+consistency; a custom `_DuplicateKeyCheckingLoader` catches a repeated
+YAML key that PyYAML's default loader would otherwise silently collapse
+to its last occurrence (a real gap discovered while writing tests - the
+naive assumption that "Python dicts can't have duplicate keys" doesn't
+protect against a maintainer accidentally defining the same tag twice in
+the source YAML file).
+
+### Registry Version/Hash
+
+```text
+registry_version:      1
+registry_hash:            a230373e2a788423026142beb93c5c454a291f23468d46cfb40f5692e48b8070
+truth_contract_hash:         8ce68e8f53395f8f983e0002c53e62a31bb121b8551f28e739fcebb7f462988c
+                             (full 15-tag supported set; embeds
+                             tag_registry_hash + tag_registry_version
+                             directly in build_contract_config()'s output)
+```
+
+Both verified deterministic (stable across repeated loads) and
+verified to change under a semantic edit but not under comment/
+formatting/key-order changes.
+
+### Before/After Eligible Population
+
+```text
+before (10 tags):   185,506 eligible facts, 28,859 unique accessions, 7,809 unique CIKs
+after  (15 tags):      255,527 eligible facts, 28,863 unique accessions, 7,810 unique CIKs
+delta:                    +70,021 facts, +4 accessions, +1 CIK
+```
+
+Delta explained: almost entirely more facts about already-covered
+filings (companies reporting Assets/Revenues overwhelmingly also report
+EPS/income-tax/operating-expense in the same 10-K), not many new
+companies. Not optimized for size - Task 2.1's original rules were not
+weakened to produce this increase.
+
+### Independent Checks
+
+3 real eligible facts from 3 different companies manually inspected for
+**each** of the 5 newly-resolved tags (15 total) - every field
+(coreg/segments/version/uom/qtrs/form/fiscal_year/period-alignment)
+re-queried directly from raw tables, never trusting `eligible_facts()` to
+prove itself. 15/15 confirmed correct, including plausible EPS values
+($0.70, -$0.60, $13.76).
+
+### Tests
+
+```text
+new Task 2.2 tests:  tests/test_tag_registry.py (34 tests - config
+  loading, schema validation including the duplicate-key YAML case,
+  semantic consistency, determinism/hash stability, real-registry
+  checks); tests/test_truth_contract.py updated (net +1 test after
+  removing 2 now-obsolete unresolved-tag tests and adding 4 new ones -
+  registry-hash embedding, previously-unresolved tags now supported,
+  unknown-tag rejection via the registry, deterministic-ordering check
+  added to the real-data integration test)
+doctor:              PASS
+portable suite:        416 passed, 11 deselected, 0 failed (was 381; +35
+  net new portable tests)
+full suite:              427 passed, 0 failed (was 392; +35 new tests,
+  including the local_data-marked real integration test)
+```
+
+### Frozen-Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+facts row count:               90,685,753 - unchanged
+submissions row count:            218,166 - unchanged
+```
+
+### Phase 1 Regression Gate
+
+`git diff --stat` over src/retrieval, src/generation, src/index,
+src/embeddings, src/chunk, src/normalize, src/eval/citation_integrity.py,
+src/eval/smoke_dataset.py, src/eval/baseline_metrics.py, src/cli, and all
+three Phase 1 evaluation result files: zero changes.
+
+### Task 2.1 Regression Gate
+
+`git diff` review of `src/eval/truth_contract.py` confirms only the
+qtrs/unit ownership moved to the registry - form='10-K', the 2016-2020
+window, coreg/segments-blank, `version LIKE 'us-gaap/%'`, value validity,
+`ddate = submissions.period` alignment, same-accession dedup/conflict
+handling, and the no-materiality decision are all byte-identical in
+substance to Task 2.1's original SQL. Task 1.7a's frozen 10-case
+diagnostic was not rerun.
+
+### Files Created / Modified
+
+```text
+configs/eval_tags.yaml                                       (new)
+src/eval/tag_registry.py                                        (new)
+src/eval/truth_contract.py                                        (modified:
+  registry-driven qtrs/unit, CONTRACT_VERSION 1.0 -> 2.0)
+scripts/audit_eval_tag_registry.py                                    (new)
+tests/test_tag_registry.py                                              (new,
+  34 tests)
+tests/test_truth_contract.py                                              (updated)
+results/phase_2_2_tag_registry_summary.json                                  (new,
+  tracked)
+requirements.txt                                                                (added
+  pyyaml==6.0.3 - required by configs/eval_tags.yaml, the task's own
+  mandated config format; already present transitively, now declared
+  explicitly per the project's direct-dependency convention)
+project_plan/PHASE2_TAG_REGISTRY.md                                                (new)
+project_plan/REPOSITORY_STRUCTURE.md                                                (updated
+  narrowly: src/eval/ now lists tag_registry.py; configs/ and scripts/
+  listings updated)
+Progress.md                                                                          (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/index/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, `src/cli/`, `src/eval/
+citation_integrity.py`, `src/eval/smoke_dataset.py`, `src/eval/
+baseline_metrics.py`, Phase 1 result files, or frozen `data/` modified.
+No network, no LLM, no API credits spent.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files only -
+  0 data/artifacts/venv/.env content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.2 commit: "Freeze Phase 2 evaluation tag
+registry". No Phase 2 completion tag created. No remote configured - push
+deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.1 XBRL Truth Contract                     — COMPLETE
+  2.2 Freeze Supported Tag Registry           — COMPLETE
+  2.3 Build the Full Evaluation Dataset       — NEXT
+
+Known Phase 1 warning:
+Task 1.7a citation-format compliance remains 8/10.
+```

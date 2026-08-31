@@ -29,3 +29,6 @@ uvicorn==0.52.4
 
 # --- environment configuration (Task 0.5) ---
 python-dotenv==1.2.3
+
+# --- Phase 2 evaluation tag registry config (Task 2.2, configs/eval_tags.yaml) ---
+pyyaml==6.0.3

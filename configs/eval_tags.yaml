@@ -1,0 +1,212 @@
+# Phase 2 evaluation tag registry (Task 2.2) - frozen, versioned.
+#
+# This is the ONLY place XBRL tag semantics (qtrs, period_type, unit,
+# enabled status) are decided. src/eval/truth_contract.py's eligible_facts()
+# consumes this registry via src/eval/tag_registry.py - it does not
+# maintain a second, independently-decided qtrs/unit mapping.
+#
+# Comments and formatting are not part of the semantic hash
+# (tag_registry.compute_registry_hash() canonicalizes only version + the
+# per-tag enabled/qtrs/period_type/unit fields).
+#
+# period_type: "instant" (qtrs must be 0) or "duration" (qtrs must be 4,
+# the annual/10-K figure - never a quarterly qtrs=1/2/3 value, which would
+# require 10-Q data this project's truth contract does not use).
+#
+# unit: the exact XBRL uom string required for this tag. Verified
+# directly against data/xbrl.duckdb before being written here - see
+# project_plan/PHASE2_TAG_REGISTRY.md for the real per-tag uom
+# distributions, including the EPS unit investigation (Section 8 of the
+# Task 2.2 prompt required "especially inspecting" EarningsPerShareBasic/
+# Diluted - the real data shows plain "USD", never a "USD/shares"
+# compound unit, for every one of the 15 tags below).
+
+version: 1
+
+tags:
+  # ---------------------------------------------------------- balance sheet (instant)
+  Assets:
+    enabled: true
+    period_type: instant
+    qtrs: 0
+    unit: USD
+    category: balance_sheet
+    label: Total assets
+    reason: "Task 2.1 resolved; re-verified in Task 2.2 (100% of raw Assets facts are qtrs=0)."
+
+  Liabilities:
+    enabled: true
+    period_type: instant
+    qtrs: 0
+    unit: USD
+    category: balance_sheet
+    label: Total liabilities
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  StockholdersEquity:
+    enabled: true
+    period_type: instant
+    qtrs: 0
+    unit: USD
+    category: balance_sheet
+    label: Total stockholders' equity
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  CashAndCashEquivalentsAtCarryingValue:
+    enabled: true
+    period_type: instant
+    qtrs: 0
+    unit: USD
+    category: balance_sheet
+    label: Cash and cash equivalents
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  # ------------------------------------------------------- income statement (duration)
+  Revenues:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Total revenues
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+    notes: >-
+      Overlaps with RevenueFromContractWithCustomerExcludingAssessedTax for
+      766 (cik, fiscal_year) pairs 2016-2020 - both kept as distinct
+      supported concepts per Task 2.2's explicit instruction not to merge
+      correlated-but-distinct concepts. A later question generator should
+      avoid producing near-duplicate questions for the same company/period
+      across both tags (deferred to Task 2.3).
+
+  ResearchAndDevelopmentExpense:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Research and development expense
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  NetIncomeLoss:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Net income (loss)
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  OperatingIncomeLoss:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Operating income (loss)
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  CostOfRevenue:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Cost of revenue
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  GrossProfit:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Gross profit
+    reason: "Task 2.1 resolved; re-verified in Task 2.2."
+
+  # ------------------------------------------- newly resolved in Task 2.2
+  RevenueFromContractWithCustomerExcludingAssessedTax:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Revenue from contracts with customers (ASC 606)
+    reason: >-
+      Real 2016-2020/10-K data: 6,240 of 6,244 distinct 10-K filings that
+      report this tag at all report it at qtrs=4 (99.9%) - the same
+      dominant-annual pattern as the six already-resolved duration tags.
+      2,528 unique CIKs eligible - comparable to or better than several
+      already-supported tags (CostOfRevenue: 1,796; ResearchAndDevelopment:
+      2,288).
+    notes: >-
+      Coverage is heavily skewed toward 2018-2020 (2 CIKs in 2016, 10 in
+      2017, then 1,690/2,204/2,332 in 2018/2019/2020) - a real accounting-
+      standard transition (ASC 606 became effective for most public
+      companies in fiscal 2018), not a data-quality defect. Raw (pre-
+      filter) rows are dominated by dimensional revenue-stream/segment
+      breakdowns (one company alone contributed ~70 raw rows for one
+      company-period, of which the segments-blank rule correctly keeps
+      exactly 1) - the segments filter does real, necessary work for this
+      tag specifically.
+
+  OperatingExpenses:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Total operating expenses
+    reason: >-
+      Real 2016-2020/10-K data: 13,749 of 13,822 distinct filings reporting
+      this tag report it at qtrs=4 (99.5%). Consistent coverage across all
+      five years (2,561-2,869 unique CIKs/year). 4,104 unique CIKs eligible
+      overall.
+
+  EarningsPerShareBasic:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Earnings per share, basic
+    reason: >-
+      Real data confirms plain uom="USD" (never a "USD/shares" compound
+      unit) for 613,983 of 614,700 raw facts - the Task 2.2 prompt's
+      "especially inspect" concern does not apply to this dataset. 15,769
+      of 15,801 distinct 10-K filings reporting this tag report it at
+      qtrs=4 (99.8% of filings).
+    notes: >-
+      Raw ROW counts favor qtrs=1 (79,682 vs 48,482 within 10-K filings)
+      because some filers embed extensive quarterly-EPS footnote schedules
+      (one accession alone contributed 126 separate qtrs=1 rows) - this is
+      within-filing row multiplicity, not evidence qtrs=1 is the correct
+      annual figure. The per-FILING dominance of qtrs=4 (99.8%) is the
+      basis for this decision, not the raw row count.
+
+  EarningsPerShareDiluted:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Earnings per share, diluted
+    reason: >-
+      Same verification as EarningsPerShareBasic: plain uom="USD" confirmed
+      (592,948 of 593,617 raw facts); 15,279 of 15,305 distinct 10-K
+      filings report it at qtrs=4 (99.8%). Kept fully distinct from
+      EarningsPerShareBasic per Task 2.2's explicit instruction - no alias
+      or equivalence between basic and diluted EPS.
+
+  IncomeTaxExpenseBenefit:
+    enabled: true
+    period_type: duration
+    qtrs: 4
+    unit: USD
+    category: income_statement
+    label: Income tax expense (benefit)
+    reason: >-
+      Real 2016-2020/10-K data: 20,831 of 20,898 distinct filings reporting
+      this tag report it at qtrs=4 (99.7%). Strong, consistent coverage
+      across all five years (4,086-4,246 unique CIKs/year); 5,572 unique
+      CIKs eligible overall - the second-highest coverage among all 15
+      tags after Assets.

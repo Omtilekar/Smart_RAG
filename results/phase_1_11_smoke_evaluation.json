@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "created_at_utc": "2026-08-31T19:54:01Z",
-  "git_sha": "dd101c531a8f5419328a74a45be5e0737e5ee112",
+  "created_at_utc": "2026-08-31T20:34:22Z",
+  "git_sha": "006d7aed4c6c8b3a7d986c880e35f627f74b7b9f",
   "metric_name": "doc_recall@10",
   "k": 10,
   "question_count": 200,
@@ -61,10 +61,10 @@
   },
   "runtime": {
     "label": "Phase 1 evaluation-run diagnostic - NOT a production benchmark",
-    "run_seconds": 23.785,
+    "run_seconds": 23.399,
     "retrieval_latency_ms": {
-      "p50": 118.101,
-      "p95": 125.9
+      "p50": 110.029,
+      "p95": 153.062
     }
   },
   "questions": [

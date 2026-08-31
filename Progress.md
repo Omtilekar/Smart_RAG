@@ -5665,3 +5665,197 @@ Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
 ```
+
+---
+
+## 2026-08-31 — Phase 1 Independent Task Verification
+
+### Objective
+
+Full independent audit of Phase 1 as it actually exists on disk right now
+- not trusting `Progress.md`, docs, or result-file summaries as proof.
+Every important claim was re-derived directly from raw artifacts, live
+code execution, or fresh command runs. Full report:
+`project_plan/PHASE1_VERIFICATION_REPORT.md`.
+
+### Baseline
+
+```text
+HEAD:                006d7ae "Add Phase 1 end-to-end commands"
+branch:                 main
+working tree:              clean except this audit's own prompt file
+Python:                       3.11.9, .venv confirmed in use
+doctor:                          PASS
+local data / CUDA:                  both available
+```
+
+### Commands Run
+
+```bash
+python scripts/dev.py doctor
+python scripts/dev.py test --portable
+python scripts/dev.py smoke
+python scripts/dev.py test
+python scripts/run_baseline_metric.py
+python -m src.cli.phase1 evaluate
+python -m src.cli.phase1 answer --question ""
+python -m src.cli.phase1 answer
+```
+
+Plus one-off Python scripts (not committed) that independently
+reconstructed Task 1.1's selection from raw `data/edgar_corpus/*.parquet`
++ `data/xbrl.duckdb`, recomputed `normalization_build_sha256` from live
+files, read `chunks.parquet`/`embeddings.parquet` directly with PyArrow,
+ran a live LanceDB self-retrieval search, ran fresh retrieval queries,
+constructed 8 fresh adversarial citation-integrity cases, recomputed the
+Task 1.9 dataset hash and sampled 10 fresh cases against raw source, and
+independently recomputed Task 1.10's hit_count/first_hit_rank for all 200
+questions from raw fields (no call to the production aggregation helper).
+
+### Independently Verified Facts
+
+```text
+Task 1.1: eligible population (5,646) and 1,500-row SHA-256 selection
+  fully reconstructed from scratch against raw frozen data - exact match.
+  Manifest hash recomputed and matched. 10/10 fresh sample resolved.
+Task 1.2: normalization_build_sha256 recomputed from live artifact,
+  matched. 1,500 files, filename<->document_id 1:1 confirmed.
+Task 1.3: chunks.parquet read directly - 162,357 rows, 162,357 unique
+  chunk_id, 0 empty text, exactly the 7 approved empty-source docs have
+  0 chunks.
+Task 1.4: embeddings.parquet read directly - 162,357 rows, dim 384, all
+  finite, unit norm, row order index-aligned to chunks.parquet.
+Task 1.5: real LanceDB table opened directly - chunks, 162,357 rows,
+  0 ANN indexes; live self-retrieval search confirmed rank-1 self-match.
+Task 1.6: 3 fresh retrieval queries + 1 k=10 query against the real
+  index - correct counts, populated fields, no vectors exposed.
+Task 1.7: code inspection confirmed no hardcoded key/model, API key read
+  from os.environ only, deterministic settings (temperature=0.0,
+  stream=false).
+Task 1.8: 8 fresh adversarial cases (valid, unknown ID, valid-but-
+  unsupplied, fullwidth, truncated, missing-citation, valid abstention,
+  ordinary bracket) run against the real validator - all 8/8 correct.
+Task 1.7a: git show confirmed the correction commit touched only the
+  prompt/tests/docs/results - parser, validator, and smoke config
+  byte-identical. Task 1.8's historical result confirmed byte-identical
+  since its own commit.
+Task 1.9: dataset read directly - 200 rows, 40/40/40/40/40 balance, zero
+  fabricated fields, hash recomputed and matched. 10 fresh cases sampled
+  and resolved against raw EDGAR-CORPUS source.
+Task 1.10: real 200-question evaluation rerun fresh (twice) -
+  194/200, doc_recall@10=0.970000, metric_result_sha256 identical each
+  time. hit_count/first_hit_rank independently recomputed from raw
+  per-question fields, matched exactly.
+Task 1.11: python -m src.cli.phase1 evaluate rerun fresh - identical
+  result/hash, no OpenRouter call. answer command's empty/missing
+  --question rejection re-tested fresh, correct non-zero exit both times.
+```
+
+### Discrepancies Found
+
+One non-blocking documentation staleness item: `project_plan/PROJECT_EXECUTION.md`'s
+"Current Status" table still read "Phase 0 NEXT / Phase 1 NOT STARTED"
+despite both being complete. Fixed (trivial, unambiguous from repository
+evidence) - not a Phase 1 implementation gap, purely a top-level status
+table that was never revisited after Task-by-task work in `Progress.md`
+made it stale. No other inconsistency, stale hash, stale count, or false
+"resolved" claim was found anywhere in `project_plan/*.md`.
+
+### Fixes Made
+
+```text
+project_plan/PROJECT_EXECUTION.md - Current Status table corrected
+  (Phase 0 COMPLETE, Phase 1 COMPLETE WITH WARN, Phase 2 NEXT); one
+  "Next action" line updated to point at Phase 2. No other content
+  changed.
+```
+
+No code, test, config semantics, dataset, or historical result value was
+changed.
+
+### Test Results
+
+```text
+doctor:              PASS
+portable suite:        344 passed, 10 deselected, 0 failed (fresh)
+local-data/gpu/model:    9 passed, 345 deselected, 0 failed (fresh)
+full suite:                354 passed, 0 failed (fresh; includes 1
+                          incidental live OpenRouter call from the
+                          pre-existing generation_api-marked test, not a
+                          new call added by this audit)
+```
+
+### Phase 1 Exit-Criteria Result
+
+```text
+1. one command accepts question + returns answer         PASS
+2. answer contains valid source citations                PASS
+3. every citation resolves to stored source chunk         PASS
+4. 200-question evaluation runs end to end                PASS
+5. doc_recall@10 calculated, printed, saved               PASS
+6. integration bugs/limitations documented                PASS
+7. no advanced retrieval added prematurely                PASS
+
+7/7 PASS
+```
+
+### Known Warnings
+
+```text
+Task 1.7a citation-format compliance = 8/10 - re-confirmed unchanged,
+byte-identical to its original commit, non-blocking. Not re-run in this
+audit (re-running risks a different number by chance and would violate
+the explicit no-cherry-picking rule).
+```
+
+### Files Modified
+
+```text
+project_plan/PROJECT_EXECUTION.md              (trivial stale-status fix)
+project_plan/PHASE1_VERIFICATION_REPORT.md        (new - full audit report)
+results/phase_1_10_baseline_metric.json              (refreshed by fresh
+  reruns - only created_at_utc/git_sha/runtime latency changed; metric
+  content byte-identical)
+results/phase_1_11_smoke_evaluation.json                (refreshed
+  identically)
+configs/phase_1_10_baseline_metric.json                    (rewritten,
+  byte-identical stable content)
+Progress.md                                                  (this entry)
+```
+
+### Git State
+
+```text
+secret scan:            clean (full git ls-files scan, no key/token/
+  credential pattern found; only placeholder SEC_USER_AGENT values)
+.env ignored:                confirmed
+data/ ignored:                    confirmed (data/.gitkeep correctly the
+  only trackable exception)
+artifacts/ ignored:                    confirmed
+git add -n . safety:                      dry-run staged only this
+  audit's own files, nothing from data/artifacts/.venv/.env
+```
+
+### Final Verdict
+
+```text
+PASS WITH WARN
+
+READY FOR PHASE 2: YES
+
+Known accepted warning:
+Task 1.7a citation-format compliance remains 8/10.
+```
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
+  (independently re-verified; see PHASE1_VERIFICATION_REPORT.md)
+Phase 2 — Make the Numbers Trustworthy        — NEXT
+
+Known Phase 1 warning:
+Task 1.7a citation-format compliance remains 8/10.
+```

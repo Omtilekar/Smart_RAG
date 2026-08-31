@@ -1479,12 +1479,16 @@ A successful project has:
 
 ```text
 Data Preparation   ✅ COMPLETE
-Phase 0            ⬜ NEXT
-Phase 1            ⬜ NOT STARTED
-Phase 2            ⬜ NOT STARTED
+Phase 0            ✅ COMPLETE
+Phase 1            ⚠️ COMPLETE WITH WARN (Task 1.7a citation-format compliance: 8/10)
+Phase 2            ⬜ NEXT
 Phase 3            ⬜ NOT STARTED
 Phase 4            ⬜ NOT STARTED
 Phase 5            ⭐ STRETCH
 ```
 
-**Next action:** finalize Phase 0 acceptance criteria, then execute its subtasks in order.
+See `Progress.md` for the full dated engineering log behind this summary,
+including every Phase 0/1 subtask entry and the Phase 1 Independent Task
+Verification audit.
+
+**Next action:** begin Phase 2 — Make the Numbers Trustworthy.

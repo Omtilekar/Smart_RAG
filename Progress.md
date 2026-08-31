@@ -4473,3 +4473,247 @@ Phase 1 — Make It Work End to End  — IN PROGRESS
   1.7 Minimal Generation Layer     — COMPLETE
   1.8 Citation Integrity Smoke     — NEXT
 ```
+
+## 2026-08-29 — Phase 1.8 Citation Integrity Smoke
+
+### Objective
+
+Mechanically validates Task 1.7 chunk-ID citations against the real Task
+1.5 chunk store and the exact context supplied to the same generation
+call - confirms every cited chunk ID exists and was actually supplied,
+fails clearly on unknown/out-of-context/malformed citations. Not an
+answer-quality or entailment evaluator.
+
+### Initial State
+
+```text
+Task 1.7 commit:            1f110d2
+generation provider/model:     GENERATION_PROVIDER=openrouter,
+                              GENERATION_MODEL=openai/gpt-oss-20b (local
+                              .env, unchanged since Task 1.7)
+Task 1.6 retriever:              BaselineRetriever.retrieve(question, k=5)
+Task 1.5 index/table:              chunks, 162,357 rows, 0 ANN indexes
+                                (re-verified)
+test baseline:                       256 passed, 0 failed before starting
+```
+
+### Frozen User Decisions
+
+Malformed citation attempts fail (inspecting answer text independently of
+`GenerationResult.citations`); non-abstaining answer with zero valid
+citations fails; live smoke = exactly 10 questions, 8 ordinary + 2
+abstention controls.
+
+### A Real Discrepancy From the Task's Own Framing
+
+The task prompt listed three "must fail" malformed forms observed in Task
+1.7's live smoke: fullwidth `【...】`, truncated `[chunk63]`, and
+`[chunk_id: 1158114_2016.htm::chunk106]`. **Empirically verified against
+the actual committed Task 1.7 parser** before implementing anything: the
+first two are correctly rejected outright by the strict regex
+(`\[([^\[\]]+::chunk\d+)\]`), but the third is **not** rejected - its
+content matches the strict grammar exactly (arbitrary text + `::chunk\d+`),
+so `parse_citations()` returns `"chunk_id: 1158114_2016.htm::chunk106"` as
+a citation string. It therefore fails downstream as `unknown_chunk_id`
+(wrong content, not malformed syntax), not `malformed_citation_attempt`.
+Per Step 8's explicit instruction, followed the real code and documented
+this rather than silently rewriting the framing to match. Regression test:
+`test_context_label_form_fails_as_unknown_not_malformed`.
+
+### Integrity Contract
+
+```text
+valid syntax:            reused exactly from src.generation.citations.parse_citations()
+malformed attempt:          ASCII/fullwidth bracket with chunk-like content
+                          (chunk\d+ or "chunk_id") that the strict parser
+                          does NOT accept verbatim -> FAIL
+unknown ID:                  valid-syntax citation absent from the real
+                          chunks table -> FAIL
+out-of-context ID:              valid-syntax citation exists but wasn't in
+                              this call's exact supplied top-5 -> FAIL,
+                              distinct reason code from unknown
+zero citations:                    non-abstaining -> FAIL; abstention-control
+                                  (question-level pre-configured expectation,
+                                  never inferred from answer text) -> allowed
+duplicate citations:                    not itself a failure - the strict
+                                      parser already dedups
+```
+
+### Implementation
+
+```text
+module:                       src/eval/citation_integrity.py
+                              (detect_citation_attempts, evaluate_citation_integrity,
+                              RecordingRetriever, LanceDBResolvers)
+supplied-context capture:        RecordingRetriever wraps the real Task 1.6
+                                BaselineRetriever (duck-typed - no Task
+                                1.6/1.7 public contract changed), records
+                                the exact RetrievalResult objects
+                                MinimalGenerator actually used
+existence lookup:                    new get_chunk_by_id() helper added to
+                                    src/index/lancedb_index.py - exact
+                                    scalar-filter table.search().where(...),
+                                    verified directly to be a pure metadata
+                                    scan, never a vector search
+```
+
+### Live Smoke
+
+```text
+provider:                 openrouter
+requested model:            openai/gpt-oss-20b
+response-reported model:      openai/gpt-oss-20b (echoed back exactly)
+total cases:                    10 (8 answer + 2 abstention controls)
+passed:                           3
+failed:                             7
+```
+
+Failure reasons, all 7 failures: `malformed_citation_attempt` +
+`missing_required_citation` (6 used fullwidth `【】` brackets, 1 used
+truncated `[chunk63]`; one case compounded both - fullwidth brackets
+around a truncated ID). **Zero** `unknown_chunk_id` or
+`citation_not_in_supplied_context` failures - every syntactically valid
+citation attempt pointed to a real, correctly-supplied chunk, meaning
+retrieval/grounding itself worked correctly; the failure mode is narrowly
+`openai/gpt-oss-20b`'s bracket-character habit, not hallucinated or
+out-of-context citations.
+
+### Citation Diagnostics
+
+```text
+cases_with_valid_citations:        1
+cases_with_malformed_attempts:       7
+cases_with_unknown_ids:                0
+cases_with_out_of_context_ids:           0
+cases_missing_required_citation:           7
+total_valid_citations:                       1
+valid_citations_existing:                      1
+valid_citations_supplied:                        1
+```
+
+Not scientific quality metrics - a 10-case smoke diagnostic.
+
+### Manual Inspection
+
+All 10 live cases structurally inspected. Both abstention controls
+(citation-smoke-09 "ancient Rome employee stock purchase plans",
+citation-smoke-10 "CEO's favorite color") manually confirmed to actually
+produce insufficiency/abstention-shaped answers - no machine-readable
+abstention flag exists on `GenerationResult`, none was invented;
+`expected_behavior` came from the pre-configured question, never inferred
+from the model's own text. citation-smoke-02 (risk factors) confirmed to
+have 8 repeated identical valid citations, correctly deduplicated to 1 and
+correctly passing.
+
+### Tests
+
+```text
+new Task 1.8 tests:  30 (25 in test_citation_integrity.py covering
+  detection/classification/existence/supplied-context/mismatch/abstention/
+  duplicate/multiple-citation cases plus RecordingRetriever; 5 new
+  get_chunk_by_id tests in test_vector_index.py, including 1
+  local_data-marked test against the real Task 1.5 index)
+doctor:              PASS
+portable suite:        278 passed, 8 deselected, 0 failed
+full suite:              286 passed, 0 failed, 0 skipped (was 256)
+real index check:          PASS (known real chunk_id found; fabricated
+                          valid-format ID correctly absent)
+live smoke:                  ran to completion (exit 1, by design - see
+                            below); 3/10 cases passed citation integrity
+```
+
+The pytest suite result (286/286, 0 failures) is separate from and not
+contaminated by the live smoke's 3/10 citation-compliance result - the
+implementation is correct; the live model's output is not fully compliant.
+
+### Safety
+
+```text
+API key not logged/committed:      re-verified per Step 54 (did not rely on
+  memory that Task 1.7's near-miss was fixed) - exhaustive grep for the
+  real key string across every about-to-be-staged file: 0 matches;
+  .env confirmed git-ignored via git check-ignore -v .env
+index unchanged:                       162,357 rows, 0 ANN indexes, re-verified
+embeddings unchanged:                     sha256 52210a51... matches
+chunks unchanged:                            sha256 3bd684c5... matches
+normalized Markdown unchanged:                  1,500 files, unchanged
+data/ unchanged:                                    xbrl.duckdb
+  7,011,053,568 bytes - identical
+no prompt/model ablation:                              committed Task 1.7
+  prompt used as-is, only the currently configured model used once
+no Task 1.9 work:                                          confirmed
+```
+
+### Files Created / Modified
+
+```text
+src/eval/citation_integrity.py                    (new)
+scripts/smoke_citation_integrity.py                (new)
+configs/citation_integrity_smoke.json               (new, tracked)
+results/phase_1_8_citation_integrity_summary.json     (new, tracked)
+tests/test_citation_integrity.py                        (new, 25 tests)
+src/index/lancedb_index.py                                (modified: added
+  get_chunk_by_id() - narrow, non-breaking, existing functions untouched)
+tests/test_vector_index.py                                  (modified: 5
+  new tests for get_chunk_by_id, including 1 local_data-marked real-index test)
+project_plan/PHASE1_CITATION_INTEGRITY.md                     (new)
+project_plan/REPOSITORY_STRUCTURE.md                            (updated:
+  src/eval/ marked partial - citation-integrity helper only, full
+  truth-contract system explicitly still not implemented; configs/ and
+  scripts/ listings updated)
+Progress.md                                                        (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/chunk/`,
+`src/normalize/`, `src/ingest/`, index data, embeddings, chunks,
+normalized Markdown, or frozen `data/` modified beyond the one narrow
+additive helper above. No new dependency.
+
+### Git
+
+```text
+git status --short before commit: 8 new/modified tracked-worthy files - 0
+  artifacts/data/venv/.env content stageable (confirmed via git status
+  --ignored and git check-ignore -v .env)
+secret scan:            clean (re-verified, not assumed)
+```
+
+Committed as one coherent Task 1.8 commit: "Add citation integrity smoke
+check". No remote configured - push deferred, not attempted.
+
+### Result
+
+```text
+WARN — citation-integrity checker implemented; live generator produced
+  one or more correctly-detected citation-compliance failures
+```
+
+**Task 1.8 implementation is complete. Phase 1 citation compliance
+remains a documented, unresolved warning** - 7 of 10 live cases failed
+because `openai/gpt-oss-20b` predominantly emits fullwidth `【】` brackets
+instead of the instructed ASCII `[]` (plus one truncated-ID case). The
+checker is verified correct (30 new tests, all manually cross-checked
+against the 10 real cases); the failure is genuinely in model output
+compliance, not in this task's implementation. Per Step 32/51, no citation
+repair loop, prompt ablation, or model change was attempted without
+approval - stopping here for a decision on how to proceed (e.g., try a
+different OpenRouter model, adjust the prompt's citation instruction
+further, or accept the current compliance rate and note it as a known
+Phase 1 limitation) before Task 1.9 begins.
+
+### Phase Status
+
+```text
+Data Preparation                   — COMPLETE
+Phase 0 — Foundation               — COMPLETE
+Phase 1 — Make It Work End to End  — IN PROGRESS
+  1.1 Select Development Corpus    — COMPLETE
+  1.2 Minimal Normalization        — COMPLETE
+  1.3 Minimal Fixed-Window Chunker — COMPLETE
+  1.4 Baseline Embedding Pipeline  — COMPLETE
+  1.5 Vector-Only Index            — COMPLETE
+  1.6 Baseline Retriever           — COMPLETE
+  1.7 Minimal Generation Layer     — COMPLETE
+  1.8 Citation Integrity Smoke     — COMPLETE WITH WARN
+  1.9 200-Question Smoke Eval      — PENDING USER DECISION
+```

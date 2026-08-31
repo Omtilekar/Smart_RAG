@@ -108,6 +108,17 @@ def validate_query_vector(vector) -> np.ndarray:
     return arr
 
 
+def get_chunk_by_id(table, chunk_id: str) -> pa.Table:
+    """Task 1.8 - exact scalar-filter identity lookup, NOT a vector search.
+    Returns a PyArrow table with 0 or 1 rows. Uses table.search().where(...)
+    with no vector argument (a pure metadata scan/filter, verified directly
+    against the installed LanceDB 0.37.1 to perform no similarity search at
+    all) - never embeds the ID, never fuzzy-matches, never falls back to a
+    document_id-only match."""
+    escaped = chunk_id.replace("'", "''")
+    return table.search().where(f"chunk_id = '{escaped}'").to_arrow()
+
+
 def exact_cosine_search(table, query_vector, limit: int) -> pa.Table:
     """Validates `query_vector` (raises VectorIndexError if malformed),
     then performs an exact (no ANN index exists) cosine-distance search.

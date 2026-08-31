@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "case_count": 10,
+  "answer_case_count": 8,
+  "abstention_case_count": 2,
+  "citation_format": "[chunk_id]",
+  "malformed_attempt_policy": "fail",
+  "unknown_id_policy": "fail",
+  "out_of_context_policy": "fail",
+  "non_abstaining_zero_citation_policy": "fail",
+  "questions": [
+    {
+      "id": "citation-smoke-01",
+      "question": "What was the company's total revenue?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-02",
+      "question": "What are the main risk factors described in this filing?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-03",
+      "question": "What was net income for the fiscal year?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-04",
+      "question": "How much did the company spend on research and development?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-05",
+      "question": "What is the company's total outstanding debt?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-06",
+      "question": "Did the company pay dividends to shareholders?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-07",
+      "question": "What were the company's total operating expenses?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-08",
+      "question": "How many employees does the company have?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "citation-smoke-09",
+      "question": "Does this filing mention any information about employee stock purchase plans in ancient Rome?",
+      "expected_behavior": "abstain"
+    },
+    {
+      "id": "citation-smoke-10",
+      "question": "What is the CEO's favorite color?",
+      "expected_behavior": "abstain"
+    }
+  ]
+}

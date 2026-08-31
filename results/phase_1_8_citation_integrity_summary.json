@@ -1,0 +1,389 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-31T16:20:50Z",
+  "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "requested_provider": "openrouter",
+  "requested_model": "openai/gpt-oss-20b",
+  "response_reported_model": "openai/gpt-oss-20b",
+  "total_cases": 10,
+  "passed_cases": 3,
+  "failed_cases": 7,
+  "answer_expected_cases": 8,
+  "abstention_control_cases": 2,
+  "cases_with_valid_citations": 1,
+  "cases_with_malformed_attempts": 7,
+  "cases_with_unknown_ids": 0,
+  "cases_with_out_of_context_ids": 0,
+  "cases_missing_required_citation": 7,
+  "total_valid_citations": 1,
+  "valid_citations_existing": 1,
+  "valid_citations_supplied": 1,
+  "cases": [
+    {
+      "case_id": "citation-smoke-01",
+      "question": "What was the company's total revenue?",
+      "expected_behavior": "answer",
+      "answer": "The company\u2019s total revenue in 2016 was **$259.4\u202fmillion**\u30101158114_2016.htm::chunk106\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u30101158114_2016.htm::chunk106\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u30101158114_2016.htm::chunk106\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "1158114_2016.htm::chunk106",
+        "1595974_2018.htm::chunk127",
+        "1629606_2016.htm::chunk5",
+        "23111_2016.htm::chunk66",
+        "746515_2018.htm::chunk68"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-02",
+      "question": "What are the main risk factors described in this filing?",
+      "expected_behavior": "answer",
+      "answer": "**Main risk factors highlighted in the TRANSBIOTEC, Inc. 2018 filing**\n\n- **Limited operating history and financial information** \u2013 The company has a short operating history and limited historical financial data, making it difficult for investors to evaluate performance. [1425627_2018.htm::chunk9]  \n- **Early\u2011stage development uncertainties** \u2013 As a company in the early stages of development, it faces significant risks and uncertainties that could prevent successful product development and commercialization. [1425627_2018.htm::chunk9]  \n- **Potential failure to address risks and uncertainties** \u2013 The company may not successfully mitigate these risks or implement its existing and new products, which could materially harm the business and the value of its common stock. [1425627_2018.htm::chunk9]  \n- **Uncertain future cash flows and profitability** \u2013 Even if objectives are met, the company may not generate the positive cash flows or profits it anticipates. [1425627_2018.htm::chunk9]  \n- **Inadequate funding, consumer acceptance, competition, product development, and sales/marketing** \u2013 These are common challenges that could adversely affect the company\u2019s operations and may force it to reduce or curtail operations. [1425627_2018.htm::chunk9]  \n- **Limited cash liquidity and capital resources** \u2013 The company has not generated revenue and has limited cash, making it dependent on future capital infusions. [1425627_2018.htm::chunk9]  \n- **Need for additional capital** \u2013 Future capital requirements depend on product development, cash flow, and market conditions; failure to obtain adequate funding could require operational reductions or discontinuation. [1425627_2018.htm::chunk9]  \n- **Negative cash flows from operations** \u2013 The company has historically experienced negative cash flows and expects this to continue in the foreseeable future. [1425627_2018.htm::chunk9]",
+      "parsed_citations": [
+        "1425627_2018.htm::chunk9"
+      ],
+      "citation_attempts": [
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        },
+        {
+          "raw": "[1425627_2018.htm::chunk9]",
+          "bracket_style": "ascii",
+          "strict_valid": true
+        }
+      ],
+      "malformed_citation_attempts": [],
+      "supplied_chunk_ids": [
+        "1425627_2018.htm::chunk9",
+        "1437578_2018.htm::chunk16",
+        "1566912_2020.htm::chunk25",
+        "1646228_2019.htm::chunk15",
+        "910073_2016.htm::chunk23"
+      ],
+      "citation_checks": [
+        {
+          "chunk_id": "1425627_2018.htm::chunk9",
+          "exists_in_index": true,
+          "was_supplied": true,
+          "source_metadata": {
+            "chunk_id": "1425627_2018.htm::chunk9",
+            "document_id": "1425627_2018.htm",
+            "company": "TRANSBIOTEC, INC.",
+            "form_type": "10-K",
+            "fiscal_year": 2018,
+            "source": "edgar_corpus",
+            "source_filename": "1425627_2018.htm",
+            "source_split": "validation",
+            "ordinal": 9,
+            "token_count": 512,
+            "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+            "normalizer_version": "phase1-minimal-v1",
+            "normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+            "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+            "retrieval_rank": 1,
+            "retrieval_score": 0.814378023147583,
+            "retrieval_distance": 0.185621976852417
+          }
+        }
+      ],
+      "case_status": "PASS",
+      "failure_reasons": [],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-03",
+      "question": "What was net income for the fiscal year?",
+      "expected_behavior": "answer",
+      "answer": "Net income for the fiscal year ended December\u202f31,\u202f2015 was **$68,014**\u3010chunk72\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u3010chunk72\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u3010chunk72\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "1141807_2016.htm::chunk44",
+        "1368622_2017.htm::chunk80",
+        "715072_2016.htm::chunk72",
+        "764038_2016.htm::chunk69",
+        "91576_2019.htm::chunk57"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-04",
+      "question": "How much did the company spend on research and development?",
+      "expected_behavior": "answer",
+      "answer": "The company reported research and development expenses of **$157.4\u202fmillion** for the year ended December\u202f31,\u202f2017. [chunk63]",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "[chunk63]",
+          "bracket_style": "ascii",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "[chunk63]"
+      ],
+      "supplied_chunk_ids": [
+        "1269026_2016.htm::chunk85",
+        "1395937_2017.htm::chunk154",
+        "1566373_2020.htm::chunk226",
+        "1591698_2016.htm::chunk56",
+        "867374_2017.htm::chunk63"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-05",
+      "question": "What is the company's total outstanding debt?",
+      "expected_behavior": "answer",
+      "answer": "The company had **$3,597\u202fmillion** in total outstanding debt as of December\u202f31,\u202f2020 (down from $3,003\u202fmillion in 2019)\u3010898174_2020.htm::chunk160\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u3010898174_2020.htm::chunk160\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u3010898174_2020.htm::chunk160\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "28917_2017.htm::chunk33",
+        "746598_2020.htm::chunk47",
+        "883237_2019.htm::chunk46",
+        "898174_2020.htm::chunk160",
+        "904979_2018.htm::chunk37"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-06",
+      "question": "Did the company pay dividends to shareholders?",
+      "expected_behavior": "answer",
+      "answer": "No.  In its 2018 Form\u202f10\u2011K, ICONIX Brand Group stated that it has never declared or paid any cash dividends on its common stock and does not anticipate paying any in the foreseeable future\u3010857737_2018.htm::chunk52\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u3010857737_2018.htm::chunk52\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u3010857737_2018.htm::chunk52\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "1141807_2016.htm::chunk39",
+        "1359841_2016.htm::chunk4",
+        "1368275_2017.htm::chunk11",
+        "1688476_2019.htm::chunk47",
+        "857737_2018.htm::chunk52"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-07",
+      "question": "What were the company's total operating expenses?",
+      "expected_behavior": "answer",
+      "answer": "The company\u2019s total operating expenses for the year ended January\u202f31,\u202f2019 were **$40,754** (and for the prior year, $25,651)\u30101696898_2019.htm::chunk9\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u30101696898_2019.htm::chunk9\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u30101696898_2019.htm::chunk9\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "1020859_2017.htm::chunk47",
+        "1438901_2019.htm::chunk25",
+        "1507079_2020.htm::chunk111",
+        "1696898_2019.htm::chunk9",
+        "1766682_2019.htm::chunk118"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-08",
+      "question": "How many employees does the company have?",
+      "expected_behavior": "answer",
+      "answer": "The company has 950 employees\u30101580905_2020.htm::chunk11\u3011.",
+      "parsed_citations": [],
+      "citation_attempts": [
+        {
+          "raw": "\u30101580905_2020.htm::chunk11\u3011",
+          "bracket_style": "fullwidth",
+          "strict_valid": false
+        }
+      ],
+      "malformed_citation_attempts": [
+        "\u30101580905_2020.htm::chunk11\u3011"
+      ],
+      "supplied_chunk_ids": [
+        "1157817_2017.htm::chunk9",
+        "1259515_2016.htm::chunk13",
+        "1458891_2019.htm::chunk6",
+        "1580905_2020.htm::chunk11",
+        "90896_2019.htm::chunk91"
+      ],
+      "citation_checks": [],
+      "case_status": "FAIL",
+      "failure_reasons": [
+        "malformed_citation_attempt",
+        "missing_required_citation"
+      ],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-09",
+      "question": "Does this filing mention any information about employee stock purchase plans in ancient Rome?",
+      "expected_behavior": "abstain",
+      "answer": "No. The filing excerpts provided discuss employee stock purchase plans for modern companies (Clearfield, Teradyne, LivePerson, Viva Entertainment, Aerpio) and contain no reference to employee stock purchase plans in ancient Rome.",
+      "parsed_citations": [],
+      "citation_attempts": [],
+      "malformed_citation_attempts": [],
+      "supplied_chunk_ids": [
+        "1102993_2018.htm::chunk138",
+        "1422142_2019.htm::chunk141",
+        "1479000_2018.htm::chunk8",
+        "796505_2018.htm::chunk44",
+        "97210_2017.htm::chunk91"
+      ],
+      "citation_checks": [],
+      "case_status": "PASS",
+      "failure_reasons": [],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    },
+    {
+      "case_id": "citation-smoke-10",
+      "question": "What is the CEO's favorite color?",
+      "expected_behavior": "abstain",
+      "answer": "The supplied context does not contain any information about the CEO\u2019s favorite color.",
+      "parsed_citations": [],
+      "citation_attempts": [],
+      "malformed_citation_attempts": [],
+      "supplied_chunk_ids": [
+        "1124804_2019.htm::chunk13",
+        "1682325_2016.htm::chunk92",
+        "1720116_2018.htm::chunk0",
+        "822663_2017.htm::chunk46",
+        "822663_2017.htm::chunk47"
+      ],
+      "citation_checks": [],
+      "case_status": "PASS",
+      "failure_reasons": [],
+      "requested_provider": "openrouter",
+      "requested_model": "openai/gpt-oss-20b",
+      "response_reported_model": "openai/gpt-oss-20b"
+    }
+  ]
+}

@@ -219,3 +219,71 @@ def test_exact_cosine_search_creates_no_ann_index(tmp_path):
     table = idx.create_chunk_table(db, _sample_table(5))
     idx.exact_cosine_search(table, _unit_vector(0), limit=3)
     assert table.list_indices() == []
+
+
+# ------------------------------------------------------------ get_chunk_by_id
+
+def test_get_chunk_by_id_finds_existing_row(tmp_path):
+    db = idx.open_database(tmp_path / "db")
+    table = idx.create_chunk_table(db, _sample_table(5))
+    result = idx.get_chunk_by_id(table, "doc2.htm::chunk0")
+    assert result.num_rows == 1
+    assert result.column("document_id")[0].as_py() == "doc2.htm"
+
+
+def test_get_chunk_by_id_returns_zero_rows_for_unknown_id(tmp_path):
+    db = idx.open_database(tmp_path / "db")
+    table = idx.create_chunk_table(db, _sample_table(5))
+    result = idx.get_chunk_by_id(table, "does-not-exist_2099.htm::chunk999999")
+    assert result.num_rows == 0
+
+
+def test_get_chunk_by_id_is_exact_not_prefix_match(tmp_path):
+    db = idx.open_database(tmp_path / "db")
+    table = idx.create_chunk_table(db, _sample_table(5))
+    # "doc2.htm::chunk0" exists; a merely-prefix-matching different chunk_id must not
+    result = idx.get_chunk_by_id(table, "doc2.htm::chunk0extra")
+    assert result.num_rows == 0
+
+
+def test_get_chunk_by_id_creates_no_ann_index(tmp_path):
+    db = idx.open_database(tmp_path / "db")
+    table = idx.create_chunk_table(db, _sample_table(5))
+    idx.get_chunk_by_id(table, "doc0.htm::chunk0")
+    assert table.list_indices() == []
+
+
+def test_get_chunk_by_id_escapes_single_quotes_safely(tmp_path):
+    db = idx.open_database(tmp_path / "db")
+    table = idx.create_chunk_table(db, _sample_table(5))
+    # A chunk_id containing a single quote must not break the filter or
+    # match unrelated rows - it should simply not be found (no such row).
+    result = idx.get_chunk_by_id(table, "weird'id::chunk0")
+    assert result.num_rows == 0
+
+
+# --------------------------------------------------- real index (local_data)
+
+CHUNK_CONFIG_HASH = "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd"
+MODEL_NAME = "BAAI/bge-small-en-v1.5"
+KNOWN_REAL_CHUNK_ID = "1005817_2016.htm::chunk0"
+
+
+@pytest.mark.local_data
+def test_get_chunk_by_id_against_real_task_1_5_index():
+    from src.storage import get_storage
+
+    storage = get_storage()
+    db_path = storage.index_dir(CHUNK_CONFIG_HASH, MODEL_NAME)
+    if not db_path.is_dir():
+        pytest.skip(f"Task 1.5 index not present at {db_path}")
+
+    db = idx.open_database(db_path)
+    table = idx.open_chunk_table(db)
+
+    real = idx.get_chunk_by_id(table, KNOWN_REAL_CHUNK_ID)
+    assert real.num_rows == 1
+    assert real.column("chunk_id")[0].as_py() == KNOWN_REAL_CHUNK_ID
+
+    fabricated = idx.get_chunk_by_id(table, "does-not-exist_2099.htm::chunk999999")
+    assert fabricated.num_rows == 0

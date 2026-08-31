@@ -5177,3 +5177,254 @@ Phase 1 — Make It Work End to End             — IN PROGRESS
   1.9 200-Question Smoke Evaluation           — COMPLETE
   1.10 Baseline Metric Runner                 — NEXT
 ```
+
+---
+
+## 2026-08-31 — Phase 1.10 Baseline Metric Runner
+
+### Objective
+
+Compute Task 1.10's first document-level retrieval metric,
+`doc_recall@10`, over the frozen Task 1.9 200-question smoke set, using
+Task 1.6's real vector-only retriever at `k=10`. Retrieval evaluation
+only - no generation, no citation scoring, no retrieval optimization.
+
+### Initial State
+
+```text
+Task 1.9 commit:              7da5900 "Add Phase 1 smoke evaluation set"
+Task 1.9 dataset:                results/phase_1_9_smoke_evaluation.json,
+                                200 questions, smoke_eval_sha256
+                                0b2c25dcbde141cafb5694ae748c5131d556d543195158aa3794dec325657a27
+                                (independently recomputed and matched
+                                before writing any metric code)
+Task 1.6 retriever:                  BaselineRetriever, real k=10 smoke
+                                    confirmed: 10 results, ranks 1-10,
+                                    document_id/chunk_id present on all,
+                                    0 ANN indexes on the real table
+test baseline:                          311 passed, 9 deselected, 0 failed
+```
+
+### Metric Contract
+
+```text
+metric = doc_recall@10 (frozen name, never renamed)
+k = 10 chunk results per question
+no document dedup before cutoff - considers exactly the first 10 chunk
+  results, whatever documents they belong to
+hit = exact string equality of any result.document_id against
+  target_document_id - never CIK/company/fiscal-year/fuzzy matching
+one hit maximum per question, even if the target document occupies
+  multiple of the 10 chunk slots
+first_hit_rank recorded as a diagnostic only - never converted to MRR
+infrastructure errors (retrieval/encode/index-read failure) surface as a
+  runner failure, never silently converted to a miss
+```
+
+### Run Configuration
+
+```text
+config path:                configs/phase_1_10_baseline_metric.json
+metric_run_config_hash:         d429b0b971d1fdf68eeb93cd526208754842181ee373b7b8fdec5ef085437e5d
+dataset hash:                       0b2c25dcbde141cafb5694ae748c5131d556d543195158aa3794dec325657a27
+retriever provenance:                   BAAI/bge-small-en-v1.5 (revision
+                                      5c38ec7c405ec4b44b94cc5a9bb96e735b38267a),
+                                      chunk_config_hash
+                                      f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd,
+                                      table chunks (162,357 rows, 0 ANN
+                                      indexes, re-verified), exact cosine
+                                      search
+```
+
+### Result
+
+```text
+question_count:  200
+hit_count:          194
+doc_recall@10:          0.970000
+```
+
+Not softened - this is the actual real-run result. High recall is
+expected given Task 1.9's broad, template-generated, on-topic questions
+(each question is a paraphrase of the exact section the target filing's
+own text discusses) - this proves the vector-only baseline plumbing
+works, not that retrieval is good on a harder question distribution. See
+`PHASE1_BASELINE_METRICS.md` for the full caveat.
+
+### Category Diagnostics
+
+| Category | Questions | Hits | doc_recall@10 |
+|---|---:|---:|---:|
+| business | 40 | 38 | 0.950000 |
+| risk_factors | 40 | 37 | 0.925000 |
+| mdna | 40 | 39 | 0.975000 |
+| market_risk | 40 | 40 | 1.000000 |
+| financial_statements | 40 | 40 | 1.000000 |
+
+### First-Hit-Rank Diagnostics
+
+```text
+rank 1: 167   rank 2: 16   rank 3: 5   rank 4: 1   rank 5: 1
+rank 6: 1     rank 7: 2    rank 8: 1   rank 9: 0   rank 10: 0
+```
+
+Descriptive only - not converted to MRR, not an additional headline
+metric.
+
+### Determinism
+
+Full 200-question run executed twice in independent fresh processes:
+identical question count, hit count, `doc_recall@10`, per-question
+hit/first_hit_rank, retrieved chunk-ID order, retrieved document-ID
+order, and `metric_result_sha256`
+(`64438c1c5ee0769763a274af8cafd200472116889cbd5ee4b045f37557907328` both
+runs). The hash deliberately excludes question/category text,
+scores/distances, and all timestamp/runtime fields.
+
+### Manual Checks
+
+10 deterministic cases hand-checked from the written result file: first 5
+hit cases and first 5 miss cases by ascending `question_id` (per the
+task's specified sampling rule - phase1-smoke-0001..0005 for hits;
+0034/0039/0042/0060/0077 for misses, the first 5 misses encountered in ID
+order). For each, exact target-document membership and `first_hit_rank`
+were manually re-derived from the stored 10 `retrieved_document_ids` and
+compared against the stored values.
+
+```text
+result: 10/10 PASS
+```
+
+### Independent Aggregate Check
+
+After the result file was written, `hit_count`/`doc_recall@10` were
+independently recomputed by a separate one-off calculation reading the
+`questions` array directly - never calling `summarize_doc_recall()` again:
+
+```text
+independent_hit_count:  194 (matches stored hit_count: 194)
+independent_recall:        0.97 (matches stored doc_recall_at_10: 0.97)
+```
+
+### Performance
+
+```text
+Phase 1 evaluation-run diagnostic - NOT a production benchmark
+run_seconds:              26.426 (200 questions, one retrieval call each)
+retrieval latency p50:        129.585 ms
+retrieval latency p95:            153.013 ms
+```
+
+Consistent with Task 1.5/1.6's own exact-scan diagnostics (~130-165 ms
+p50/p95) - same unindexed 162,357-row brute-force cosine scan, not a new
+workload, not compared against Task 0.10's separate IVF_PQ serving-spike
+numbers.
+
+### Accepted Existing Warning
+
+Task 1.7a remains COMPLETE WITH WARN at 8/10 citation-format compliance
+(2 residual fullwidth-bracket failures, 0 unknown/out-of-context). Task
+1.10 does not call generation, so it neither exercises nor fixes that
+issue - this warning stays visible and unresolved.
+
+### Tests
+
+```text
+new Task 1.10 tests:  20 (tests/test_baseline_metrics.py - 19 pure-logic
+  tests covering hit-at-rank-1/rank-10, target-absent miss, duplicate
+  target chunks -> one hit/first rank retained, same-CIK-wrong-document_id
+  miss, exact string equality, wrong-result-count/non-sequential-rank
+  rejection, aggregate hit-count/recall, category aggregation,
+  first-hit-rank counts, config-hash determinism, result-hash
+  ignoring runtime/timestamp fields, result-hash changing with retrieval
+  identity; 1 local_data+model+gpu-marked real-data integration test on a
+  3-question subset - not the full 200, which stays the dedicated
+  Task 1.10 script's job)
+doctor:              PASS
+portable suite:        330 passed, 10 deselected, 0 failed (was 311; +19
+  new portable tests)
+full suite:              340 passed, 0 failed (was 320; +20 new tests,
+  including the local_data-marked real integration test)
+```
+
+### Safety
+
+```text
+no generation/OpenRouter:               confirmed - Task 1.10 never
+  imports src.generation.* or src.generation.openrouter
+Task 1.9 dataset unchanged:                 byte-identical smoke_eval_sha256
+  re-verified after the metric run
+Task 1.6 retriever unchanged:                   git diff --stat over
+  src/retrieval, src/index, src/embeddings shows zero changes
+LanceDB index unchanged:                            162,357 rows, 0 ANN
+  indexes, re-verified
+embeddings/chunks/normalized Markdown/frozen data/: unchanged (no
+  ingestion, chunking, embedding, or normalization code touched)
+citation validator unchanged:                            git diff --stat
+  over src/eval/citation_integrity.py shows zero changes
+.env:                                                        git-ignored,
+  re-verified; no API key needed or used by this task
+no Task 1.11 work:                                              confirmed
+```
+
+### Files Created / Modified
+
+```text
+src/eval/baseline_metrics.py                                     (new)
+scripts/run_baseline_metric.py                                      (new)
+configs/phase_1_10_baseline_metric.json                                (new,
+  tracked)
+results/phase_1_10_baseline_metric.json                                  (new,
+  tracked - 200-question metric result)
+tests/test_baseline_metrics.py                                              (new,
+  20 tests)
+project_plan/PHASE1_BASELINE_METRICS.md                                        (new)
+project_plan/REPOSITORY_STRUCTURE.md                                              (updated
+  narrowly: src/eval/ now lists baseline_metrics.py; configs/ and
+  scripts/ listings updated)
+Progress.md                                                                        (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/index/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, `src/eval/citation_integrity.py`,
+`src/eval/smoke_dataset.py`, index data, embeddings, chunks, normalized
+Markdown, or frozen `data/` modified. No new dependency. No Task 1.11
+implementation.
+
+### Git
+
+```text
+git status --short before commit: 8 new/modified tracked-worthy files - 0
+  data/artifacts/venv/.env content stageable (git status --ignored, git
+  add -n . both confirmed)
+secret/personal-path scan:            clean
+```
+
+Committed as one coherent Task 1.10 commit: "Add baseline retrieval
+metric runner". No remote configured - push deferred, not attempted.
+
+### Result Status
+
+```text
+PASS — baseline doc_recall@10 runner implemented and executed successfully
+```
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — IN PROGRESS
+  1.1 Select Development Corpus               — COMPLETE
+  1.2 Minimal Normalization                   — COMPLETE
+  1.3 Minimal Fixed-Window Chunker            — COMPLETE
+  1.4 Baseline Embedding Pipeline             — COMPLETE
+  1.5 Vector-Only Index                       — COMPLETE
+  1.6 Baseline Retriever                      — COMPLETE
+  1.7 Minimal Generation Layer                — COMPLETE
+  1.8 Citation Integrity Smoke                — COMPLETE WITH HISTORICAL WARN
+  1.7a Citation Format Compliance Correction  — COMPLETE WITH WARN
+  1.9 200-Question Smoke Evaluation           — COMPLETE
+  1.10 Baseline Metric Runner                 — COMPLETE
+  1.11 End-to-End Command                     — NEXT
+```

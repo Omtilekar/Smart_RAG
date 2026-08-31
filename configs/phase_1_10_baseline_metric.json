@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "metric_name": "doc_recall@10",
+  "k": 10,
+  "dataset_path": "results/phase_1_9_smoke_evaluation.json",
+  "expected_smoke_eval_sha256": "0b2c25dcbde141cafb5694ae748c5131d556d543195158aa3794dec325657a27",
+  "retriever": "baseline_vector",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "embedding_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "index_table": "chunks",
+  "distance_metric": "cosine",
+  "search_mode": "exact",
+  "document_hit_definition": "hit(q) = 1 if any of the first k retrieved CHUNK results has result.document_id == q.target_document_id (exact string equality, no dedup before the cutoff, no CIK/company/year matching), else 0"
+}

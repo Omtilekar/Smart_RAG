@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "target_question_count": 200,
+  "questions_per_category": 40,
+  "category_order": [
+    "business",
+    "risk_factors",
+    "mdna",
+    "market_risk",
+    "financial_statements"
+  ],
+  "category_section_column": {
+    "business": "section_1",
+    "risk_factors": "section_1A",
+    "mdna": "section_7",
+    "market_risk": "section_7A",
+    "financial_statements": "section_8"
+  },
+  "question_templates": {
+    "business": "What does {company} report about its business in its fiscal year {fiscal_year} 10-K?",
+    "risk_factors": "What risk factors does {company} report in its fiscal year {fiscal_year} 10-K?",
+    "mdna": "What does {company} report in Management's Discussion and Analysis for fiscal year {fiscal_year}?",
+    "market_risk": "What does {company} report about quantitative and qualitative market risk in its fiscal year {fiscal_year} 10-K?",
+    "financial_statements": "What financial statements and related information does {company} report for fiscal year {fiscal_year}?"
+  },
+  "selection_algorithm": "For each category in category_order: build the eligible candidate pool (manifest rows whose assigned EDGAR-CORPUS section column is a non-null, non-empty, non-whitespace-only string), sort by ascending selection_key, skip any document_id already selected by an earlier category, take the first questions_per_category.",
+  "selection_key_format": "sha256(category + '\\0' + document_id), hex digest, ascending",
+  "label_granularity": "document",
+  "retrieval_metric": "doc_recall@10",
+  "input_manifest": "results/phase_1_1_development_corpus.json",
+  "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b"
+}

@@ -4926,3 +4926,254 @@ Phase 1 — Make It Work End to End             — IN PROGRESS
   1.7a Citation Format Compliance Correction  — COMPLETE WITH WARN
   1.9 200-Question Smoke Eval                 — PENDING USER DECISION
 ```
+
+---
+
+## 2026-08-31 — Phase 1.9 200-Question Smoke Evaluation
+
+### Objective
+
+Build the Task 1.9 document-level, 200-question Phase 1 smoke-evaluation
+DATASET only (per `PROJECT_EXECUTION.md`'s Task 1.9 definition) — not
+`doc_recall@10` itself, which Task 1.10 owns. Deterministic, offline,
+template-based question construction from the frozen Task 1.1 development
+corpus; no LLM, no OpenRouter call, no answer scoring.
+
+### Accepted Warning
+
+Task 1.7a ended 8/10 on the frozen Task 1.8 smoke, with two residual
+malformed fullwidth `【】` citation-format failures (down from the original
+3/10) and zero `unknown_chunk_id`/`citation_not_in_supplied_context`
+failures in either run. **The user explicitly approved proceeding to Task
+1.9 with that limitation documented** — this task does not rewrite that
+history, does not mark citation compliance resolved, and does not weaken
+citation validation. Task 1.9 does not call generation at all, so it
+neither re-exercises nor fixes this warning.
+
+### Initial State
+
+```text
+git:                    clean except intentional Task 1.9 prompt state;
+                       Task 1.7a commit b0d1b89 confirmed; Task 1.10
+                       implementation absent
+doctor:                  PASS
+portable suite:            289 passed, 8 deselected, 0 failed (matches
+                          recorded post-Task-1.7a reference exactly)
+Task 1.1 manifest:            1,500 rows, 1,500 unique document_ids, years
+                              2016-2020, development_manifest_sha256
+                              d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b
+                              (independently recomputed and matched)
+EDGAR-CORPUS schema:              section_1, section_1A, section_1B, ...,
+                                 section_15 confirmed present (live schema
+                                 inspection, train.parquet)
+normalization_build_sha256:        fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b
+                                  (independently recomputed from the live
+                                  artifacts/normalized/phase1-minimal-v1/
+                                  directory before trusting the tracked
+                                  Task 1.2 summary value - matched exactly)
+```
+
+### 200-Question Contract (frozen)
+
+```text
+200 questions, 200 unique target_document_id values, 1 question/filing
+5 categories x 40 questions: business/section_1, risk_factors/section_1A,
+  mdna/section_7, market_risk/section_7A, financial_statements/section_8
+deterministic offline template construction - no LLM, no web search, no
+  random free-form generation
+label_granularity = "document", retrieval_metric = "doc_recall@10"
+no target_chunk_id, no accession, no expected_answer/answer_span fabricated
+no generation call - Task 1.7 not invoked, no OpenRouter credits spent
+```
+
+### Deterministic Selection
+
+```text
+selection_key = SHA-256(category + "\0" + document_id), ascending, no PRNG,
+  never Python's built-in hash()
+category order (fixed, used for both selection and question-ID
+  assignment): business, risk_factors, mdna, market_risk,
+  financial_statements
+per category: sort eligible candidates by selection_key, skip document_ids
+  already selected by an earlier category, take first 40
+question_id assigned after selection: ordered by (category order,
+  target_document_id ascending), "phase1-smoke-0001".."phase1-smoke-0200"
+```
+
+Implemented in `src/eval/smoke_dataset.py` (pure logic, no I/O, fully unit
+testable without local data) + `scripts/build_smoke_evaluation.py` (I/O:
+manifest/EDGAR-CORPUS resolution via the same read-only DuckDB
+union-of-splits join pattern Task 1.2 already established).
+
+### Category Candidate / Selected Counts
+
+| Category | Candidates | Selected |
+|---|---:|---:|
+| business | 1,427 | 40 |
+| risk_factors | 1,420 | 40 |
+| mdna | 1,482 | 40 |
+| market_risk | 1,431 | 40 |
+| financial_statements | 1,478 | 40 |
+
+Every category's candidate pool was far larger than 40, so cross-category
+exclusion never came close to exhausting any category (no STOP condition
+triggered).
+
+### Dataset Paths / Hash
+
+```text
+dataset:      results/phase_1_9_smoke_evaluation.json
+config:          configs/phase_1_9_smoke_evaluation.json
+summary:            results/phase_1_9_smoke_evaluation_summary.json
+smoke_eval_sha256:     0b2c25dcbde141cafb5694ae748c5131d556d543195158aa3794dec325657a27
+                     (identical across two independent fresh-process builds)
+```
+
+### Distribution Diagnostics
+
+```text
+year distribution:       2016:52  2017:36  2018:30  2019:42  2020:40
+unique target CIKs:         198
+unique target companies:       198
+max questions per CIK:            2
+```
+
+Not claimed as representative of the eligible population - no
+stratification was applied (per the task's explicit non-goal), this is
+descriptive only.
+
+### Document-Level Ground-Truth Limitation
+
+Task 1.3's fixed 512-token chunker has no section-aware gold labels, so
+true chunk evidence is unavailable for Task 1.9 by construction. No target
+chunk was manufactured by searching for headings or picking a retrieved
+chunk. Each record instead carries `source_section_sha256` - a SHA-256 over
+the exact raw EDGAR-CORPUS section string used for eligibility - as
+provenance only, never presented as chunk-level ground truth. Task 1.10
+must evaluate document recall only.
+
+### Manual Inspection
+
+15 questions inspected (3/category, all 5 categories) from the real build.
+All 15 confirmed: correct frozen-template wording, company name and fiscal
+year matched against the manifest, target document ID never leaked into
+question text, assigned source section confirmed non-empty, defensible
+document-level target. Result: 15/15 passed.
+
+### Traceability
+
+Independently re-verified with a fresh DuckDB query (not trusted from the
+build script's own internal validation) joining all 200 targets' assigned
+section columns directly against the live `data/edgar_corpus/*.parquet`
+files:
+
+```text
+200/200 targets present in the Task 1.1 manifest
+200/200 source rows resolved, cik/year/source_split identity confirmed
+200/200 assigned source sections non-empty
+0/200 are one of the 7 known Task 1.2 empty-source filings
+```
+
+### Tests
+
+```text
+new Task 1.9 tests:  23 (tests/test_smoke_evaluation_dataset.py - 22
+  pure-logic tests covering category/section mapping, empty-section
+  rejection, SHA-256 selection-key/hash determinism, category-sensitive
+  selection key, used-document skipping, balanced selection,
+  target-document uniqueness, template rendering, question-ID
+  determinism, dataset ordering, dataset-hash determinism, document-level
+  metric labels, absence of target_chunk_id/accession/expected_answer,
+  source_section_sha256 determinism; 1 local_data-marked real-dataset
+  integration test validating the actual 200 built questions)
+doctor:              PASS
+portable suite:        311 passed, 9 deselected, 0 failed (was 289; +22
+  new portable tests)
+full suite:              320 passed, 0 failed (was 297; +23 new tests,
+  including the local_data-marked real-dataset test)
+```
+
+### Safety
+
+```text
+no OpenRouter call:               confirmed (Task 1.9 never imports/calls
+  src.generation.* or src.generation.openrouter)
+no source mutation:                     confirmed - data/edgar_corpus/*.parquet
+  opened read-only via DuckDB, never written
+retrieval/generation/citation validator: unchanged (git diff --stat over
+  src/generation, src/eval/citation_integrity.py, src/retrieval, src/index,
+  src/embeddings, src/chunk, src/normalize, and
+  configs/citation_integrity_smoke.json shows zero changes)
+Task 1.10 metric runner:                    not implemented - no
+  doc_recall@10 calculation, no hit-count/recall logic anywhere in this
+  task's code
+Task 1.1 manifest:                             unchanged (byte-identical
+  checksum re-verified)
+LanceDB index:                                    unchanged (162,357 rows,
+  table ['chunks'], re-verified)
+.env:                                                git-ignored,
+  re-verified; no API key needed or used by this task
+```
+
+### Result
+
+```text
+PASS — deterministic 200-question document-target smoke evaluation built
+```
+
+### Files Created / Modified
+
+```text
+src/eval/smoke_dataset.py                                     (new)
+scripts/build_smoke_evaluation.py                                (new)
+configs/phase_1_9_smoke_evaluation.json                             (new,
+  tracked)
+results/phase_1_9_smoke_evaluation.json                                (new,
+  tracked - 200-question dataset)
+results/phase_1_9_smoke_evaluation_summary.json                           (new,
+  tracked)
+tests/test_smoke_evaluation_dataset.py                                       (new,
+  23 tests)
+project_plan/PHASE1_SMOKE_EVALUATION.md                                         (new)
+project_plan/REPOSITORY_STRUCTURE.md                                               (updated
+  narrowly: src/eval/ now lists smoke_dataset.py; configs/ and scripts/
+  listings updated)
+Progress.md                                                                          (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/chunk/`,
+`src/normalize/`, `src/ingest/`, `src/eval/citation_integrity.py`, index
+data, embeddings, chunks, normalized Markdown, or frozen `data/` modified.
+No new dependency (DuckDB was already a project dependency, used exactly
+as Task 1.2 already used it). No Task 1.10 implementation.
+
+### Git
+
+```text
+git status --short before commit: 9 new/modified tracked-worthy files - 0
+  data/artifacts/venv/.env content stageable (git status --ignored, git
+  add -n . both confirmed)
+secret/personal-path scan:            clean
+```
+
+Committed as one coherent Task 1.9 commit: "Add Phase 1 smoke evaluation
+set". No remote configured - push deferred, not attempted.
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — IN PROGRESS
+  1.1 Select Development Corpus               — COMPLETE
+  1.2 Minimal Normalization                   — COMPLETE
+  1.3 Minimal Fixed-Window Chunker            — COMPLETE
+  1.4 Baseline Embedding Pipeline             — COMPLETE
+  1.5 Vector-Only Index                       — COMPLETE
+  1.6 Baseline Retriever                      — COMPLETE
+  1.7 Minimal Generation Layer                — COMPLETE
+  1.8 Citation Integrity Smoke                — COMPLETE WITH HISTORICAL WARN
+  1.7a Citation Format Compliance Correction  — COMPLETE WITH WARN
+  1.9 200-Question Smoke Evaluation           — COMPLETE
+  1.10 Baseline Metric Runner                 — NEXT
+```

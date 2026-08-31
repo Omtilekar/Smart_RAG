@@ -32,7 +32,9 @@ SEC-RAG/
 │   ├── crag/            # planned responsibility: retrieval confidence / corrective decisions
 │   ├── guards/          # planned responsibility: input/context/output protections
 │   ├── api/             # planned responsibility: FastAPI-facing layer
-│   └── cli/             # planned responsibility: command-line entry points
+│   └── cli/             # IMPLEMENTED (Task 1.11) — phase1.py, the Phase 1
+│                         # local end-to-end CLI (answer / evaluate); no
+│                         # FastAPI/production API implemented here
 │
 ├── configs/             # implemented (partial): serving_spike.json (Task 0.10),
 │                         # normalize_development_corpus.json (Task 1.2),
@@ -53,7 +55,8 @@ SEC-RAG/
 │                         # smoke_generation.py (Task 1.7),
 │                         # smoke_citation_integrity.py (Task 1.8),
 │                         # build_smoke_evaluation.py (Task 1.9),
-│                         # run_baseline_metric.py (Task 1.10)
+│                         # run_baseline_metric.py (Task 1.10, reused by
+│                         # src/cli/phase1.py's evaluate subcommand)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -95,7 +98,7 @@ intentionally omitted from the tree above.
 | `crag/` | structure only | Reranker-score-based confidence grading (Phase 3.7) |
 | `guards/` | structure only | Input/context/output guardrails (Phase 4.7–4.9) |
 | `api/` | structure only | FastAPI service (Phase 4.10) |
-| `cli/` | structure only | One-command demo / smoke-eval entry points (Phase 1.11) |
+| `cli/` | **implemented** | `phase1.py` — one-command demo (`answer`) and smoke-eval entry point (`evaluate`) (Task 1.11), see `project_plan/PHASE1_END_TO_END.md`; no FastAPI/production API |
 
 `src/config.py` (Task 0.5 — implemented, see `project_plan/CONFIGURATION.md`),
 `src/logging_utils.py` (Task 0.6 — implemented, see

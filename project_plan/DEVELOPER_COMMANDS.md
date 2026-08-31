@@ -82,3 +82,18 @@ invoked directly (`python scripts/serving_spike.py --target-chunks N`) —
 deliberately **not** wired into `dev.py` as a subcommand, since it is
 throwaway benchmark code, not a routine developer workflow step. See
 `project_plan/SERVING_FEASIBILITY.md`.
+
+## Related: the Phase 1 user-facing CLI (`src/cli/phase1.py`)
+
+`dev.py` stays foundation/developer tooling only — it does not become the
+user-facing RAG command. Task 1.11 gives the actual RAG system its own
+thin local CLI, invoked directly (not a `dev.py` subcommand):
+
+```bash
+python -m src.cli.phase1 answer --question "..."
+python -m src.cli.phase1 evaluate
+```
+
+See `project_plan/PHASE1_END_TO_END.md` for the full command contract,
+configuration, and the Phase 1 exit-criteria evidence these two commands
+produced.

@@ -150,7 +150,19 @@ def build_stable_config() -> dict:
     }
 
 
-def main() -> int:
+def run(
+    *,
+    result_relative_path: Path = RESULT_RELATIVE_PATH,
+    config_relative_path: Path = CONFIG_RELATIVE_PATH,
+) -> dict:
+    """Task 1.10's full metric computation, written for reuse (Task 1.11's
+    `evaluate` CLI subcommand calls this directly rather than duplicating
+    doc_recall@10 logic). `result_relative_path`/`config_relative_path`
+    default to the exact Task 1.10 paths, so calling `run()` with no
+    arguments (what `main()`/direct script invocation still does) is a
+    zero-semantic-change identity to the original Task 1.10 behavior.
+    Returns the full result dict; also writes it to disk and prints the
+    same headline lines Task 1.10 always printed."""
     storage = get_storage()
     questions = load_and_verify_dataset(storage)
     db_path, table = verify_index(storage)
@@ -256,7 +268,7 @@ def main() -> int:
         "questions": questions_json,
     }
 
-    result_path = storage.repo_root / RESULT_RELATIVE_PATH
+    result_path = storage.repo_root / result_relative_path
     if result_path.exists():
         existing = json.loads(result_path.read_text(encoding="utf-8"))
         if existing.get("metric_result_sha256") != metric_result_sha256:
@@ -268,7 +280,7 @@ def main() -> int:
     storage.ensure_dir(result_path.parent)
     result_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
-    config_path = storage.repo_root / CONFIG_RELATIVE_PATH
+    config_path = storage.repo_root / config_relative_path
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(stable_config, indent=2) + "\n", encoding="utf-8")
 
@@ -284,6 +296,11 @@ def main() -> int:
     print(f"metric_result_sha256: {metric_result_sha256}")
     print(f"Result written to: {result_path}")
     print(f"Config written to: {config_path}")
+    return result
+
+
+def main() -> int:
+    run()
     return 0
 
 

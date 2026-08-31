@@ -5428,3 +5428,240 @@ Phase 1 — Make It Work End to End             — IN PROGRESS
   1.10 Baseline Metric Runner                 — COMPLETE
   1.11 End-to-End Command                     — NEXT
 ```
+
+---
+
+## 2026-08-31 — Phase 1.11 End-to-End Command
+
+### Objective
+
+Final numbered Phase 1 task - integration/orchestration only, not an
+architecture upgrade. Give `src/cli/` a real Phase 1 purpose: one command
+that answers a question with citations (Task 1.6 retrieval + Task 1.7a
+generation), and one command that runs the frozen Task 1.9/1.10
+200-question `doc_recall@10` evaluation without duplicating its metric
+logic.
+
+### Initial State
+
+```text
+Task 1.10 commit:            dd101c5 "Add baseline retrieval metric runner"
+340-test baseline:               340 passed, 0 failed
+Task 1.10 result:                    194/200 = 0.970000,
+                                    metric_result_sha256
+                                    64438c1c5ee0769763a274af8cafd200472116889cbd5ee4b045f37557907328
+                                    (independently re-verified before any
+                                    CLI code was written)
+Task 1.7a historical warning:            8/10, two residual fullwidth
+                                        failures (citation-smoke-01/07),
+                                        zero unknown/out-of-context
+```
+
+### Commands
+
+```bash
+python -m src.cli.phase1 answer --question "..."
+python -m src.cli.phase1 evaluate
+```
+
+### Design
+
+`src/cli/phase1.py` (new, argparse only - no Typer/Click/Fire, no new
+dependency) composes existing classes without reimplementing anything:
+`BaselineRetriever` (Task 1.6), `MinimalGenerator`/`OpenRouterProvider`
+(Task 1.7/1.7a) for `answer`; `scripts.run_baseline_metric.run()` (Task
+1.10) for `evaluate`. To make Task 1.10's runner reusable without
+duplicating doc_recall@10 math, `scripts/run_baseline_metric.py`'s `main()`
+body was extracted into a parameterized `run(*, result_relative_path=...,
+config_relative_path=...)` function - verified zero-semantic-change by
+re-running the original script invocation and confirming byte-identical
+output/hashes before and after the refactor. An empty `scripts/__init__.py`
+was added so `src/cli/phase1.py` can `from scripts.run_baseline_metric
+import run`.
+
+### Answer Command
+
+```text
+retrieval k:              5 (Task 1.7's frozen generation-context default,
+                          never Task 1.10's k=10)
+provider/model:              openrouter / openai/gpt-oss-20b (matches Task
+                            1.7a baseline, re-verified before the live call)
+demo case ID:                  citation-smoke-02 (deterministically
+                              selected: lowest case_id among
+                              expected_behavior="answer" cases that PASSed
+                              Task 1.7a's rerun)
+answer returned:                  non-empty
+printed citation IDs:                1425627_2018.htm::chunk9
+citation-integrity result:              PASS (0 malformed attempts, exists
+                                      in index, was in the exact supplied
+                                      top-5) - verified via a diagnostic-only
+                                      --dump-context flag wrapping
+                                      retrieval with Task 1.8's
+                                      RecordingRetriever, no second
+                                      OpenRouter call
+```
+
+Exactly one live paid call was made (Step 18/19's frozen rule - no retry,
+no cherry-picking, no switching to another historically-passing case).
+
+### Evaluate Command
+
+```text
+questions=200
+hits=194
+doc_recall@10=0.970000
+metric_result_sha256:  64438c1c5ee0769763a274af8cafd200472116889cbd5ee4b045f37557907328
+matches Task 1.10 = YES (byte-identical hash)
+```
+
+Result written to `results/phase_1_11_smoke_evaluation.json` - a separate
+path from `results/phase_1_10_baseline_metric.json`, so Task 1.10's
+historical baseline artifact is preserved rather than overwritten by the
+CLI's rerun. No OpenRouter call occurred.
+
+### Tests
+
+```text
+new Task 1.11 tests:  14 (tests/test_phase1_cli.py - --help lists both
+  subcommands, answer requires --question, empty/whitespace question
+  rejected, generator invoked with the exact question, answer/citations
+  printed, zero-citations shown explicitly as "(none)", vectors/context
+  never printed, provider error becomes a safe non-zero failure, API key
+  never appears in output, evaluate delegates to the Task 1.10 runner
+  function without duplicating metric computation, evaluate prints the
+  three headline values, evaluate propagates runner failure as non-zero)
+doctor:              PASS
+portable suite:        344 passed, 10 deselected, 0 failed (was 330; +14
+  new portable tests)
+full suite:              354 passed, 0 failed (was 340; +14 new tests; no
+  new paid pytest test added - the pre-existing generation_api-marked live
+  smoke ran as it always does when the key/model are configured)
+```
+
+### Phase 1 Exit Review
+
+| # | Criterion | Status |
+|---|---|---|
+| 1 | One command accepts a question and returns an answer | PASS |
+| 2 | The answer contains valid source citations | PASS |
+| 3 | Every citation resolves back to a stored source chunk | PASS |
+| 4 | A 200-question evaluation runs end to end | PASS |
+| 5 | `doc_recall@10` is printed and saved | PASS |
+| 6 | Integration bugs found during the vertical slice are documented | PASS |
+| 7 | No advanced retrieval component has been added prematurely | PASS |
+
+All 7 official criteria demonstrated on real, non-cherry-picked evidence.
+
+### Known Warning
+
+**Task 1.7a's general citation-format compliance remains 8/10** on the
+frozen 10-case Task 1.8 smoke (2 residual fullwidth-bracket failures, 0
+unknown/out-of-context). The one Task 1.11 live demo call happened to
+produce a strict-valid citation with zero malformed attempts - this single
+successful case does NOT supersede, resolve, or improve that 8/10 general
+diagnostic, which remains the governing evidence.
+
+### Safety
+
+```text
+API key:                                        never logged/committed -
+  re-verified via grep across all staged files; .env confirmed git-ignored
+no citation repair:                                 confirmed - the CLI
+  prints the model's raw answer and Task 1.7's strict parser output
+  verbatim, never normalizes fullwidth brackets or expands truncated IDs
+no model/provider switch:                              confirmed -
+  openrouter/openai/gpt-oss-20b, re-verified before the live call
+no advanced retrieval:                                    confirmed - no
+  BM25/hybrid/reranker/CRAG/router/metadata-filter code added (git diff)
+no Task 1.9/1.10 semantic changes:                            confirmed -
+  Task 1.9 dataset byte-identical; Task 1.10's doc_recall@10 logic
+  (src/eval/baseline_metrics.py) untouched, only its I/O wrapper's output
+  path was parameterized (zero-semantic-change, verified)
+upstream artifacts unchanged:                                    Task 1.5
+  index (162,357 rows, 0 ANN indexes), Task 1.4 embeddings, Task 1.3
+  chunks, Task 1.2 normalized Markdown, frozen data/ - all unmodified
+Task 1.10 historical result preserved:                              only
+  non-logical fields (created_at_utc, git_sha, runtime latency) changed
+  when the script was rerun during this task; hit_count, doc_recall_at_10,
+  category_results, and metric_result_sha256 are byte-identical
+no Phase 2 work:                                                        confirmed
+  - no truth_contract.py, no eval_tags config, no 3,000-question dataset,
+  no DEV/TEST split
+```
+
+### Files Created / Modified
+
+```text
+src/cli/phase1.py                                            (new)
+scripts/run_baseline_metric.py                                  (modified:
+  main() body extracted into reusable run(), zero semantic change)
+scripts/__init__.py                                                (new,
+  empty - makes scripts/ importable for src/cli/phase1.py's reuse of
+  scripts.run_baseline_metric.run)
+tests/test_phase1_cli.py                                              (new,
+  14 tests)
+results/phase_1_11_smoke_evaluation.json                                (new,
+  tracked - CLI's evaluate rerun, separate from Task 1.10's baseline)
+results/phase_1_11_end_to_end_summary.json                                (new,
+  tracked)
+results/phase_1_10_baseline_metric.json                                      (refreshed
+  by rerun - only created_at_utc/git_sha/runtime latency changed, metric
+  content byte-identical)
+project_plan/PHASE1_END_TO_END.md                                              (new)
+project_plan/DEVELOPER_COMMANDS.md                                                (updated:
+  cross-link to the new CLI, dev.py stays foundation-only)
+project_plan/REPOSITORY_STRUCTURE.md                                                (updated
+  narrowly: src/cli/ marked implemented)
+Progress.md                                                                          (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/index/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, `src/eval/citation_integrity.py`,
+`src/eval/smoke_dataset.py`, `src/eval/baseline_metrics.py`, Task 1.9
+dataset, index data, embeddings, chunks, normalized Markdown, or frozen
+`data/` modified.
+
+### Git
+
+```text
+git status --short before commit: 9 new/modified tracked-worthy files - 0
+  data/artifacts/venv/.env content stageable (git status --ignored, git
+  add -n . both confirmed)
+secret/personal-path scan:            clean (fake test-only API-key string
+  in tests/test_phase1_cli.py excluded, confirmed intentional)
+```
+
+Committed as one coherent Task 1.11 commit: "Add Phase 1 end-to-end
+commands". No remote configured - push deferred, not attempted. No Phase
+1 tag created (Phase 1 tagging semantics under COMPLETE WITH WARN were not
+unambiguously required by any existing convention - left to a later
+explicit decision rather than invented here).
+
+### Result
+
+```text
+PASS — Phase 1 one-command answer and 200-question evaluation are integrated
+```
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
+  1.1 Select Development Corpus               — COMPLETE
+  1.2 Minimal Normalization                   — COMPLETE
+  1.3 Minimal Fixed-Window Chunker            — COMPLETE
+  1.4 Baseline Embedding Pipeline             — COMPLETE
+  1.5 Vector-Only Index                       — COMPLETE
+  1.6 Baseline Retriever                      — COMPLETE
+  1.7 Minimal Generation Layer                — COMPLETE
+  1.8 Citation Integrity Smoke                — COMPLETE WITH HISTORICAL WARN
+  1.7a Citation Format Compliance Correction  — COMPLETE WITH WARN
+  1.9 200-Question Smoke Evaluation           — COMPLETE
+  1.10 Baseline Metric Runner                 — COMPLETE
+  1.11 End-to-End Command                     — COMPLETE
+
+Known Phase 1 warning:
+Task 1.7a citation-format compliance remains 8/10.
+```

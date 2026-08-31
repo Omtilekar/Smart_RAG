@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-08-31T21:11:38Z",
+  "git_sha": "ff4bc44edd6ead0d494890d0251bf302abe37b14",
+  "truth_contract_config_hash": "b575ac4b86c7a5fe633bf56ea487215a0ccab4cdfbcad0d448c1601f5efae618",
+  "resolved_tags": [
+    "Assets",
+    "CashAndCashEquivalentsAtCarryingValue",
+    "CostOfRevenue",
+    "GrossProfit",
+    "Liabilities",
+    "NetIncomeLoss",
+    "OperatingIncomeLoss",
+    "ResearchAndDevelopmentExpense",
+    "Revenues",
+    "StockholdersEquity"
+  ],
+  "unresolved_candidate_tags": [
+    "RevenueFromContractWithCustomerExcludingAssessedTax",
+    "OperatingExpenses",
+    "EarningsPerShareBasic",
+    "EarningsPerShareDiluted",
+    "IncomeTaxExpenseBenefit"
+  ],
+  "source_fact_count": 10984293,
+  "eligible_fact_count": 185506,
+  "rejected_count": 10798787,
+  "rejected_by_reason_independent_diagnostics": {
+    "coreg": 249913,
+    "segments": 6601480,
+    "taxonomy": 353,
+    "unit": 17993,
+    "qtrs": 4193001,
+    "form": 8080932,
+    "fiscal_year_window": 5244137,
+    "null_value": 0,
+    "date_period_alignment": 6901647
+  },
+  "eligible_counts_by_tag": {
+    "Assets": 28448,
+    "CashAndCashEquivalentsAtCarryingValue": 25065,
+    "Liabilities": 23301,
+    "NetIncomeLoss": 26263,
+    "OperatingIncomeLoss": 21497,
+    "Revenues": 11168,
+    "StockholdersEquity": 26468,
+    "GrossProfit": 10326,
+    "ResearchAndDevelopmentExpense": 8035,
+    "CostOfRevenue": 4935
+  },
+  "eligible_counts_by_year": {
+    "2016": 37793,
+    "2017": 37857,
+    "2018": 37299,
+    "2019": 35897,
+    "2020": 36660
+  },
+  "eligible_counts_by_qtrs": {
+    "0": 103282,
+    "4": 82224
+  },
+  "unique_accessions": 28859,
+  "unique_ciks": 7809,
+  "same_accession_duplicates_encountered": 0,
+  "cross_filing_comparable_groups": 23,
+  "cross_filing_value_revision_groups": 0,
+  "cross_filing_value_revision_rate": 0.0,
+  "cross_filing_value_revision_note": "Computed on THIS contract's 10-tag registry (2016-2020, 10-K only) - NOT the same population as DATA_READINESS_REPORT.md's frozen 7.87%/8.00%/10.39% figures (all-tags / standard-tags / 15-tag registry, no fiscal-year-window restriction). Never call this a 'restatement rate' - see module docstring.",
+  "runtime_seconds": 1.696
+}

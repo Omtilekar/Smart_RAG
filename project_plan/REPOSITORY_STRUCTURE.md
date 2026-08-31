@@ -22,11 +22,13 @@ SEC-RAG/
 │   ├── index/           # IMPLEMENTED (Task 1.5) — exact-cosine LanceDB vector index
 │   ├── retrieval/       # IMPLEMENTED (Task 1.6) — baseline natural-language vector retriever
 │   ├── generation/      # IMPLEMENTED (Task 1.7) — minimal grounded generation, OpenRouter adapter
-│   ├── eval/            # PARTIAL (Tasks 1.8-1.10) — citation-integrity smoke helper
-│   │                     # (Task 1.8), the deterministic Phase 1 smoke-dataset
-│   │                     # builder (Task 1.9), and the doc_recall@10 baseline
-│   │                     # metric logic (Task 1.10); full eval/truth-contract
-│   │                     # system NOT yet implemented
+│   ├── eval/            # PARTIAL (Tasks 1.8-1.10, 2.1) — citation-integrity
+│   │                     # smoke helper (Task 1.8), the deterministic Phase 1
+│   │                     # smoke-dataset builder (Task 1.9), the doc_recall@10
+│   │                     # baseline metric logic (Task 1.10), and the XBRL
+│   │                     # fact-eligibility truth contract (Task 2.1); question
+│   │                     # generation, tag-registry freeze, DEV/TEST split,
+│   │                     # and evidence alignment NOT yet implemented
 │   ├── router/          # planned responsibility: query classification, path selection
 │   ├── rerank/          # planned responsibility: cross-encoder reranking
 │   ├── crag/            # planned responsibility: retrieval confidence / corrective decisions
@@ -56,7 +58,8 @@ SEC-RAG/
 │                         # smoke_citation_integrity.py (Task 1.8),
 │                         # build_smoke_evaluation.py (Task 1.9),
 │                         # run_baseline_metric.py (Task 1.10, reused by
-│                         # src/cli/phase1.py's evaluate subcommand)
+│                         # src/cli/phase1.py's evaluate subcommand),
+│                         # build_truth_contract_summary.py (Task 2.1)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -92,7 +95,7 @@ intentionally omitted from the tree above.
 | `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
 | `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
 | `generation/` | **implemented** | `provider.py` (provider-neutral interface), `openrouter.py` (adapter), `minimal.py`, `citations.py` (Task 1.7), see `project_plan/PHASE1_GENERATION.md` |
-| `eval/` | **partial** | `citation_integrity.py` — mechanical citation-integrity smoke check (Task 1.8), see `project_plan/PHASE1_CITATION_INTEGRITY.md`; `smoke_dataset.py` — deterministic 200-question document-level smoke dataset builder (Task 1.9), see `project_plan/PHASE1_SMOKE_EVALUATION.md`; `baseline_metrics.py` — pure doc_recall@10 metric logic (Task 1.10), see `project_plan/PHASE1_BASELINE_METRICS.md`; `truth_contract.py`, tag registry, ~3,000-question benchmark still not implemented (Phase 2.1–2.6) |
+| `eval/` | **partial** | `citation_integrity.py` — mechanical citation-integrity smoke check (Task 1.8), see `project_plan/PHASE1_CITATION_INTEGRITY.md`; `smoke_dataset.py` — deterministic 200-question document-level smoke dataset builder (Task 1.9), see `project_plan/PHASE1_SMOKE_EVALUATION.md`; `baseline_metrics.py` — pure doc_recall@10 metric logic (Task 1.10), see `project_plan/PHASE1_BASELINE_METRICS.md`; `truth_contract.py` — XBRL fact-eligibility contract, 10/15 tags qtrs-resolved (Task 2.1), see `project_plan/PHASE2_TRUTH_CONTRACT.md`; tag-registry freeze, ~3,000-question benchmark, DEV/TEST split, evidence alignment still not implemented (Phase 2.2–2.8) |
 | `router/` | structure only | Rules-first query classification/path selection (Phase 3.8) |
 | `rerank/` | structure only | Cross-encoder reranking (Phase 3.6) |
 | `crag/` | structure only | Reranker-score-based confidence grading (Phase 3.7) |

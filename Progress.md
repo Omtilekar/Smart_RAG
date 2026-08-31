@@ -5859,3 +5859,234 @@ Phase 2 — Make the Numbers Trustworthy        — NEXT
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
 ```
+
+---
+
+## 2026-08-31 — Phase 2.1 XBRL Truth Contract
+
+### Objective
+
+First Phase 2 implementation task: define the single authoritative rule
+for which raw SEC XBRL `facts` rows may become Phase 2 evaluation ground
+truth. Does not generate questions, freeze the tag registry, build the
+DEV/TEST split, or touch Phase 1 artifacts.
+
+### Initial State
+
+```text
+HEAD:              ff4bc44 "Verify Phase 1 completion"
+portable baseline:      344 passed, 10 deselected, 0 failed
+data/xbrl.duckdb:          7,011,053,568 bytes, facts=90,685,753,
+                          submissions=218,166 (re-verified, unchanged
+                          from Task 0/1 records)
+src/eval/truth_contract.py: did not exist
+```
+
+### Authoritative Decisions Used
+
+`project_plan/REVIEW_RESOLUTIONS.md` does not exist in the repository
+(flagged, not invented) - proceeded using `PROJECT_EXECUTION.md`,
+`DATA_READINESS_REPORT.md`, and `src/ingest/audit_data.py`/`validate.py`
+as the available authoritative sources, per the task's own precedence
+rule.
+
+Two consequential findings, both taken directly from
+`PROJECT_EXECUTION.md`'s own Task 2.1 checklist (not invented):
+
+```text
+"Keep materiality/sampling policy separate from truth validity" is
+  literally one of Task 2.1's OWN checklist items - resolved: no
+  min_magnitude parameter in eligible_facts(), a deliberate deviation
+  from the task prompt's own illustrative API sketch.
+Task 2.2 ("Freeze supported tag registry") explicitly owns "expected
+  qtrs" for the full ~15-tag registry, in configs/eval_tags.yaml - Task
+  2.1 does not pre-empt that.
+```
+
+### Historical Stale-Metric Correction
+
+Verified `23.56%` never appears anywhere in this task's output/docs as a
+current fact. `DATA_READINESS_REPORT.md`'s corrected terminology
+(cross-filing value-revision rate, 7.87%/8.00%/10.39%) is used throughout
+`PHASE2_TRUTH_CONTRACT.md` and `src/eval/truth_contract.py`'s own
+docstring.
+
+### Real XBRL Schema Verified
+
+```text
+facts columns:        adsh, cik, company, form, fiscal_year, fp, tag,
+                     version, ddate, qtrs, uom, coreg, segments, value
+                     (cik/company/form/fiscal_year/fp are already
+                     denormalized onto facts - no join to submissions
+                     needed for the window/form filters)
+submissions columns:      adsh, cik, name, form, fiscal_year, fp, period, filed
+coreg/segments encoding:      exactly two states in real data - NULL or
+                            non-empty string; no whitespace-only variant
+                            observed
+ddate format:                     VARCHAR, always 8 chars, YYYYMMDD
+version format:                       "us-gaap/YYYY" - literal "us-gaap"
+                                    (no slash) matches 0 rows
+period alignment (real finding):          only ~44% of a 10-K's Assets
+                                        facts and ~37% of its Revenues
+                                        facts have ddate == submissions.period -
+                                        the rest are comparative/prior-period
+                                        columns embedded in the same filing
+```
+
+### Eligibility Contract
+
+10-K only; fiscal_year 2016-2020; coreg/segments blank; `version LIKE
+'us-gaap/%'`; `uom='USD'`; per-tag qtrs; `value IS NOT NULL`/finite;
+`ddate = submissions.period` (own-period only, excludes comparatives); no
+materiality filter (explicitly out of scope). Grain `(adsh, tag, ddate,
+qtrs, uom)` verified unique after all other filters (0 duplicates found);
+`eligible_facts()` still raises on a genuine conflicting duplicate rather
+than assuming this holds forever.
+
+### Tag/qtrs Status
+
+```text
+10/15 candidate tags have resolved qtrs semantics (given explicitly by
+  this task's own frozen instructions): Assets/Liabilities/
+  StockholdersEquity/CashAndCashEquivalentsAtCarryingValue -> 0;
+  Revenues/ResearchAndDevelopmentExpense/NetIncomeLoss/
+  OperatingIncomeLoss/CostOfRevenue/GrossProfit -> 4
+5/15 remain UNRESOLVED (RevenueFromContractWithCustomerExcludingAssessedTax,
+  OperatingExpenses, EarningsPerShareBasic, EarningsPerShareDiluted,
+  IncomeTaxExpenseBenefit) - appear only as data-quality-audit candidates
+  in src.ingest.audit_data.CANDIDATE_TAGS / DATA_READINESS_REPORT.md, no
+  approved qtrs mapping anywhere. eligible_facts() raises
+  TruthContractError rather than guess (e.g. via iord=D pattern-matching).
+  Deferred to Task 2.2's tag-registry freeze.
+```
+
+### Materiality Decision
+
+Excluded from truth validity entirely, per `PROJECT_EXECUTION.md`'s own
+Task 2.1 checklist ("Keep materiality/sampling policy separate from truth
+validity") - not an unresolved STOP condition, a resolved exclusion.
+
+### Duplicate/Revision Handling
+
+Same-accession duplicates: 0 found empirically; collapsed if identical,
+raises `RuntimeError` if conflicting. Cross-filing value-revision
+diagnostic on this 10-tag registry: 23 comparable groups, 0 revisions,
+rate 0.0% - **not forced to match** the frozen 7.87%/10.39% figures.
+Investigated and documented why: those figures compare a concept across
+every `ddate` ever seen (including comparative reprints in later
+filings); this contract's period-alignment rule deliberately excludes
+comparative columns, so cross-filing comparability collapses to a
+handful of edge cases by construction, not by accident.
+
+### Implementation
+
+```text
+src/eval/truth_contract.py       - QTRS_BY_TAG, UNRESOLVED_CANDIDATE_TAGS,
+  TruthContractError, EligibleFact, eligible_facts(), build_contract_config(),
+  compute_contract_config_hash()
+scripts/build_truth_contract_summary.py  - real-data diagnostic runner
+```
+
+### Real-Data Diagnostics
+
+```text
+source facts (10-tag registry):    10,984,293
+eligible facts:                        185,506
+rejected:                                10,798,787
+unique accessions:                          28,859
+unique CIKs:                                   7,809
+truth_contract_config_hash:                       b575ac4b86c7a5fe633bf56ea487215a0ccab4cdfbcad0d448c1601f5efae618
+runtime:                                             1.696s
+```
+
+Full per-reason rejection counts and per-tag/year/qtrs eligible counts in
+`results/phase_2_1_truth_contract_summary.json`.
+
+### Independent Checks
+
+20 real eligible facts manually re-verified directly against raw
+tables (20/20 correct). Deterministic rejected examples located for every
+major rejection reason. Total eligible count (185,506) independently
+recomputed via a separate per-tag SQL loop, not calling `eligible_facts()`
+- matched exactly.
+
+### Tests
+
+```text
+new Task 2.1 tests:  38 (tests/test_truth_contract.py - 37 portable using
+  a synthetic in-memory DuckDB schema verified against the real database
+  first; 1 local_data-marked real-data integration test)
+doctor:              PASS
+portable suite:        381 passed, 11 deselected, 0 failed (was 344; +37
+  new portable tests)
+full suite:              392 passed, 0 failed (was 354; +38 new tests,
+  including the local_data-marked real integration test)
+```
+
+### Frozen-Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+facts row count:               90,685,753 - unchanged
+submissions row count:            218,166 - unchanged
+```
+
+### Phase 1 Regression Gate
+
+`git diff --stat` over src/retrieval, src/generation, src/index,
+src/embeddings, src/chunk, src/normalize, src/eval/citation_integrity.py,
+src/eval/smoke_dataset.py, src/eval/baseline_metrics.py, src/cli,
+scripts/run_baseline_metric.py, and all three Phase 1 evaluation result
+files: zero changes. Task 1.7a's frozen 8/10 diagnostic was not rerun.
+
+### Files Created / Modified
+
+```text
+src/eval/truth_contract.py                                  (new)
+scripts/build_truth_contract_summary.py                        (new)
+tests/test_truth_contract.py                                      (new,
+  38 tests)
+results/phase_2_1_truth_contract_summary.json                        (new,
+  tracked)
+project_plan/PHASE2_TRUTH_CONTRACT.md                                    (new)
+project_plan/REPOSITORY_STRUCTURE.md                                        (updated
+  narrowly: src/eval/ now lists truth_contract.py; scripts/ listing updated)
+Progress.md                                                                    (this entry)
+```
+
+No `src/generation/`, `src/retrieval/`, `src/embeddings/`, `src/index/`,
+`src/chunk/`, `src/normalize/`, `src/ingest/`, `src/cli/`, Phase 1 result
+files, or frozen `data/` modified. No new dependency (DuckDB already a
+project dependency). No network, no LLM, no API credits spent.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files only -
+  0 data/artifacts/venv/.env content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.1 commit: "Add Phase 2 XBRL truth
+contract". No Phase 2 completion tag created (Phase 2 is not complete
+after Task 2.1). No remote configured - push deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Data Preparation                              — COMPLETE
+Phase 0 — Foundation                          — COMPLETE
+Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.1 XBRL Truth Contract                     — COMPLETE
+  2.2 Freeze Supported Tag Registry           — NEXT
+
+Known Phase 1 warning:
+Task 1.7a citation-format compliance remains 8/10.
+```

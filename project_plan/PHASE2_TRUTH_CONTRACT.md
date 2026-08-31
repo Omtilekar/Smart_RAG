@@ -1,0 +1,298 @@
+# Phase 2 XBRL Truth Contract
+
+Established in Task 2.1, the first Phase 2 implementation task. Defines
+the project's single authoritative rule for which raw SEC XBRL `facts`
+rows are permitted to become Phase 2 evaluation ground truth.
+
+**`eligible XBRL fact != generated evaluation question`.** This task only
+defines the allowed fact population — it does not generate questions,
+build the ~3,000-question benchmark, create a DEV/TEST split, or perform
+evidence/chunk alignment. Those are later Phase 2 tasks.
+
+## Objective
+
+A raw XBRL fact being technically well-formed does not make it safe
+ground truth. The same `(company, tag, year)` can carry consolidated
+totals, segment/dimensional breakdowns, co-registrant (subsidiary)
+figures, mismatched units, comparative prior-period columns embedded in
+the current filing, custom taxonomy extensions, and cross-filing value
+revisions. `src/eval/truth_contract.py`'s `eligible_facts()` is the one
+place this gets resolved — later Phase 2 generators/validators must
+import it, never re-derive their own eligibility SQL.
+
+## Why raw XBRL is unsafe as direct truth (real evidence)
+
+Verified directly against `data/xbrl.duckdb` during this task:
+
+```text
+coreg populated (co-registrant/subsidiary facts):     2,548,668 / 90,685,753 (2.81%)
+segments populated (dimensional breakdowns):              42,896,698 / 90,685,753 (52.70%)
+version = literal "us-gaap" (wrong filter):                0 rows match
+version LIKE "us-gaap/%" (correct filter):                     84,101,557 / 90,685,753 (92.7%)
+Assets facts whose ddate equals their OWN filing's period-end: only 44%
+  of a 10-K's Assets facts (the rest are comparative/prior-period columns
+  also embedded in the same filing)
+Revenues facts whose ddate equals their OWN filing's period-end:  only
+  ~37% (similarly, the rest are comparative columns)
+```
+
+## Terminology correction (do not regress this)
+
+Earlier project analysis called a metric "23.56% restatement rate." That
+number was independently re-audited (`DATA_READINESS_REPORT.md`, "Check
+1") and found to measure the wrong population — it left in segment/
+dimensional facts (52.7% of all facts), ignored unit mismatches, and never
+collapsed same-accession duplicates before comparing values. The
+corrected, stricter figure is called the **cross-filing value-revision
+rate**, never "restatement rate":
+
+```text
+7.87%   — all tags (consolidated, non-dimensional, same-unit, cross-accession only)
+8.00%   — standard non-abstract tags only
+10.39%  — the data-readiness audit's own 15-tag candidate registry
+```
+
+This module never reintroduces 23.56% as a current fact, and its own
+diagnostic (see "Cross-filing value-revision diagnostic" below) is a
+**different, smaller population** than any of the three figures above —
+explained, not forced to match.
+
+## Authoritative eligibility contract
+
+`eligible_facts(con, tags)` returns a fact only when **every** rule below
+passes:
+
+| Rule | Condition | Verified against real data |
+|---|---|---|
+| Filing type | `form = '10-K'` | matches Task 1.1's own EDGAR↔XBRL alignment precedent |
+| Evaluation window | `fiscal_year BETWEEN 2016 AND 2020` | same window/field Task 1.1 used (`fy`, the semantically-chosen alignment field per `DATA_READINESS_REPORT.md` "Check 2") |
+| Consolidated entity | `coreg IS NULL OR coreg = ''` | real data has only two states, NULL or non-empty — no whitespace-only variant exists |
+| No segment/dimensional facts | `segments IS NULL OR segments = ''` | same two-state pattern confirmed |
+| Standard taxonomy | `version LIKE 'us-gaap/%'` | `version = 'us-gaap'` matches **zero** rows — verified directly, never use the naive filter |
+| Monetary unit | `uom = 'USD'` | all 15 candidate tags (10 resolved + 5 unresolved-qtrs) are monetary or per-share-in-USD in this dataset |
+| Per-tag qtrs | `qtrs = QTRS_BY_TAG[tag]` | see registry below |
+| Value validity | `value IS NOT NULL`, not NaN/Inf, sign preserved | verified: 0 NULL/NaN/Inf among the 10-tag registry |
+| Reporting-period alignment | `ddate = submissions.period` for the fact's own `adsh` | the fact must be the filing's own current-period figure, not a comparative/prior-period column also present in the same filing |
+| Same-accession duplicates | grain `(adsh, tag, ddate, qtrs, uom)` collapsed if identical, **raises** if genuinely conflicting | verified empirically: 0 grain duplicates in the real 2016-2020/10-K population for this registry |
+| Filing identity preserved | every returned row keeps its own `adsh`/`cik`/`company` | no cross-filing canonicalization is ever performed |
+
+**Materiality is deliberately excluded.** `PROJECT_EXECUTION.md`'s own
+Task 2.1 checklist states: *"Keep materiality/sampling policy separate
+from truth validity."* `eligible_facts()` therefore takes **no**
+`min_magnitude` parameter — a deliberate deviation from an earlier
+illustrative API sketch, resolved directly by the authoritative roadmap
+document itself, not invented here. A future Phase 2 task may apply a
+magnitude/sampling policy at question-generation time; it is not part of
+truth validity.
+
+## Tag / qtrs registry — what is resolved, what is not
+
+`PROJECT_EXECUTION.md`'s Task 2.2 ("Freeze supported tag registry")
+explicitly owns validating and freezing the full ~15-concept evaluation
+registry — including **expected qtrs** — into `configs/eval_tags.yaml`.
+Task 2.1 does not pre-empt that. Two groups exist today:
+
+**Resolved (`QTRS_BY_TAG`, usable with `eligible_facts()` now)** — given
+explicitly by this task's own frozen instructions:
+
+```text
+Assets                                   -> 0  (instant)
+Liabilities                              -> 0  (instant)
+StockholdersEquity                       -> 0  (instant)
+CashAndCashEquivalentsAtCarryingValue    -> 0  (instant)
+Revenues                                 -> 4  (annual duration)
+ResearchAndDevelopmentExpense            -> 4  (annual duration)
+NetIncomeLoss                            -> 4  (annual duration)
+OperatingIncomeLoss                      -> 4  (annual duration)
+CostOfRevenue                            -> 4  (annual duration)
+GrossProfit                              -> 4  (annual duration)
+```
+
+**Unresolved (`UNRESOLVED_CANDIDATE_TAGS`, raises `TruthContractError` if
+requested)** — appear in `src.ingest.audit_data.CANDIDATE_TAGS` /
+`DATA_READINESS_REPORT.md`'s 15-tag table as data-quality-audit
+candidates, but have **no approved qtrs mapping anywhere in current
+authoritative documentation**:
+
+```text
+RevenueFromContractWithCustomerExcludingAssessedTax
+OperatingExpenses
+EarningsPerShareBasic
+EarningsPerShareDiluted
+IncomeTaxExpenseBenefit
+```
+
+All five have `iord = 'D'` (duration) in the raw XBRL tag metadata, which
+might *suggest* `qtrs = 4` by pattern-matching the other six duration
+tags — but this task explicitly forbids inventing an unresolved project
+decision, even one that looks obvious. `eligible_facts()` raises
+`TruthContractError` rather than guess. Task 2.2 owns resolving this.
+
+## Same-accession duplicate handling
+
+Empirically verified: after applying every other eligibility rule, the
+grain `(adsh, tag, ddate, qtrs, uom)` has **zero** duplicate groups in the
+real 2016-2020/10-K population for the 10-tag registry (185,506 eligible
+rows, checked exhaustively). `eligible_facts()` still defends this
+invariant at runtime: an identical-value duplicate at the same grain is
+silently collapsed to one row (harmless — same fact, same value); a
+duplicate with a **conflicting** value raises `RuntimeError` rather than
+silently picking one, per this task's explicit "do not silently choose
+between genuinely conflicting same-accession values" instruction.
+
+## Cross-filing value-revision diagnostic (this registry, not a repeat of Check 1)
+
+```text
+eligible facts (10-tag registry):           185,506
+cross-filing comparable groups:                 23
+cross-filing value-revision groups:                0
+cross-filing value-revision rate (this contract):     0.0%
+```
+
+**This is a genuinely different population from the frozen 7.87%/8.00%/
+10.39% figures, not a discrepancy to explain away.** Check 1's methodology
+compares a `(cik,tag,ddate,qtrs,uom)` group across **every** `ddate` value
+that ever appears for that concept — including comparative/prior-period
+columns reprinted in later filings, which is exactly how a genuine
+cross-filing revision becomes visible (Filing A's own-period value vs.
+Filing B's later comparative reprint of that same historical period).
+Task 2.1's period-alignment rule (`ddate = submissions.period`)
+deliberately **excludes** those comparative columns, keeping only each
+filing's own current-period figure. Since a company essentially never
+files two separate 10-Ks whose *own* period-end is identical, this
+structurally collapses cross-filing comparability to a handful of edge
+cases (23 groups, here) rather than Check 1's ~13M+/1.9M+ comparable
+groups. **The algorithm was not adjusted to reproduce 7.87%/10.39%** —
+the difference is explained by which population period-end alignment
+selects, exactly as this task's Section 14 anticipated as one of the
+legitimate reasons two runs could differ.
+
+## Deterministic ordering
+
+`eligible_facts()` always issues an explicit `ORDER BY adsh, tag, ddate,
+qtrs, uom` — never relies on DuckDB's incidental physical row order.
+Verified: two independent calls against the same database and tag
+selection return byte-identical rows in identical order.
+
+## Provenance / config hash
+
+`build_contract_config(tags)` returns a deterministic, timestamp-free
+dict (contract version, resolved tags + their qtrs, every rule above in
+explicit textual form). `compute_contract_config_hash()` is a SHA-256 over
+its canonical JSON (`sort_keys=True`, stable separators — the same
+convention already used throughout this repo for
+`development_manifest_sha256`/`chunk_config_hash`/`smoke_eval_sha256`).
+Order-independent (tags are sorted internally) and never changes merely
+because the run occurred later — no timestamp is part of the hashed
+payload.
+
+```text
+truth_contract_config_hash (10-tag registry): b575ac4b86c7a5fe633bf56ea487215a0ccab4cdfbcad0d448c1601f5efae618
+```
+
+## Real-data summary
+
+```bash
+python scripts/build_truth_contract_summary.py
+```
+
+Reads `data/xbrl.duckdb` read-only, writes only
+`results/phase_2_1_truth_contract_summary.json` (tracked; does not store
+the full eligible population, only counts/diagnostics). Rejection-reason
+counts are **independent diagnostics, not a mutually exclusive
+partition** — a single row can fail more than one rule at once (e.g.
+wrong unit *and* wrong period), so they must not be summed to reconstruct
+the total rejected count.
+
+```text
+source facts (10-tag registry, any filter): 10,984,293
+eligible facts:                                185,506
+rejected:                                          10,798,787
+unique accessions:                                    28,859
+unique CIKs:                                             7,809
+runtime:                                                   1.696s
+```
+
+| Rejection reason (independent, overlapping) | Count |
+|---|---:|
+| coreg populated | 249,913 |
+| segments populated | 6,601,480 |
+| taxonomy | 353 |
+| unit | 17,993 |
+| qtrs | 4,193,001 |
+| form | 8,080,932 |
+| fiscal-year window | 5,244,137 |
+| null value | 0 |
+| date/period alignment | 6,901,647 |
+
+Eligible counts by tag, year, and qtrs are recorded in the tracked summary
+JSON.
+
+## Independent verification (this task)
+
+- **20 real eligible facts** manually inspected: each row's `coreg`,
+  `segments`, `version`, `uom`, `qtrs`, `form`, `fiscal_year`, and
+  `ddate = submissions.period` were re-queried directly from the raw
+  tables (never trusting `eligible_facts()` to prove itself) — 20/20
+  confirmed correct.
+- **Deterministic rejected examples** located and confirmed for every
+  major rejection reason (coreg, segments, wrong unit, wrong qtrs on a
+  duration tag, comparative/prior-period `ddate`, non-10-K form,
+  outside-window fiscal year). Note: no real *wrong-qtrs Assets* example
+  exists — 100% of raw `Assets` facts are already `qtrs=0`
+  (`DATA_READINESS_REPORT.md` had already established this); the qtrs
+  filter's correctness on `Assets` is instead confirmed via a synthetic
+  unit test and cross-validated on `Revenues` (real wrong-qtrs examples
+  exist and are correctly rejected).
+- **One aggregate independently recomputed**: the total eligible count
+  (185,506) was recomputed via a separate per-tag SQL loop written from
+  scratch — not calling `eligible_facts()` — and matched exactly.
+
+## Tests
+
+```bash
+python -m pytest tests/test_truth_contract.py -q
+```
+
+38 tests: 37 portable (synthetic in-memory DuckDB database whose schema
+was verified directly against the real `data/xbrl.duckdb` before writing
+any fixture) covering consolidation, taxonomy, units, qtrs (including
+unknown/unresolved-tag rejection), period alignment, fiscal-year window,
+form restriction, value validity (null/positive/negative/zero), the
+explicit absence of a materiality parameter, filing-identity preservation,
+cross-filing non-canonicalization, same-accession duplicate collapse vs.
+conflict, determinism (rows, ordering, config hash), and no-writes safety;
+1 `local_data`-marked real-data integration test against the actual
+`data/xbrl.duckdb`.
+
+## Known limitations
+
+- Only 10 of the ~15 candidate evaluation tags have resolved qtrs
+  semantics; the remaining 5 raise `TruthContractError` until Task 2.2
+  freezes them.
+- Materiality/sampling policy is explicitly out of scope for this
+  contract (see above) — deferred to later Phase 2 work.
+- No accession-level canonicalization is performed for cases where a
+  company might file more than one 10-K covering an overlapping period —
+  not observed in this population, not specifically handled beyond the
+  generic same-accession-duplicate/period-alignment rules above.
+- Non-USD monetary facts (CAD, EUR, etc., a small fraction of the 15
+  candidate tags) are excluded entirely, not converted — no FX conversion
+  exists or is planned in Phase 2.
+- Does not touch EDGAR-CORPUS, chunking, embeddings, retrieval, or
+  generation in any way — purely an XBRL-fact-level contract.
+
+## Decisions explicitly deferred to later Phase 2 tasks
+
+```text
+Task 2.2 — freeze the complete ~15-tag registry (including the 5
+  unresolved-qtrs candidates), labels, allowed question templates,
+  coverage stats, configs/eval_tags.yaml
+Task 2.3 — ~3,000-question generation, materiality/sampling policy at
+  question-generation time, DEV/TEST split
+Task 2.8 — primary-document/inline-XBRL evidence alignment
+```
+
+## Next task
+
+Per `PROJECT_EXECUTION.md`: **2.2 — Freeze supported tag registry.**

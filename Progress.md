@@ -6338,8 +6338,257 @@ Phase 1 — Make It Work End to End             — COMPLETE WITH WARN
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.1 XBRL Truth Contract                     — COMPLETE
   2.2 Freeze Supported Tag Registry           — COMPLETE
-  2.3 Build the Full Evaluation Dataset       — NEXT
+  2.3 Build the Full Evaluation Dataset       — COMPLETE WITH NOTE
+  2.4 DEV/TEST Split                          — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
+
+Known Phase 2 note:
+Task 2.3's 50 narrative questions are LLM-generated and
+status=pending_review, not gold - see project_plan/PHASE2_EVALUATION_DATASET.md.
+```
+
+## 2026-08-31 — Phase 2.3 Build the Full Evaluation Dataset
+
+### Objective
+
+Build the project's authoritative full Phase 2 evaluation dataset from
+the frozen `[[PHASE2_TRUTH_CONTRACT]]` (Task 2.1) and frozen
+`[[PHASE2_TAG_REGISTRY]]` (Task 2.2) plus frozen SEC source data, across
+five categories (numeric, comparative, narrative, unanswerable,
+adversarial). Reproducible, versioned, traceable to source evidence,
+resistant to label leakage, retrieval-independent. Not DEV/TEST split -
+that is Task 2.4.
+
+### Initial State
+
+```text
+HEAD:                    171e104 "Add citation integrity smoke check"
+portable baseline:      427 passed, 0 failed (Task 2.2 exit state)
+registry_hash:            a230373e2a788423026142beb93c5c454a291f23468d46cfb40f5692e48b8070
+truth_contract_hash:         8ce68e8f53395f8f983e0002c53e62a31bb121b8551f28e739fcebb7f462988c
+```
+
+### Category Contract (explicit, documented policy)
+
+`project_plan/PROJECT_EXECUTION.md` gives no per-category counts for
+this task, only "approximately 3,000... categories such as...". Adopted
+historical proportions as an explicit documented policy rather than
+guessing silently, with two deliberate reductions:
+
+```text
+numeric:                                       2,000
+comparative (year_over_year_difference):         350
+comparative (cross_entity_comparison):           150
+narrative (llm_generated, pending_review):        50   (reduced from 200)
+unanswerable (year_outside_window):              100
+unanswerable (unsupported_tag):                  100
+adversarial (prompt_injection):                   20
+adversarial (financial_advice):                   20
+adversarial (off_scope):                          20   (reduced from ~33/subtype)
+total:                                          2,810
+```
+
+### The Narrative-Category Decision (user-directed, not guessed)
+
+Narrative questions historically require LLM generation + genuine human
+review before being labeled gold. The task's own rules forbid labeling
+unreviewed LLM output as gold and forbid using the same LLM as both
+generator and judge. No human-review pipeline exists in this project.
+Raised to the user directly via `AskUserQuestion` rather than silently
+picking a resolution - two explicit decisions, both binding:
+
+```text
+Q1: "Task 2.3 asks for 5 question categories... Narrative questions
+    historically require LLM generation + genuine human review before
+    being labeled 'gold'... I can't perform genuine human review myself.
+    How should I handle the narrative category?"
+A1: "Generate narrative questions via LLM, mark them pending_review."
+
+Q2: "Generating narrative questions means one live OpenRouter call per
+    question (same provider/model as Phase 1: openai/gpt-oss-20b). The
+    historical design targets ~200 narrative questions. How many should
+    I generate?"
+A2: "50"
+```
+
+Every narrative record carries `status: "pending_review"` (never
+`"accepted"`), plus `generation_provider`/`generation_requested_model`/
+`generation_response_model`/`generation_prompt_version`/
+`source_section_sha256` (hash of the full source section text, not just
+the 3,000-char excerpt sent to the model). Real build: 54 OpenRouter
+calls made, 50 accepted (4 skipped for empty/malformed responses),
+`temperature=0.0`, same provider/model as Phase 1.
+
+### Implementation
+
+`src/eval/evaluation_dataset.py` (new, pure logic, no I/O): record
+construction for all 5 categories, `selection_key()` (SHA-256 over
+NUL-joined UTF-8 parts - the Task 1.9/2.1/2.2 convention, never Python's
+salted `hash()`), `assign_question_ids()` (deterministic sort by
+category then subtype/tag/cik/fiscal_year/question text),
+`compute_dataset_sha256()` (canonical JSON: `sort_keys=True,
+separators=(",",":")`), `check_no_duplicate_questions()`,
+`check_no_leakage()`.
+
+`scripts/build_evaluation_dataset.py` (new, I/O layer): opens
+`data/xbrl.duckdb`, calls `src/eval/tag_registry.py::get_registry()` and
+`src/eval/truth_contract.py::eligible_facts()` for numeric/comparative
+ground truth (does not re-derive XBRL eligibility SQL independently),
+calls `src/generation/openrouter.py::OpenRouterProvider` (reused
+directly from Phase 1, no new provider code) for narrative, writes
+`results/phase_2_3_evaluation_dataset.json`,
+`results/phase_2_3_evaluation_dataset_summary.json`,
+`configs/phase_2_3_evaluation_dataset.json`. Idempotent-rewrite-refusal:
+`raise SystemExit` if the tracked dataset file already exists with a
+different `dataset_sha256` - the Task 1.9/1.10/2.1 pattern, reused here.
+
+### Bugs Found and Fixed During Real-Data Build
+
+```text
+1. Duplicate-check false positive, cross_entity_comparison: generic
+   semantic key used top-level cik/accession fields that don't exist on
+   cross-entity records (identity lives in operands) - every cross-
+   entity pair for the same (tag, year) looked like a duplicate. Fixed:
+   dedicated key (category, subtype, tag, fiscal_year, sorted(operand
+   ciks)).
+2. Duplicate-check false positive, year_over_year_difference: same root
+   cause (no top-level fiscal_year; one (cik,tag) legitimately produces
+   multiple distinct year-pair questions). Fixed: dedicated key
+   (category, subtype, cik, tag, operand fiscal_years).
+3. Leakage/duplicate checks were called before assign_question_ids() -
+   their error-reporting code (r["question_id"]) would KeyError instead
+   of raising the intended exception if a real leak/duplicate were
+   found. Fixed: assign IDs first, then leakage check, then duplicate
+   check.
+4. Config file written as JSON to a .yaml-extensioned path
+   (configs/phase_2_3_evaluation_dataset.yaml) - inconsistent with
+   project convention (JSON for machine-generated configs; YAML
+   reserved for the one human-curated file, configs/eval_tags.yaml, per
+   Task 2.2). Fixed: path changed to .json; wrongly-named file deleted
+   (git-untracked, safe); config regenerated from the same build_config
+   dict content without re-running narrative generation (no additional
+   OpenRouter calls spent on this fix).
+```
+
+All 4 caught before the artifact was committed, none required discarding
+the real 50-question narrative batch or re-spending API credits.
+
+### Determinism Verification
+
+2,760 of 2,810 records (all except narrative) confirmed byte-
+reproducible: two independent fresh-process builds of the deterministic
+categories produced identical `dataset_sha256` and identical question-ID
+ordering. The 50 narrative records are explicitly NOT claimed
+byte-reproducible - LLM output is not byte-stable even at
+`temperature=0.0` (consistent with Phase 1's own generation
+documentation); a rerun of narrative generation would very likely
+produce a different `dataset_sha256` and trip the overwrite-refusal
+guard, by design.
+
+### Independent Verification
+
+```text
+dataset_sha256 recomputed independently from the dataset file's own
+  question list, compared to stored value - match
+check_no_leakage() and check_no_duplicate_questions() re-run against the
+  real 2,810-record set - both pass
+15 numeric + 10 year-over-year + 10 cross-entity questions cross-checked
+  against raw XBRL via eligible_facts() (not by calling the generation
+  functions) - all matched
+55 questions manually inspected across all 5 categories (15 numeric, 10
+  comparative, 10 narrative, 10 unanswerable, 10 adversarial) - natural
+  wording, no leakage, semantically correct; no issues found
+```
+
+### Distribution Diagnostics
+
+```text
+category counts:      numeric 2000, comparative 500, unanswerable 200,
+                       adversarial 60, narrative 50
+fiscal_year skew:      2016 accounts for ~44% (1,243/2,810) - follows
+                       from the numeric-selection rule (one fact per
+                       (tag,cik), lowest adsh, deterministic order)
+                       combined with 2016 being the first supported year
+                       for most companies' earliest eligible filing -
+                       not a construction bug
+unique CIKs:           2,185; unique accessions: 1,831
+max per CIK:              4; max per accession: 4 (no hard cap enforced
+                       beyond the natural 1-per-(cik,tag) numeric rule)
+question length:       30-248 chars, median 95
+numeric magnitude:      0.0 to ~$895B
+```
+
+### Tests
+
+```text
+new Task 2.3 tests:  tests/test_evaluation_dataset.py (42 tests - 41
+  portable using synthetic FakeFact fixtures, 1 local_data-marked
+  real-dataset integration test: schema/provenance, independent hash
+  recompute, per-record registry cross-check, narrative status=
+  pending_review check, leakage/duplicate re-check on the real 2,810-
+  record set)
+doctor:              PASS
+portable suite:        (41 of the 42 new tests are portable; existing
+  427 unaffected)
+full suite:              469 passed, 0 failed
+```
+
+### Frozen-Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+data/edgar_corpus/:            test.parquet/train.parquet/validation.parquet
+                             present, unchanged
+data/raw/primary/:              present, unchanged
+```
+
+### Task 2.1 / Task 2.2 / Phase 1 Regression Gates
+
+`git diff --stat HEAD` over all tracked files: zero changes. All Task
+2.3 files are new/untracked - `src/eval/truth_contract.py`,
+`src/eval/tag_registry.py`, and `configs/eval_tags.yaml` byte-identical
+to their Task 2.2 committed state. No competing tag/qtrs/unit registry
+created in the new generator code - `build_evaluation_dataset.py` calls
+`get_registry()` and `eligible_facts()` directly rather than re-deriving
+eligibility. No Phase 1 module (`src/retrieval`, `src/generation`,
+`src/index`, `src/embeddings`, `src/chunk`, `src/normalize`, `src/cli`,
+`src/eval/citation_integrity.py`, `src/eval/smoke_dataset.py`,
+`src/eval/baseline_metrics.py`, Phase 1 result files) modified.
+
+### Files Created / Modified
+
+```text
+src/eval/evaluation_dataset.py                                (new)
+scripts/build_evaluation_dataset.py                           (new)
+tests/test_evaluation_dataset.py                              (new, 42 tests)
+results/phase_2_3_evaluation_dataset.json                     (new,
+  2,810 records, dataset_sha256=bf85e1a12ac70645d906a75fa79563c06dbb7620d6e870d4eb29505a326f922a)
+results/phase_2_3_evaluation_dataset_summary.json             (new)
+configs/phase_2_3_evaluation_dataset.json                     (new)
+project_plan/PHASE2_EVALUATION_DATASET.md                     (new)
+project_plan/REPOSITORY_STRUCTURE.md                          (updated
+  narrowly: src/eval/, configs/, scripts/ listings)
+Progress.md                                                    (this entry)
+```
+
+### Git
+
+```text
+git status --short before commit: new/untracked files only - 0
+  data/artifacts/venv/.env content stageable
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.3 commit: "Build Phase 2 evaluation
+dataset". No Phase 2 completion tag created (Phase 2 not yet complete -
+Tasks 2.4-2.8 remain). No remote configured - push deferred.
+
+### Result
+
+```text
+PASS, WITH NOTE: narrative category (50/2,810 questions) is LLM-
+generated and pending_review, not gold, pending a future human-review
+task. All other 2,760 questions are deterministic and byte-reproducible.
 ```

@@ -1,0 +1,30 @@
+{
+  "eval_set_version": "phase2-v1",
+  "category_targets": {
+    "numeric": 2000,
+    "comparative_year_over_year": 350,
+    "comparative_cross_entity": 150,
+    "narrative": 50,
+    "unanswerable_year_outside_window": 100,
+    "unanswerable_unsupported_tag": 100,
+    "adversarial_prompt_injection": 20,
+    "adversarial_financial_advice": 20,
+    "adversarial_off_scope": 20
+  },
+  "year_window": [
+    2016,
+    2020
+  ],
+  "selection_key_format": "sha256(purpose + '\u0000' + ...identifying parts), ascending",
+  "numeric_selection_rule": "one fact per (tag, cik) [lowest adsh], sorted by selection_key(tag, cik), first N per tag",
+  "comparative_yoy_rule": "same (cik, tag) with both fiscal_year Y and Y+1 eligible; difference = value(Y+1) - value(Y)",
+  "comparative_cross_entity_rule": "two distinct CIKs, same tag and fiscal_year, both eligible; expected_answer = company with the greater value",
+  "unanswerable_year_rule": "a real eligible company, asked about a fiscal year outside [2016, 2020]",
+  "unanswerable_tag_rule": "a real eligible company, asked about a real XBRL concept not in configs/eval_tags.yaml",
+  "adversarial_rule": "deterministic hand-reviewed templates; financial_advice templates reused across real companies",
+  "narrative_rule": "LLM-assisted (OpenRouter, same provider/model as Phase 1), one call per question, from real EDGAR-CORPUS section_1/1A/7/7A text; status=pending_review always, never accepted",
+  "arithmetic_rule": "Python float64 (matches source XBRL DOUBLE column); exact value serialized via repr() for deterministic round-trip; difference = later_year - earlier_year, no rounding",
+  "materiality_policy": "none applied - Task 2.1's exclusion of materiality from truth validity is preserved; Task 2.3 does not introduce a magnitude/sampling filter",
+  "no_dev_test_split": "PROJECT_EXECUTION.md Task 2.4 owns the company-disjoint DEV/TEST split; this dataset is split-ready (cik/fiscal_year/category/tag preserved) but not split",
+  "build_config_hash": "03c20e70565aa241ce224112f803ad58a5281431e3982ea7a1ba3607a84e26a1"
+}

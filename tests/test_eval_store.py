@@ -64,6 +64,26 @@ def test_metric_definitions_seeded(con):
     assert count == len(schema.METRIC_DEFINITIONS)
 
 
+def test_metric_definitions_resynced_on_reinit_without_duplicating(con):
+    # Simulate a Task-2.6-style registry content update (implemented
+    # flag changed) between two initialize_schema() calls on the SAME
+    # database - the row must be updated in place, never duplicated,
+    # and run-scoped eval_metrics rows must be untouched.
+    con.execute(
+        "UPDATE metric_definitions SET implemented = false WHERE metric_name = 'doc_recall@10'"
+    )
+    es.initialize_schema(con)  # should resync back to the real registry value
+    row = con.execute(
+        "SELECT implemented FROM metric_definitions WHERE metric_name = 'doc_recall@10'"
+    ).fetchone()
+    real_definition = next(m for m in schema.METRIC_DEFINITIONS if m.metric_name == "doc_recall@10")
+    assert row[0] == real_definition.implemented
+    count = con.execute(
+        "SELECT COUNT(*) FROM metric_definitions WHERE metric_name = 'doc_recall@10'"
+    ).fetchone()[0]
+    assert count == 1  # never duplicated
+
+
 # --------------------------------------------------------------- run lifecycle
 
 def test_start_run_returns_unique_ids(con):

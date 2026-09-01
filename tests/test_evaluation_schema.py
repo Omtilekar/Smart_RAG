@@ -87,9 +87,12 @@ def test_doc_recall_implemented_and_available():
     assert m.available_for_current_gold is True
 
 
-def test_chunk_recall_not_implemented_not_available():
+def test_chunk_recall_implemented_but_not_available_for_current_gold():
+    # Task 2.6: the formula is implemented and hand-tested, but no
+    # chunk/evidence-level gold labels exist yet - implemented and
+    # available_for_current_gold are independent flags (Section 4/40).
     m = next(m for m in schema.METRIC_DEFINITIONS if m.metric_name == "chunk_recall@10")
-    assert m.implemented is False
+    assert m.implemented is True
     assert m.available_for_current_gold is False
 
 

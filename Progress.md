@@ -6341,7 +6341,8 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.3 Build the Full Evaluation Dataset       — COMPLETE WITH NOTE
   2.4 DEV/TEST Split                          — COMPLETE
   2.5 Evaluation Schema                       — COMPLETE
-  2.6 Metric Unit Tests                       — NEXT
+  2.6 Metric Unit Tests                       — COMPLETE
+  2.7 MS MARCO Harness Validation              — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
@@ -6352,6 +6353,9 @@ status=pending_review, not gold - see project_plan/PHASE2_EVALUATION_DATASET.md.
 Task 2.4's DEV/TEST split inherits this: 35/50 pending narrative
 questions landed in DEV, 15/50 in TEST, none promoted to gold - see
 project_plan/PHASE2_DEV_TEST_SPLIT.md.
+Task 2.6 deferred numeric_tolerance_match/citation_grounding/faithfulness
+(no frozen tolerance policy / no evidence gold / needs LLM judge) - see
+project_plan/PHASE2_METRIC_TESTS.md.
 ```
 
 ## 2026-08-31 — Phase 2.3 Build the Full Evaluation Dataset
@@ -7160,4 +7164,314 @@ PASS
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.5 Evaluation Schema                       — COMPLETE
   2.6 Metric Unit Tests                       — NEXT
+```
+
+## 2026-09-01 — Phase 2.6 Metric Unit Tests
+
+### Objective
+
+Implement hand-constructed, independently verifiable unit tests for the
+project's evaluation metrics (Recall@K, document Recall@K, chunk
+Recall@K, MRR, nDCG@K, numeric exact match, refusal metrics) so later
+Phase 3 experiments cannot produce plausible-looking but mathematically
+incorrect results. Every expected value derived by hand before the
+implementation ran - never by calling the function under test to
+produce its own expected answer.
+
+### Initial State
+
+```text
+HEAD:                    28cd046 "Add Phase 2 evaluation schema"
+portable baseline:      564 passed, 16 deselected
+evaluation_schema_version: 1
+evaluation_schema_hash:   13aec6b2d80d1be70f3d8117bf4914274605910697f88d058f93bfe933332338
+registered metrics:      11
+implemented before:       2 (doc_recall@10, citation_format_compliance)
+available-for-current-gold before: 7
+full suite (pre-Task 2.6): 580 passed
+```
+
+### Authoritative Sources
+
+`PROJECT_EXECUTION.md`'s Task 2.6 section (Recall@K, document Recall@K,
+chunk Recall@K, MRR, nDCG@K, exact match, refusal metrics when
+applicable - "use tiny hand-constructed examples") confirmed materially
+consistent with this task's own detailed prompt - no discrepancy
+requiring a stop.
+
+### Metric Registry Before
+
+All 11 metrics inspected via `schema.METRIC_DEFINITIONS` before writing
+any code - printed name/version/level/implemented/available_for_current_
+gold/required_gold_type/applicable_categories for every entry, matching
+the values recorded when Task 2.5 shipped (none had drifted).
+
+### Scope Decision
+
+**Implemented this task**: `chunk_recall@10`/`chunk_mrr` formulas
+(mathematically tested on synthetic labels, `available_for_current_gold`
+stays false - no real chunk gold exists), `doc_mrr`, `doc_ndcg@10`
+(binary relevance, `1/log2(rank+1)` discount), `numeric_exact_match`
+(canonical-float + unit comparison), `correct_refusal_rate` (structured
+label comparison), and the shared `aggregate_rate` primitive.
+**Deliberately deferred** (all per explicit Stop Conditions, not
+oversights): `numeric_tolerance_match` (no tolerance policy frozen
+anywhere - Stop Condition B), `citation_grounding` (needs evidence-level
+gold that doesn't exist - Stop Condition E), `faithfulness` (needs an
+LLM judge - Stop Condition D, no OpenRouter/OpenAI/Anthropic call made).
+No retrieval, generator, guardrail, CRAG, router, or reranker code was
+implemented despite corresponding metric names existing in the registry
+(Section 5). `doc_recall@50` was not added - `PROJECT_EXECUTION.md`
+names "Recall@K" generically, not a specific k=50 requirement (Section
+30) - deferred, not silently added.
+
+### Implemented Metric Functions
+
+New `src/eval/metrics.py` (pure, no I/O - verified by a source-inspection
+test that `duckdb`/`open(`/`requests`/`subprocess`/`OpenRouter` never
+appear in it): `aggregate_rate`, `first_hit_rank`/`hit_at_k`,
+`reciprocal_rank`/`mean_reciprocal_rank`, `dcg_at_k`/`idcg_at_k`/
+`ndcg_at_k`, `numeric_exact_match`, `correct_refusal`.
+**`doc_recall@10` itself was NOT reimplemented** -
+`src/eval/baseline_metrics.py` (Task 1.10) remains the frozen,
+authoritative implementation; `first_hit_rank()` reproduces its exact
+hit/first-hit-rank definition generically (any ID granularity, any k)
+and was verified to agree with it on identical fixtures
+(`test_agrees_with_task_1_10_baseline_metrics_hit_and_rank`, `..._miss`).
+`src/eval/baseline_metrics.py` was not modified.
+
+### Hand-Constructed Fixtures
+
+Toy fixture (Section 37, k=10, one relevant doc per question): Q1=rank1,
+Q2=rank2, Q3=rank10, Q4=rank11 (miss - outside k=10), Q5=no relevant
+result. Hand-derived: `recall@10=0.6`, `MRR=0.32`, per-question
+`doc_ndcg@10` = [1.0, 0.6309297535714575, 0.2890648263178879, 0.0,
+not-applicable], mean nDCG@10 over Q1-Q4 = 0.47999864497233635.
+Separate multi-relevant fixture (Section 38): gold={A,B,C},
+retrieved=[X,B,Y,A,Z] -> hand-derived DCG@5=1.0616063116448506,
+IDCG@5=2.1309297535714578, nDCG@5=0.49818925746641285. Duplicate-chunk
+fixture (Section 39): ranks 1-2 both document X (different chunks),
+rank 3 target document Y -> `first_hit_rank=3`, no dedup before cutoff.
+All derivations written out with raw `math.log2` arithmetic directly in
+`tests/test_metrics.py` and mirrored in
+`project_plan/PHASE2_METRIC_TESTS.md` - never computed by calling the
+function under test.
+
+### Recall Tests
+
+Boundary cases: rank1=hit, rank10=hit (boundary), rank11=miss (genuine
+boundary - target absent from the returned window, not merely renumbered),
+no-target=miss, empty results=miss (no error), fewer-than-k results,
+multiple-relevant-first-one-wins, duplicate-document-chunks
+(first-hit-rank counts the chunk rank, not a deduplicated document
+rank). `aggregate_rate` hand example: 3 hits / 4 questions = 0.75,
+numerator/denominator/value cross-checked to agree.
+
+### MRR Tests
+
+Rank1=1.0, rank2=0.5, rank4=0.25, no-relevant=0.0, invalid rank(0)
+raises `MetricInputError`. Explicit regression proving MRR is neither
+mean-rank nor 1/mean-rank. Full toy-fixture MRR=0.32 and the
+Section-10-prompt's own worked example (ranks=[1,2,4,miss] ->
+MRR=0.4375) both verified exactly via `pytest.approx(..., abs=1e-12)`.
+
+### nDCG Tests
+
+Perfect ranking = 1.0; reversed ranking hand-derived via raw
+`1/math.log2(4)`; zero-hit = 0.0; no-relevant-items-in-gold returns
+`None` (explicit N/A convention, never a fake 0.0); cutoff boundary
+(rank 10 contributes, rank 11 truncated - `1/log2(11)` vs. `0.0`
+exactly); binary-relevance enforcement (`dcg_at_k([2,0,1], ...)` raises
+`MetricInputError` - graded relevance rejected since no graded gold
+exists); range invariant `0 <= nDCG <= 1` swept over k in {1,5,10}.
+
+### Numeric Tests
+
+Exact match, different value, zero, negative, negative-vs-positive,
+large value (~$895B), small decimal, representation equivalence
+(`"1000000.0"`/`"1000000"`/`"1e6"` all equal), EPS case (unit
+confirmed `"USD"` from the real `configs/eval_tags.yaml` registry, never
+`"USD/shares"` - re-verified directly, not assumed from this task's
+prompt text), same-value-wrong-unit (`100 USD` != `100 shares` -
+Section 17 currency/unit safety, no conversion, no inference), invalid
+parse on either side raises `MetricInputError` rather than crashing or
+silently coercing.
+
+### Refusal Tests
+
+Structured match/mismatch (`expected_behavior == observed_behavior`,
+never substring matching on free text); hand example (4 refusal cases,
+3 correct) -> `aggregate_rate` = 0.75, numerator=3, denominator=4.
+
+### Error/N-A Semantics
+
+`aggregate_rate()` never receives a flag for a non-applicable question -
+callers filter by category/subtype applicability first (numeric metrics
+never apply to adversarial questions; refusal metrics never apply to
+ordinary numeric questions), so `N/A != 0` by construction. Documented
+explicitly (not re-tested against live retrieval/generation code, since
+no such code runs in Task 2.6) that a question whose
+`eval_question_results.status` is `retrieval_error`/`generation_error`/
+`timeout`/`schema_error` must be excluded from a metric's applicable set
+the same way, never scored `False`.
+
+### Metric Registry After
+
+```text
+chunk_recall@10:          implemented false -> true  (available_for_current_gold stays false)
+doc_mrr:                  implemented false -> true  (available_for_current_gold true, unchanged)
+chunk_mrr:                implemented false -> true  (available_for_current_gold stays false)
+doc_ndcg@10:               implemented false -> true  (available_for_current_gold true, unchanged)
+numeric_exact_match:       implemented false -> true  (available_for_current_gold true, unchanged)
+correct_refusal_rate:      implemented false -> true  (available_for_current_gold true, unchanged)
+numeric_tolerance_match:   unchanged (false / true)    - deferred, tolerance policy not frozen
+citation_grounding:        unchanged (false / false)   - deferred, no evidence gold
+faithfulness:              unchanged (false / false)   - deferred, needs LLM judge
+doc_recall@10:             unchanged (true / true)
+citation_format_compliance: unchanged (true / true)
+```
+
+`available_for_current_gold` was changed for exactly zero metrics - only
+`implemented` flags changed, and only where a real, hand-tested
+implementation now exists in this repository.
+
+### Schema Hash/Version Impact
+
+```text
+evaluation_schema_version: 1 -> 1  (UNCHANGED - no table/column/constraint changed)
+evaluation_schema_hash:    13aec6b2d80d1be70f3d8117bf4914274605910697f88d058f93bfe933332338
+                        -> 7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126
+```
+
+Change explicitly justified in `project_plan/PHASE2_METRIC_TESTS.md`:
+`implemented` is registry metadata about code state, not a change to any
+metric's mathematical definition (no `metric_version` changed), so
+version stays 1 - matching Task 2.2's precedent (content-hash changes
+without a version bump when semantics/comparability are preserved).
+
+**Real-DB gap found and fixed while doing this**: Task 2.5's
+`initialize_schema()` only inserted missing `metric_definitions` rows -
+it never updated an existing row's content, so the real `eval.duckdb`
+would have kept the stale `implemented=false` values forever. Extended
+it to UPSERT (update-if-changed, insert-if-missing) - never touches
+run-scoped `eval_runs`/`eval_question_results`/`eval_metrics`, only the
+shared `metric_definitions` table. New regression test:
+`test_metric_definitions_resynced_on_reinit_without_duplicating`.
+`scripts/init_evaluation_schema.py` re-run (copy-test first, then the
+real database) to apply the resync - `test_access_log` verified
+byte-identical (2 rows) before and after, `eval_runs`/
+`eval_question_results` row counts still 0/0 in the real DB.
+
+### Eval Store Round Trip
+
+`tests/test_metrics.py::test_metric_round_trip_through_eval_store`
+(in-memory DuckDB): built the 5-question toy fixture, computed
+`doc_recall@10` via `aggregate_rate` (0.6, 3/5), persisted via
+`eval_store.record_metric()`, read back exact match, then
+**independently re-aggregated** from the persisted
+`eval_question_results.doc_first_hit_rank` rows (never trusting the
+stored `eval_metrics` row) - both aggregations agreed exactly. No
+synthetic rows written to the real `artifacts/eval/eval.duckdb`.
+
+### TEST Discipline
+
+`artifacts/eval/phase_2_4_test.json` never read; `load_test_set()` never
+called. Official TEST evaluation runs consumed: **0/3** (independently
+re-verified: `test_access_log` still holds exactly 2 `build_validation`
+rows, unchanged since Task 2.4).
+
+### Regression Gates
+
+`git diff --stat HEAD` over every Task 2.4 artifact (`results/phase_2_4_
+*.json`, `configs/phase_2_4_dev_test_split.json`, `src/eval/
+dev_test_split.py`, `src/eval/test_access.py`), every Task 2.1-2.3
+artifact, and every Phase 1 module: zero changes. Task 2.4 numbers
+independently re-verified from the untouched manifest (no TEST read):
+DEV=1,932, TEST=828, CI=200, pending_narrative=50. Only the justified
+Task 2.5 files changed:
+`src/eval/evaluation_schema.py` (metric flags),
+`src/eval/eval_store.py` (upsert fix), and
+`results/phase_2_5_evaluation_schema.json` (regenerated snapshot).
+
+### Tests
+
+```text
+new Task 2.6 tests: tests/test_metrics.py (58 tests - rate aggregation,
+  recall/first-hit-rank boundaries, MRR, nDCG (perfect/reversed/zero-hit/
+  N/A/cutoff/binary-enforcement/range-invariant), numeric exact match
+  (10 cases including EPS/unit-safety/invalid-parse), correct refusal,
+  citation_format_compliance aggregation regression, property invariants,
+  no-I/O source check, eval_store round trip); tests/test_evaluation_
+  schema.py (1 test updated: chunk_recall@10's implemented flag flipped
+  true, matching the Task 2.6 change); tests/test_eval_store.py (1 test
+  added: metric_definitions resync-on-reinit)
+doctor:              PASS
+portable suite:      unaffected baseline + 58 new
+full suite:          639 passed, 0 failed (was 580; +59 net new tests)
+```
+
+### Frozen Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+data/edgar_corpus/:         test.parquet/train.parquet/validation.parquet - unchanged
+artifacts/eval/phase_2_4_test.json: test_sha256 independently recomputed,
+  matches stored value - unchanged
+```
+
+### Files Created / Modified
+
+```text
+src/eval/metrics.py                                             (new)
+tests/test_metrics.py                                                (new, 58 tests)
+src/eval/evaluation_schema.py                                          (modified:
+  6 metric implemented flags updated, available_for_current_gold
+  unchanged for all 11 metrics)
+src/eval/eval_store.py                                                   (modified:
+  initialize_schema() now upserts metric_definitions content)
+tests/test_evaluation_schema.py                                            (1 test
+  updated for the chunk_recall@10 flag change)
+tests/test_eval_store.py                                                     (1 test
+  added: metric_definitions resync)
+results/phase_2_5_evaluation_schema.json                                       (regenerated:
+  new evaluation_schema_hash, version unchanged)
+artifacts/eval/eval.duckdb                                                       (metric_definitions
+  resynced, GITIGNORED, test_access_log rows unchanged)
+project_plan/PHASE2_METRIC_TESTS.md                                                (new)
+project_plan/REPOSITORY_STRUCTURE.md                                                (updated
+  narrowly: src/eval/ listing)
+Progress.md                                                                          (this entry)
+```
+
+No Task 2.1-2.4 artifact, no Phase 1 module, and no frozen `data/`
+content modified. No network, no LLM, no GPU, no API credits spent.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - 0 data/artifacts/venv/.env content stageable
+git add -n .:            artifacts/eval/eval.duckdb and
+  artifacts/eval/phase_2_4_test.json absent from the dry-run list
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.6 commit: "Implement and verify Phase 2
+evaluation metrics" (chosen over the suggested "Add hand-verified
+evaluation metric tests" since this task legitimately implements several
+deterministic metrics, not only tests). No Phase 2 completion tag
+created (Tasks 2.7-2.8 remain). No remote configured - push deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.6 Metric Unit Tests                       — COMPLETE
+  2.7 MS MARCO Harness Validation             — NEXT
 ```

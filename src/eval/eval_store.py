@@ -89,19 +89,31 @@ def initialize_schema(con: duckdb.DuckDBPyConnection) -> None:
 
     for row in schema.metric_definitions_rows():
         existing = con.execute(
-            "SELECT 1 FROM metric_definitions WHERE metric_name = ? AND metric_version = ?",
+            "SELECT level, description, higher_is_better, required_gold_type, applicable_categories, "
+            "parameters, implemented, available_for_current_gold FROM metric_definitions "
+            "WHERE metric_name = ? AND metric_version = ?",
             [row["metric_name"], row["metric_version"]],
         ).fetchone()
+        values = [
+            row["metric_name"], row["metric_version"], row["level"], row["description"],
+            row["higher_is_better"], row["required_gold_type"], row["applicable_categories"],
+            row["parameters"], row["implemented"], row["available_for_current_gold"],
+        ]
         if existing is None:
+            con.execute("INSERT INTO metric_definitions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
+        elif tuple(existing) != tuple(values[2:]):
+            # Registry metadata (implemented/available_for_current_gold/
+            # description/...) is code-owned and safely re-synced on
+            # every initialize_schema() call - this never touches
+            # run-scoped evidence (eval_metrics), only the shared
+            # definitions table, and the metric_name+metric_version
+            # identity (the actual formula/semantics contract) never
+            # changes here.
             con.execute(
-                """
-                INSERT INTO metric_definitions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    row["metric_name"], row["metric_version"], row["level"], row["description"],
-                    row["higher_is_better"], row["required_gold_type"], row["applicable_categories"],
-                    row["parameters"], row["implemented"], row["available_for_current_gold"],
-                ],
+                "UPDATE metric_definitions SET level=?, description=?, higher_is_better=?, "
+                "required_gold_type=?, applicable_categories=?, parameters=?, implemented=?, "
+                "available_for_current_gold=? WHERE metric_name=? AND metric_version=?",
+                values[2:] + [row["metric_name"], row["metric_version"]],
             )
 
 

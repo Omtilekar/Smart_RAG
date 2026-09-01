@@ -1,8 +1,8 @@
 {
   "evaluation_schema_version": 1,
-  "evaluation_schema_hash": "13aec6b2d80d1be70f3d8117bf4914274605910697f88d058f93bfe933332338",
-  "created_at_utc": "2026-09-01T04:11:35.329913+00:00",
-  "git_sha": "e0791b3a76a6cdbad515655d90731c09f4917c56",
+  "evaluation_schema_hash": "7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126",
+  "created_at_utc": "2026-09-01T06:17:01.977489+00:00",
+  "git_sha": "28cd04681c0146d0f9e80167b28b0947b260e43c",
   "database_path": "artifacts/eval/eval.duckdb",
   "tables": {
     "eval_schema_metadata": {
@@ -782,7 +782,7 @@
       "required_gold_type": "chunk/evidence-level gold (not yet created)",
       "applicable_categories": "numeric,comparative,narrative,unanswerable",
       "parameters": "{\"k\":10}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": false
     },
     {
@@ -794,7 +794,7 @@
       "required_gold_type": "document-level gold (Task 1.9 smoke set)",
       "applicable_categories": "numeric,comparative,narrative,unanswerable",
       "parameters": "{}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": true
     },
     {
@@ -806,31 +806,31 @@
       "required_gold_type": "chunk/evidence-level gold (not yet created)",
       "applicable_categories": "numeric,comparative,narrative,unanswerable",
       "parameters": "{}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": false
     },
     {
       "metric_name": "doc_ndcg@10",
       "metric_version": "1.0",
       "level": "document",
-      "description": "Normalized discounted cumulative gain over document-level relevance in the top-10 retrieved results.",
+      "description": "Normalized discounted cumulative gain (binary relevance) over document-level relevance in the top-10 retrieved results.",
       "higher_is_better": true,
       "required_gold_type": "document-level gold (Task 1.9 smoke set)",
       "applicable_categories": "numeric,comparative,narrative,unanswerable",
       "parameters": "{\"k\":10}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": true
     },
     {
       "metric_name": "numeric_exact_match",
       "metric_version": "1.0",
       "level": "answer",
-      "description": "Exact match between the system's predicted numeric value/unit and the Task 2.3 gold expected_value/expected_unit.",
+      "description": "Exact match (canonical parsed value + unit) between the system's predicted numeric value/unit and the Task 2.3 gold expected_value/expected_unit.",
       "higher_is_better": true,
       "required_gold_type": "Task 2.3 numeric/comparative gold",
       "applicable_categories": "numeric,comparative",
       "parameters": "{}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": true
     },
     {
@@ -841,7 +841,7 @@
       "higher_is_better": true,
       "required_gold_type": "Task 2.3 numeric/comparative gold",
       "applicable_categories": "numeric,comparative",
-      "parameters": "{\"relative_tolerance\":0.01}",
+      "parameters": "{}",
       "implemented": false,
       "available_for_current_gold": true
     },
@@ -854,7 +854,7 @@
       "required_gold_type": "Task 2.3 unanswerable/adversarial expected_behavior",
       "applicable_categories": "unanswerable,adversarial",
       "parameters": "{}",
-      "implemented": false,
+      "implemented": true,
       "available_for_current_gold": true
     },
     {

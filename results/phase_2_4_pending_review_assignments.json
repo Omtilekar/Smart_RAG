@@ -1,0 +1,306 @@
+{
+  "schema_version": "1.0",
+  "split_version": "phase2-split-v1",
+  "assignments": [
+    {
+      "question_id": "phase2-eval-002501",
+      "component_id": "cik-6955",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002502",
+      "component_id": "cik-27673",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002503",
+      "component_id": "cik-31107",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002504",
+      "component_id": "cik-31107",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002505",
+      "component_id": "cik-59440",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002506",
+      "component_id": "cik-69733",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002507",
+      "component_id": "cik-744825",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002508",
+      "component_id": "cik-815093",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002509",
+      "component_id": "cik-864240",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002510",
+      "component_id": "cik-899751",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002511",
+      "component_id": "cik-910679",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002512",
+      "component_id": "cik-1010086",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002513",
+      "component_id": "cik-1014111",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002514",
+      "component_id": "cik-1018399",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002515",
+      "component_id": "cik-1023313",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002516",
+      "component_id": "cik-1032220",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002517",
+      "component_id": "cik-1056288",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002518",
+      "component_id": "cik-1058090",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002519",
+      "component_id": "cik-1099369",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002520",
+      "component_id": "cik-1113313",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002521",
+      "component_id": "cik-1131096",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002522",
+      "component_id": "cik-1140102",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002523",
+      "component_id": "cik-1140536",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002524",
+      "component_id": "cik-1145765",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002525",
+      "component_id": "cik-1156041",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002526",
+      "component_id": "cik-1158863",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002527",
+      "component_id": "cik-1175680",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002528",
+      "component_id": "cik-1212545",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002529",
+      "component_id": "cik-1253986",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002530",
+      "component_id": "cik-1307954",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002531",
+      "component_id": "cik-1463208",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002532",
+      "component_id": "cik-1473579",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002533",
+      "component_id": "cik-1495536",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002534",
+      "component_id": "cik-1507079",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002535",
+      "component_id": "cik-1524472",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002536",
+      "component_id": "cik-1533998-1618921",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002537",
+      "component_id": "cik-1568969",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002538",
+      "component_id": "cik-1582982",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002539",
+      "component_id": "cik-1606254",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002540",
+      "component_id": "cik-1617351",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002541",
+      "component_id": "cik-1622229",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002542",
+      "component_id": "cik-1636051",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002543",
+      "component_id": "cik-1640428",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002544",
+      "component_id": "cik-1658520",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002545",
+      "component_id": "cik-1687229",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002546",
+      "component_id": "cik-1704715",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002547",
+      "component_id": "cik-1723128",
+      "assigned_split": "test",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002548",
+      "component_id": "cik-1784970",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002549",
+      "component_id": "cik-1810019",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    },
+    {
+      "question_id": "phase2-eval-002550",
+      "component_id": "cik-1821769",
+      "assigned_split": "dev",
+      "status": "pending_review"
+    }
+  ]
+}

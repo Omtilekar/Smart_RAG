@@ -1,0 +1,21 @@
+{
+  "split_version": "phase2-split-v1",
+  "dev_fraction": 0.7,
+  "test_fraction": 0.3,
+  "grouping": {
+    "entity_key": "cik",
+    "multi_entity_component_policy": "connected component over CIKs co-occurring in a cross_entity_comparison question; never split"
+  },
+  "stratification": {
+    "sic": "derived from data/raw/xbrl/*.zip sub.txt, most-frequent-among-component-accessions with (count desc, sic asc) tie-break; unknown if no accession resolves",
+    "fiscal_year": "measured, not forced - components assigned by deterministic greedy balance on gold_count only",
+    "category": "measured, not forced",
+    "subtype": "measured, not forced"
+  },
+  "pending_review_policy": "narrative pending_review records inherit their company's component split; never promoted to gold; excluded from gold DEV/TEST counts and ratio target",
+  "entity_free_policy": "prompt_injection/off_scope/financial_advice carry no structured cik field - each entity-free question is its own singleton pseudo-component with zero leakage risk, assigned after all CIK-based components via the same deterministic greedy balance",
+  "tie_break_algorithm": "SHA-256 (src.eval.evaluation_dataset.selection_key) over canonical component/question identity; never Python hash()",
+  "source_dataset_version": "phase2-v1",
+  "source_dataset_sha256": "bf85e1a12ac70645d906a75fa79563c06dbb7620d6e870d4eb29505a326f922a",
+  "split_config_hash": "c3f36d987e794bf7ebd8d395659de2f6b19db4bf7357319037b9c6dc7f19eb5f"
+}

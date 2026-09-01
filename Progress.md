@@ -6339,7 +6339,8 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.1 XBRL Truth Contract                     — COMPLETE
   2.2 Freeze Supported Tag Registry           — COMPLETE
   2.3 Build the Full Evaluation Dataset       — COMPLETE WITH NOTE
-  2.4 DEV/TEST Split                          — NEXT
+  2.4 DEV/TEST Split                          — COMPLETE
+  2.5 Evaluation Schema                       — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
@@ -6347,6 +6348,9 @@ Task 1.7a citation-format compliance remains 8/10.
 Known Phase 2 note:
 Task 2.3's 50 narrative questions are LLM-generated and
 status=pending_review, not gold - see project_plan/PHASE2_EVALUATION_DATASET.md.
+Task 2.4's DEV/TEST split inherits this: 35/50 pending narrative
+questions landed in DEV, 15/50 in TEST, none promoted to gold - see
+project_plan/PHASE2_DEV_TEST_SPLIT.md.
 ```
 
 ## 2026-08-31 — Phase 2.3 Build the Full Evaluation Dataset
@@ -6591,4 +6595,276 @@ Tasks 2.4-2.8 remain). No remote configured - push deferred.
 PASS, WITH NOTE: narrative category (50/2,810 questions) is LLM-
 generated and pending_review, not gold, pending a future human-review
 task. All other 2,760 questions are deterministic and byte-reproducible.
+```
+
+## 2026-09-01 — Phase 2.4 DEV/TEST Split
+
+### Objective
+
+Split the frozen Task 2.3 evaluation dataset into company-disjoint
+DEV (~70%) / TEST (~30%), preventing any company/entity leakage
+(including secondary entities inside cross-entity questions), stratified
+where practical by SIC/fiscal year/category/subtype, versioned and
+hashed, with TEST protected from accidental tracking/inspection and a
+200-question CI regression subset drawn only from DEV.
+
+### Initial State
+
+```text
+HEAD:                    8d41fef "Build Phase 2 evaluation dataset"
+portable baseline:      457 passed, 12 deselected
+Task 2.3 dataset path:   results/phase_2_3_evaluation_dataset.json
+Task 2.3 dataset hash:   bf85e1a12ac70645d906a75fa79563c06dbb7620d6e870d4eb29505a326f922a
+Task 2.3 record count:   2,810 (2,760 gold-ready + 50 pending_review narrative)
+full test suite (pre-Task 2.4): 469 passed
+```
+
+### Task 2.3 Source Identity
+
+Recomputed `dataset_sha256` independently from the dataset file's own
+question list before touching anything (`ed.compute_dataset_sha256`) -
+matched the stored value and the task file's expected reference exactly.
+`scripts/build_dev_test_split.py` performs this same check on every run
+and `raise SystemExit` on mismatch - never splits an altered dataset.
+Task 2.3's own files were treated as frozen, read-only input; none
+modified.
+
+### Split Contract
+
+Company-disjoint, never question-level. Priority order enforced exactly
+as specified: (1) zero company leakage, (2) never split a connected
+component, (3) never promote pending_review to gold, (4) approximate
+70/30 by gold count, (5) approximate category/subtype/year/SIC balance.
+`project_plan/PHASE2_DEV_TEST_SPLIT.md` has the full design rationale.
+
+### Entity Grouping
+
+`src/eval/dev_test_split.py::extract_participating_ciks()` inspected the
+actual Task 2.3 schema per subtype rather than assuming a field:
+numeric/narrative/unanswerable/year-over-year carry one top-level `cik`;
+`cross_entity_comparison` carries two CIKs inside `operands[].cik`;
+`prompt_injection`/`off_scope` carry no company field at all;
+`financial_advice` bakes a real company name into the rendered question
+text but - discovered while inspecting the schema, not assumed - does
+NOT persist a structured `cik` field, so it is treated as entity-free
+(documented as a design characteristic of the frozen Task 2.3 schema in
+`project_plan/PHASE2_DEV_TEST_SPLIT.md`, not silently patched or treated
+as a Task 2.3 bug, since `financial_advice`'s correct gold behavior does
+not depend on any retrieved company fact).
+
+### Cross-Entity Connected Components
+
+Union-find over CIKs, edges from every `cross_entity_comparison`
+question's two operand CIKs. Real result: 150 cross-entity questions,
+150 unique CIK edges, 2,229 connected components total, largest
+component size 4. Chained cross-entity questions correctly merge into
+one indivisible multi-company component.
+
+### SIC Mapping
+
+`data/xbrl.duckdb`'s `submissions` table has no `sic` column (verified
+via `information_schema.columns`, not assumed). Read directly and
+read-only from `data/raw/xbrl/*.zip`'s `sub.txt` member (36 quarterly
+zips, 2016q1-2024q4) - `adsh -> sic`, no download, no write-back to
+frozen source. Component-level representative SIC: most frequent SIC
+among the component's real Task 2.3 accessions, tie-broken by
+(count desc, SIC code asc); `sic = "unknown"` (never guessed) when no
+accession resolves.
+
+### Stratification
+
+Measured, not forced - a byproduct of assigning ~2,270 small components
+via deterministic greedy balance on total gold count. Real numbers (see
+`project_plan/PHASE2_DEV_TEST_SPLIT.md` for full tables): numeric
+1402/598 (70.1%/29.9%), cross_entity_comparison 105/45 (70/30 exactly),
+year_over_year_difference 244/106 (69.7%/30.3%), fiscal-year 2016
+883/347 (71.8%/28.2%). Small adversarial subtypes (20 items each) show
+visible quantization noise (prompt_injection 16/4 = 80%/20%) - not
+claimed to be perfect, and documented as such.
+
+### DEV/TEST Counts
+
+```text
+gold_total:    2,760
+DEV gold:      1,932  (70.00%)
+TEST gold:       828  (30.00%)
+unique CIKs:   DEV 1,657 / TEST 688 (zero overlap)
+unique accessions: DEV 1,931 / TEST 824 (zero overlap, sums to 2,755 = full gold accession pool)
+```
+
+### Pending Narrative Handling
+
+All 50 narrative records threaded through the same component graph as
+gold records - inherit their company's component split, never a
+separate decision. Real result: 35 DEV, 15 TEST, 0 promoted to gold, 0
+included in the gold DEV/TEST counts or ratio target.
+`results/phase_2_4_pending_review_assignments.json` records
+question_id/component_id/assigned_split/status only (no question text)
+so a future human-review task can accept/reject without rerunning the
+split.
+
+### CI Golden Set
+
+Exactly 200 questions, drawn only from DEV (`select_ci_golden` -
+largest-remainder subtype quota, then `selection_key`-hash-ordered
+deterministic draw within each subtype), zero from TEST, zero
+pending_review narrative. Marked `"reportable_benchmark": false` in
+`results/phase_2_4_ci_golden.json` itself - never a headline result.
+
+### TEST Protection
+
+`artifacts/eval/phase_2_4_test.json` and `artifacts/eval/eval.duckdb`
+are covered by the project's existing `.gitignore` (the `artifacts/` and
+`*.duckdb` rules from Task 0's foundation work) - no new ignore rule
+needed. Verified: `git check-ignore -v artifacts/eval/phase_2_4_test.json`
+matches; `git add -n .` never lists the TEST file.
+`results/phase_2_4_split_manifest.json` (tracked) carries only
+`question_id`/`split`/`status`/`component_id` per row for all 2,810
+questions - verified programmatically
+(`tests/test_dev_test_split.py::test_manifest_contains_no_test_payload`)
+that no question text, expected value, or expected answer ever appears
+in it.
+
+### TEST Access Logging
+
+`src/eval/test_access.py::load_test_set(purpose)` is the only sanctioned
+TEST reader - re-verifies the loaded file's hash against the tracked
+manifest's `test_sha256` before returning content, and logs every access
+to `artifacts/eval/eval.duckdb`'s `test_access_log` table
+(`access_id`/`timestamp_utc`/`git_sha`/`eval_set_version`/
+`source_dataset_sha256`/`split_version`/`test_sha256`/`kind`/`purpose`/
+`run_number`). Task 2.4's own build/validation access is logged as
+`kind="build_validation"` and does not count toward the 3-run budget;
+only `kind="evaluation_access"` (from `load_test_set()`) counts. Purpose
+must be one of `baseline_rerank`/`router_crag`/`final` (the task's own
+suggested names - `PROJECT_EXECUTION.md` names no exact milestone
+strings for this, so nothing was invented); a fourth evaluation access
+raises `TestAccessError` unless `allow_override=True` is passed
+explicitly. Task 2.4 consumed **zero** official evaluation runs - its
+own access was logged as `build_validation`, verified by inspecting
+`eval.duckdb` directly after the build.
+
+### Distribution Diagnostics
+
+Full category/subtype/fiscal-year/SIC/unique-CIK/unique-accession/
+component-count/largest-component/median-component-size/entity-free
+breakdowns for both DEV and TEST written to
+`results/phase_2_4_split_summary.json`. No claim of perfect
+stratification is made anywhere in the summary or documentation - the
+known limitations (SIC long-tail, small-subtype quantization) are stated
+explicitly in `project_plan/PHASE2_DEV_TEST_SPLIT.md`.
+
+### Independent Leakage Check
+
+A separate one-off check (`scripts/build_dev_test_split.py::independent_leakage_check`)
+that does NOT call `dev_test_split.verify_no_cik_leakage` - re-parses
+DEV and TEST question lists directly, re-derives every participating CIK
+(including cross-entity operand CIKs) via `extract_participating_ciks`,
+and computes the intersection independently. Result: **0** overlap.
+Also independently verified every one of the 2,760 gold question IDs
+appears in exactly one of DEV/TEST (`len(seen) ==
+len(set(seen)) == len(gold_records)` assertion in the build script).
+
+### Determinism
+
+Two independent fresh-process runs of `scripts/build_dev_test_split.py`
+against the same Task 2.3 input produced byte-identical
+`split_config_hash`, `split_assignment_sha256`, `dev_sha256`,
+`test_sha256`, and `ci_sha256`. No PRNG, no LLM, no network anywhere in
+the pipeline - the only non-determinism risk (dict/set iteration order)
+is eliminated by hash-based ordering (`selection_key`, never Python's
+salted `hash()`) everywhere a deterministic sequence is required.
+
+### Tests
+
+```text
+new Task 2.4 tests: tests/test_dev_test_split.py (39 tests - 37 portable
+  synthetic-fixture tests covering extraction/grouping/multi-entity/
+  entity-free/ratio/pending-narrative/determinism/leakage/completeness/
+  CI/SIC, 1 gitignore-verification test, 1 local_data-marked real-
+  artifact integration test); tests/test_test_access.py (7 tests -
+  load/purpose-validation/hash-mismatch/run-budget/override/
+  build-validation-exemption/log-schema, all against a tmp_path
+  sandbox, never the real eval.duckdb)
+doctor:              PASS
+portable suite:      unaffected baseline (37/39 new tests portable)
+full suite:          515 passed, 0 failed (was 469; +46 new tests)
+```
+
+### Frozen Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+data/edgar_corpus/:         test.parquet/train.parquet/validation.parquet - unchanged
+data/raw/primary/:          990 files - unchanged
+data/raw/xbrl/:              36 zip files - unchanged (read via zipfile, read-only, never extracted to disk)
+```
+
+### Regression Gates
+
+`git diff --stat HEAD` over `src/eval/evaluation_dataset.py`,
+`scripts/build_evaluation_dataset.py`,
+`configs/phase_2_3_evaluation_dataset.json`,
+`results/phase_2_3_evaluation_dataset.json`,
+`results/phase_2_3_evaluation_dataset_summary.json` (Task 2.3),
+`src/eval/truth_contract.py`, `src/eval/tag_registry.py`,
+`configs/eval_tags.yaml` (Task 2.1/2.2), and every Phase 1 module
+(`src/retrieval`, `src/generation`, `src/index`, `src/embeddings`,
+`src/chunk`, `src/normalize`, `src/eval/citation_integrity.py`,
+`src/eval/smoke_dataset.py`, `src/eval/baseline_metrics.py`, `src/cli`):
+zero changes in every case. No Task 2.3 bug was discovered, so no STOP
+condition was triggered.
+
+### Files Created / Modified
+
+```text
+src/eval/dev_test_split.py                                    (new)
+src/eval/test_access.py                                       (new)
+scripts/build_dev_test_split.py                                (new)
+tests/test_dev_test_split.py                                    (new, 39 tests)
+tests/test_test_access.py                                        (new, 7 tests)
+configs/phase_2_4_dev_test_split.json                              (new)
+results/phase_2_4_dev.json                                          (new, tracked)
+results/phase_2_4_ci_golden.json                                    (new, tracked)
+results/phase_2_4_split_manifest.json                                (new, tracked)
+results/phase_2_4_split_summary.json                                  (new, tracked)
+results/phase_2_4_pending_review_assignments.json                       (new, tracked)
+artifacts/eval/phase_2_4_test.json                                        (new, GITIGNORED)
+artifacts/eval/eval.duckdb                                                  (new, GITIGNORED)
+project_plan/PHASE2_DEV_TEST_SPLIT.md                                        (new)
+project_plan/REPOSITORY_STRUCTURE.md                                          (updated
+  narrowly: src/eval/, configs/, scripts/ listings)
+Progress.md                                                                      (this entry)
+```
+
+No Phase 1 module, no `src/eval/truth_contract.py`/`tag_registry.py`, no
+Task 2.3 artifact, and no frozen `data/` content modified. No network,
+no LLM, no GPU, no API credits spent.
+
+### Git
+
+```text
+git status --short before commit: new/untracked files only (plus the two
+  narrowly-updated docs) - 0 data/artifacts/venv/.env content stageable
+git add -n .:            TEST file (artifacts/eval/phase_2_4_test.json)
+  and eval.duckdb absent from the dry-run list, as expected
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.4 commit: "Freeze Phase 2 dev test
+split". No Phase 2 completion tag created (Tasks 2.5-2.8 remain). No
+remote configured - push deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.4 DEV/TEST Split                          — COMPLETE
+  2.5 Evaluation Schema                       — NEXT
 ```

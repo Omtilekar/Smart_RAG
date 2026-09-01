@@ -1,0 +1,928 @@
+{
+  "evaluation_schema_version": 1,
+  "evaluation_schema_hash": "13aec6b2d80d1be70f3d8117bf4914274605910697f88d058f93bfe933332338",
+  "created_at_utc": "2026-09-01T04:11:35.329913+00:00",
+  "git_sha": "e0791b3a76a6cdbad515655d90731c09f4917c56",
+  "database_path": "artifacts/eval/eval.duckdb",
+  "tables": {
+    "eval_schema_metadata": {
+      "columns": [
+        {
+          "name": "schema_version",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "created_at_utc",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "migration_version",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "schema_version"
+      ]
+    },
+    "eval_runs": {
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "timestamp_utc",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "git_sha",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "split",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": "split IN ('dev', 'test', 'ci')"
+        },
+        {
+          "name": "eval_set_version",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "source_dataset_sha256",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "split_version",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "split_assignment_sha256",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "question_set_sha256",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "question_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "expected_question_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "chunk_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "index_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "retrieval_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "embed_model",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "embed_model_revision",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "rerank_model",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "rerank_model_revision",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "rerank_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "rerank_k",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_provider",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_requested_model",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_response_model",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_prompt_version",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_temperature",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "router_version",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "router_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "crag_enabled",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "crag_config_hash",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "metric_schema_version",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "test_access_id",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": "status IN ('running', 'complete', 'failed', 'partial', 'aborted')"
+        },
+        {
+          "name": "error_type",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "error_message",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "completed_at_utc",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "run_id"
+      ]
+    },
+    "eval_question_results": {
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "question_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "subtype",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "answer_type",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": "status IN ('success', 'retrieval_error', 'generation_error', 'judge_error', 'timeout', 'invalid_output', 'schema_error')"
+        },
+        {
+          "name": "retrieval_status",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "generation_status",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "latency_ms",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "doc_first_hit_rank",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "chunk_first_hit_rank",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "retrieved_count",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "expected_value",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "expected_unit",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "predicted_value",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "predicted_unit",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "numeric_parse_status",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "absolute_error",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "relative_error",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "exact_match",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "tolerance_match",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "expected_behavior",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "observed_behavior",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "correct_refusal",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "guard_triggered",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "refusal_observed",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "behavior_match",
+          "type": "BOOLEAN",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "answer_text",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "citation_count",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "input_tokens",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "cached_input_tokens",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "output_tokens",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "total_tokens",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "provider_cost_usd",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_provider",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_model",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_model_revision",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_prompt_version",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_temperature",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "judge_raw_result_ref",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "run_id",
+        "question_id"
+      ]
+    },
+    "eval_retrieved_items": {
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "question_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "rank",
+          "type": "INTEGER",
+          "nullable": false,
+          "check": "rank >= 1"
+        },
+        {
+          "name": "chunk_id",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "document_id",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "cik",
+          "type": "BIGINT",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "retrieval_score",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "rerank_score",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "retrieval_source",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "run_id",
+        "question_id",
+        "rank"
+      ]
+    },
+    "eval_metrics": {
+      "columns": [
+        {
+          "name": "metric_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "run_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "metric_name",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "metric_version",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "scope",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": "scope IN ('overall', 'category', 'subtype', 'tag', 'year', 'intent')"
+        },
+        {
+          "name": "category",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "subtype",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "tag",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "year",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "intent",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "k",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "value",
+          "type": "DOUBLE",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "numerator",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "denominator",
+          "type": "INTEGER",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "notes",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "metric_id"
+      ]
+    },
+    "eval_stage_timings": {
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "question_id",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "stage",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": "stage IN ('routing', 'embedding', 'retrieval', 'reranking', 'generation', 'guard', 'total')"
+        },
+        {
+          "name": "latency_ms",
+          "type": "DOUBLE",
+          "nullable": false,
+          "check": "latency_ms >= 0"
+        }
+      ],
+      "primary_key": [
+        "run_id",
+        "question_id",
+        "stage"
+      ]
+    },
+    "metric_definitions": {
+      "columns": [
+        {
+          "name": "metric_name",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "metric_version",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "level",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "description",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "higher_is_better",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "required_gold_type",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "applicable_categories",
+          "type": "VARCHAR",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "parameters",
+          "type": "VARCHAR",
+          "nullable": true,
+          "check": null
+        },
+        {
+          "name": "implemented",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "check": null
+        },
+        {
+          "name": "available_for_current_gold",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "check": null
+        }
+      ],
+      "primary_key": [
+        "metric_name",
+        "metric_version"
+      ]
+    }
+  },
+  "existing_tables_preserved": [
+    "test_access_log"
+  ],
+  "metric_definitions": [
+    {
+      "metric_name": "doc_recall@10",
+      "metric_version": "1.0",
+      "level": "document",
+      "description": "Fraction of questions where the gold source document appears anywhere in the top-10 retrieved results.",
+      "higher_is_better": true,
+      "required_gold_type": "document-level gold (Task 1.9 smoke set)",
+      "applicable_categories": "numeric,comparative,narrative,unanswerable",
+      "parameters": "{\"k\":10}",
+      "implemented": true,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "chunk_recall@10",
+      "metric_version": "1.0",
+      "level": "chunk",
+      "description": "Fraction of questions where a gold-labeled evidence chunk appears anywhere in the top-10 retrieved chunks.",
+      "higher_is_better": true,
+      "required_gold_type": "chunk/evidence-level gold (not yet created)",
+      "applicable_categories": "numeric,comparative,narrative,unanswerable",
+      "parameters": "{\"k\":10}",
+      "implemented": false,
+      "available_for_current_gold": false
+    },
+    {
+      "metric_name": "doc_mrr",
+      "metric_version": "1.0",
+      "level": "document",
+      "description": "Mean reciprocal rank of the first retrieved result whose source document matches the gold document.",
+      "higher_is_better": true,
+      "required_gold_type": "document-level gold (Task 1.9 smoke set)",
+      "applicable_categories": "numeric,comparative,narrative,unanswerable",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "chunk_mrr",
+      "metric_version": "1.0",
+      "level": "chunk",
+      "description": "Mean reciprocal rank of the first retrieved chunk matching a gold evidence chunk.",
+      "higher_is_better": true,
+      "required_gold_type": "chunk/evidence-level gold (not yet created)",
+      "applicable_categories": "numeric,comparative,narrative,unanswerable",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": false
+    },
+    {
+      "metric_name": "doc_ndcg@10",
+      "metric_version": "1.0",
+      "level": "document",
+      "description": "Normalized discounted cumulative gain over document-level relevance in the top-10 retrieved results.",
+      "higher_is_better": true,
+      "required_gold_type": "document-level gold (Task 1.9 smoke set)",
+      "applicable_categories": "numeric,comparative,narrative,unanswerable",
+      "parameters": "{\"k\":10}",
+      "implemented": false,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "numeric_exact_match",
+      "metric_version": "1.0",
+      "level": "answer",
+      "description": "Exact match between the system's predicted numeric value/unit and the Task 2.3 gold expected_value/expected_unit.",
+      "higher_is_better": true,
+      "required_gold_type": "Task 2.3 numeric/comparative gold",
+      "applicable_categories": "numeric,comparative",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "numeric_tolerance_match",
+      "metric_version": "1.0",
+      "level": "answer",
+      "description": "Match between predicted and gold numeric value within a defined relative tolerance.",
+      "higher_is_better": true,
+      "required_gold_type": "Task 2.3 numeric/comparative gold",
+      "applicable_categories": "numeric,comparative",
+      "parameters": "{\"relative_tolerance\":0.01}",
+      "implemented": false,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "correct_refusal_rate",
+      "metric_version": "1.0",
+      "level": "behavior",
+      "description": "Fraction of unanswerable/adversarial questions where the system's observed behavior matches the Task 2.3 expected_behavior.",
+      "higher_is_better": true,
+      "required_gold_type": "Task 2.3 unanswerable/adversarial expected_behavior",
+      "applicable_categories": "unanswerable,adversarial",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "citation_format_compliance",
+      "metric_version": "1.0",
+      "level": "answer",
+      "description": "Fraction of generated answers whose citation markers match the required format (Task 1.7a/1.8).",
+      "higher_is_better": true,
+      "required_gold_type": null,
+      "applicable_categories": "numeric,comparative,narrative",
+      "parameters": "{}",
+      "implemented": true,
+      "available_for_current_gold": true
+    },
+    {
+      "metric_name": "citation_grounding",
+      "metric_version": "1.0",
+      "level": "answer",
+      "description": "Fraction of cited claims verifiably supported by the actual text of the cited chunk.",
+      "higher_is_better": true,
+      "required_gold_type": "chunk/evidence-level gold (not yet created)",
+      "applicable_categories": "numeric,comparative,narrative",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": false
+    },
+    {
+      "metric_name": "faithfulness",
+      "metric_version": "1.0",
+      "level": "narrative",
+      "description": "LLM-judge score of whether a narrative answer is faithful to its retrieved context.",
+      "higher_is_better": true,
+      "required_gold_type": "human-reviewed narrative gold (not yet created - Task 2.3 narrative is pending_review)",
+      "applicable_categories": "narrative",
+      "parameters": "{}",
+      "implemented": false,
+      "available_for_current_gold": false
+    }
+  ],
+  "valid_splits": [
+    "dev",
+    "test",
+    "ci"
+  ],
+  "valid_run_statuses": [
+    "running",
+    "complete",
+    "failed",
+    "partial",
+    "aborted"
+  ],
+  "valid_question_result_statuses": [
+    "success",
+    "retrieval_error",
+    "generation_error",
+    "judge_error",
+    "timeout",
+    "invalid_output",
+    "schema_error"
+  ],
+  "valid_stages": [
+    "routing",
+    "embedding",
+    "retrieval",
+    "reranking",
+    "generation",
+    "guard",
+    "total"
+  ],
+  "test_access_log_rows_preserved": 2
+}

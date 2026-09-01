@@ -6340,7 +6340,8 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.2 Freeze Supported Tag Registry           — COMPLETE
   2.3 Build the Full Evaluation Dataset       — COMPLETE WITH NOTE
   2.4 DEV/TEST Split                          — COMPLETE
-  2.5 Evaluation Schema                       — NEXT
+  2.5 Evaluation Schema                       — COMPLETE
+  2.6 Metric Unit Tests                       — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
@@ -6867,4 +6868,296 @@ PASS
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.4 DEV/TEST Split                          — COMPLETE
   2.5 Evaluation Schema                       — NEXT
+```
+
+## 2026-09-01 — Phase 2.5 Evaluation Schema
+
+### Objective
+
+Design and implement the authoritative evaluation-result schema and
+storage contract every later retrieval/generation/routing/CRAG/
+reranking/end-to-end experiment must use - immutable run identity,
+reproducible provenance, per-question results as primary evidence,
+versioned metric definitions, explicit DEV/TEST/CI distinction, TEST
+discipline preserved, document vs. chunk relevance never conflated,
+infrastructure errors never silently becoming misses. No retrieval, no
+generation, no TEST evaluation, no fabricated metrics.
+
+### Initial State
+
+```text
+HEAD:                    e0791b3 "Freeze Phase 2 dev test split"
+portable baseline:      501 passed, 14 deselected
+Task 2.3 dataset hash:   bf85e1a12ac70645d906a75fa79563c06dbb7620d6e870d4eb29505a326f922a
+Task 2.4 split version:  phase2-split-v1
+Task 2.4 split-assignment hash: 931b7eb987ecdd697a571534c4041de7a0538fb22ef83c4de00fcec855fe6dd5
+DEV hash:                2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee
+TEST hash:               6ce8bf8d1b33d449e7a259175592a0f5a0ecd56059582eade483c19b3c8c8f3e
+CI hash:                 adc544629a98026634d0200ee943e978c8436150dcb9e7028e758b77f1730c09
+```
+
+`PROJECT_EXECUTION.md`'s own Task 2.5 section describes a narrower
+"freeze these per-question fields" contract - every field it names
+already exists in Task 2.3/2.4's frozen artifacts. This task's own
+prompt (much more detailed) asks for a full run/result/metric database
+layer, which is complementary, not conflicting - documented explicitly
+in `project_plan/PHASE2_EVALUATION_SCHEMA.md` rather than silently
+picking one interpretation.
+
+### Existing eval.duckdb State
+
+Inspected read-only before any change: one table, `test_access_log`
+(10 columns), 2 rows, both `kind="build_validation"` from Task 2.4's own
+determinism-check reruns, both `purpose=NULL`/`run_number=NULL` (neither
+counts toward the 3-evaluation-run budget). DuckDB version 1.5.5 -
+supports `CHECK`/`PRIMARY KEY` constraints reliably, used for both
+enum-style columns (split/status/stage) and composite uniqueness
+(run_id+question_id, run_id+question_id+rank).
+
+### Authoritative Schema Decisions
+
+7 new tables (`eval_schema_metadata`, `eval_runs`,
+`eval_question_results`, `eval_retrieved_items`, `eval_metrics`,
+`eval_stage_timings`, `metric_definitions`), all created via idempotent
+`CREATE TABLE IF NOT EXISTS`, `test_access_log` never touched. Per-
+question results are the primary evidence; `eval_metrics` are
+observations computed FROM those rows, never inserted standalone.
+`eval_runs.split` CHECK-constrained to exactly `dev`/`test`/`ci` - no
+arbitrary string silently accepted. DuckDB constraint practicality
+(Section 47): `PRIMARY KEY`/`CHECK` used where DuckDB 1.5.5 enforces them
+reliably (single-valued PKs, simple CHECKs); metric-dimension uniqueness
+(nullable scope columns) is enforced in `eval_store.record_metric()`
+application logic instead, since a `UNIQUE` constraint over nullable
+columns does not reliably prevent duplicate `NULL`-dimension rows in
+SQL - documented, not silently assumed to work.
+
+### Schema Version
+
+```text
+evaluation_schema_version: 1
+```
+
+Stored both in code (`src.eval.evaluation_schema.EVALUATION_SCHEMA_VERSION`)
+and in `eval.duckdb`'s `eval_schema_metadata` table.
+
+### Schema Hash
+
+```text
+evaluation_schema_hash: 13aec6b2d80d1be70f3d8117bf4914274605910697f88d058f93bfe933332338
+```
+
+Computed from a canonical dict built directly from the same table/
+column/metric-definition Python data structures used to generate DDL -
+never from DDL string formatting or a timestamp. Verified deterministic
+across repeated calls in the same process
+(`tests/test_evaluation_schema.py::test_schema_hash_deterministic`).
+
+### Tables Created
+
+`eval_schema_metadata` (1 row after init: schema_version=1),
+`eval_runs` (35 columns), `eval_question_results` (40 columns),
+`eval_retrieved_items` (9 columns), `eval_metrics` (15 columns),
+`eval_stage_timings` (4 columns), `metric_definitions` (10 columns, 11
+rows seeded - one per `src.eval.evaluation_schema.METRIC_DEFINITIONS`
+entry).
+
+### Run Provenance
+
+`eval_runs` carries git_sha, eval_set_version, source_dataset_sha256,
+split_version, split_assignment_sha256, question_set_sha256,
+question_count, expected_question_count, chunk/index/retrieval config
+hashes, embed/rerank model + revision, generation
+provider/model/prompt-version/temperature, router/CRAG provenance
+(nullable), metric_schema_version, and a `test_access_id` link for TEST
+runs. `start_run()` rejects any unknown provenance keyword (`ValueError`)
+rather than silently accepting a typo'd field name.
+
+### Question-Level Result Contract
+
+`eval_question_results`, `PRIMARY KEY (run_id, question_id)` - one row
+per evaluated question per run, duplicate insert raises
+`DuplicateResultError`. Carries category/subtype/answer_type, a required
+`status` CHECK-constrained to the Section 37 error taxonomy
+(`success`/`retrieval_error`/`generation_error`/`judge_error`/`timeout`/
+`invalid_output`/`schema_error`), numeric-answer fields, unanswerable/
+adversarial behavior fields, doc-vs-chunk first-hit-rank fields, token/
+cost fields, and full judge-provenance fields. Only `question_id` is
+stored as the semantic link - no question text or gold value is
+duplicated into this table.
+
+### Retrieval Result Contract
+
+`eval_retrieved_items`, `PRIMARY KEY (run_id, question_id, rank)` - rows,
+never a flattened chunk_1..chunk_50 layout. `rank >= 1` enforced by both
+a SQL `CHECK` and a Python-level `validate_rank()` before any insert;
+duplicate rank for the same question raises `ValueError` rather than
+being silently repaired.
+
+### Metric Registry
+
+11 metrics registered (`doc_recall@10`, `chunk_recall@10`, `doc_mrr`,
+`chunk_mrr`, `doc_ndcg@10`, `numeric_exact_match`,
+`numeric_tolerance_match`, `correct_refusal_rate`,
+`citation_format_compliance`, `citation_grounding`, `faithfulness`),
+each carrying `implemented` and `available_for_current_gold` as
+independent, honestly-set booleans. Only `doc_recall@10` (Task 1.10) and
+`citation_format_compliance` (Task 1.7a/1.8) are `implemented=true` -
+every other metric is schema-defined only, matching the real state of
+this repository today. No ambiguous generic metric name
+(`recall`/`accuracy`/`hit_rate`) was registered.
+
+### Document vs Chunk Relevance
+
+Never conflated: separate `doc_first_hit_rank`/`chunk_first_hit_rank`
+columns, separate `doc_recall@10`/`chunk_recall@10` and `doc_mrr`/
+`chunk_mrr` registry entries, no generic `retrieval_hit` field anywhere.
+Every `chunk_*` metric is `available_for_current_gold=false` until a
+later authoritative task creates real evidence-level gold labels -
+Task 2.5 does not derive chunk relevance from same-document/same-
+company/same-section proxies.
+
+### Run Lifecycle
+
+`start_run` -> `running`; `record_question_result`/
+`record_retrieved_items`/`record_metric`/`record_stage_timing` all
+require `status="running"` (`RunNotRunningError` otherwise - completed/
+failed runs are immutable, no `INSERT OR REPLACE` path exists);
+`complete_run` validates persisted question-result count against
+`expected_question_count` and raises `RunCompletenessError` unless
+`partial=True` is passed explicitly; `fail_run` records
+`error_type`/`error_message`. A run that crashes mid-write without
+either call stays `status="running"` forever by design - documented as
+a deliberate policy (no stale-run auto-failure sweep exists) rather than
+an oversight.
+
+### TEST Integration
+
+`eval_runs.test_access_id` links a `split="test"` run to its
+`test_access_log` `evaluation_access` row; `start_run(split="test", ...)`
+requires it and verifies the referenced row actually exists and has
+`kind='evaluation_access'` before inserting anything
+(`TestAccessLinkageError` otherwise). `eval_store.py` never imports
+`src.eval.test_access` and never writes to `test_access_log` itself -
+verified by a source-inspection test
+(`test_no_fourth_run_budget_bypass_introduced`). Task 2.5 itself never
+called `load_test_set()` - **0/3** official TEST evaluation runs
+consumed.
+
+### CI Semantics
+
+`split="ci"` accepted; `results/phase_2_4_ci_golden.json`'s own
+`"reportable_benchmark": false` field is the authoritative non-
+reportable marker, cross-checked by
+`test_ci_marked_non_reportable_in_ci_golden_artifact`.
+
+### Migration Safety
+
+`scripts/init_evaluation_schema.py`: (1) copied the real `eval.duckdb`
+to a temp file, (2) recorded its 2 existing `test_access_log` rows
+exactly, (3) ran `initialize_schema()` on the COPY twice (idempotency),
+(4) ran a fully synthetic `split="ci"` evaluation run end-to-end on the
+COPY only, verifying `test_access_log` was untouched at every step,
+(5) only then initialized the REAL `artifacts/eval/eval.duckdb`,
+(6) verified its `test_access_log` rows were byte-identical before and
+after. Result: **2 rows, unchanged, in both the copy and the real DB**.
+No fake evaluation run was ever written to the real database
+(`eval_runs`/`eval_question_results` row counts in the real DB: 0/0).
+
+### Independent DB Verification
+
+Raw DuckDB SQL (not `eval_store.py`) against the real, post-migration
+`artifacts/eval/eval.duckdb`: 8 tables present (7 new + `test_access_log`
+preserved), correct column counts per table (eval_runs 35, 
+eval_question_results 40, eval_retrieved_items 9, eval_metrics 15,
+eval_stage_timings 4, eval_schema_metadata 3, metric_definitions 10),
+`eval_schema_metadata` has exactly 1 row (`schema_version=1`),
+`metric_definitions` has exactly 11 rows, `test_access_log` still has
+exactly 2 rows (both `build_validation`), `eval_runs`/
+`eval_question_results` both have 0 rows.
+
+### Tests
+
+```text
+new Task 2.5 tests: tests/test_evaluation_schema.py (22 tests - schema
+  hash determinism/sensitivity, split/status/rank/metric-range
+  validation, metric registry integrity including doc-vs-chunk
+  distinction, DDL generation); tests/test_eval_store.py (43 tests - 41
+  portable against in-memory/tmp_path DuckDB connections covering
+  initialization/idempotency/lifecycle/provenance/question-results/
+  retrieval-results/metrics/CI/TEST-linkage/determinism/transaction-
+  safety, plus 2 local_data-marked tests performing a controlled
+  migration against a COPY of the real eval.duckdb and verifying the
+  real DB's post-migration state)
+doctor:              PASS
+portable suite:      unaffected baseline + 63 new portable tests
+full suite:          580 passed, 0 failed (was 515; +65 new tests)
+```
+
+### Regression Gates
+
+`git diff --stat HEAD` over every Task 2.4 artifact
+(`results/phase_2_4_*.json`, `configs/phase_2_4_dev_test_split.json`,
+`src/eval/dev_test_split.py`, `src/eval/test_access.py`), every Task
+2.1-2.3 artifact (`src/eval/truth_contract.py`, `src/eval/tag_registry.py`,
+`configs/eval_tags.yaml`, `src/eval/evaluation_dataset.py`,
+`scripts/build_evaluation_dataset.py`, Task 2.3 configs/results), and
+every Phase 1 module: zero changes in every case. Task 2.4 numbers
+independently re-verified from the untouched manifest: DEV=1,932,
+TEST=828, CI=200, pending_narrative=50 - all unchanged.
+
+### Frozen Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+data/edgar_corpus/:         test.parquet/train.parquet/validation.parquet - unchanged
+artifacts/eval/phase_2_4_test.json: test_sha256 independently recomputed
+  and matches the stored value - unchanged
+```
+
+### Files Created / Modified
+
+```text
+src/eval/evaluation_schema.py                                  (new)
+src/eval/eval_store.py                                         (new)
+scripts/init_evaluation_schema.py                                (new)
+tests/test_evaluation_schema.py                                    (new, 22 tests)
+tests/test_eval_store.py                                              (new, 43 tests)
+results/phase_2_5_evaluation_schema.json                                (new, tracked)
+artifacts/eval/eval.duckdb                                                  (schema-migrated,
+  GITIGNORED, test_access_log rows unchanged)
+project_plan/PHASE2_EVALUATION_SCHEMA.md                                      (new)
+project_plan/REPOSITORY_STRUCTURE.md                                          (updated
+  narrowly: src/eval/, scripts/ listings)
+Progress.md                                                                      (this entry)
+```
+
+No Task 2.1-2.4 artifact, no Phase 1 module, and no frozen `data/`
+content modified. No network, no LLM, no GPU, no API credits spent.
+
+### Git
+
+```text
+git status --short before commit: new/untracked files only - 0
+  data/artifacts/venv/.env content stageable
+git add -n .:            artifacts/eval/eval.duckdb and
+  artifacts/eval/phase_2_4_test.json absent from the dry-run list
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.5 commit: "Add Phase 2 evaluation
+schema". No Phase 2 completion tag created (Tasks 2.6-2.8 remain). No
+remote configured - push deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.5 Evaluation Schema                       — COMPLETE
+  2.6 Metric Unit Tests                       — NEXT
 ```

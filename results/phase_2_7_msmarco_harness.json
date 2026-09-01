@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "benchmark": "msmarco-dev-small-v1",
+  "split": "validation",
+  "created_at_utc": "2026-09-01T21:07:54.768438+00:00",
+  "git_sha": "d807fd24b0517f4baef1fc936ef84af14152b7ae",
+  "query_count": 6980,
+  "qrel_count": 7437,
+  "corpus_count": 8841823,
+  "configuration": {
+    "benchmark": "msmarco-dev-small-v1",
+    "benchmark_config_version": "1.0",
+    "split": "validation",
+    "corpus_path": "data\\msmarco\\corpus.parquet",
+    "queries_path": "data\\msmarco\\queries.parquet",
+    "qrels_path": "data\\msmarco\\qrels_validation.parquet",
+    "model": "BAAI/bge-small-en-v1.5",
+    "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "embedding_dimension": 384,
+    "passage_prefix": "",
+    "query_prefix": "Represent this sentence for searching relevant passages: ",
+    "normalize_embeddings": true,
+    "similarity": "cosine",
+    "search_mode": "exact",
+    "top_k": 10,
+    "metrics": [
+      "passage_recall@10",
+      "passage_mrr",
+      "passage_ndcg@10"
+    ],
+    "metric_versions": {
+      "passage_recall@10": "1.0",
+      "passage_mrr": "1.0",
+      "passage_ndcg@10": "1.0"
+    },
+    "batch_size": 128,
+    "dtype": "<class 'numpy.float32'>",
+    "shard_size": 200000
+  },
+  "config_hash": "ba92f05abf90b7e352b4a799d6357743f09bbefde778f891603a71eca5d183b0",
+  "measured_metrics": {
+    "passage_recall@10": {
+      "value": 0.6194245463228272,
+      "numerator": 4514,
+      "denominator": 7437
+    },
+    "passage_mrr": 0.3457393004957463,
+    "passage_ndcg@10": 0.4081500190484616
+  },
+  "reference": {
+    "source": "BAAI/bge-small-en-v1.5 self-reported BEIR benchmark table (cross-confirmed via two independent web searches on 2026-09-01; the exact primary-source table cell could not be directly rendered via automated fetch in this session - value corroborated from two independent search-engine result summaries, not read directly off a table)",
+    "benchmark": "BEIR/MTEB MSMARCO retrieval task (standard MS MARCO passage dev-small, 6,980 queries)",
+    "model": "BAAI/bge-small-en-v1.5",
+    "metric": "nDCG@10",
+    "value": 0.408,
+    "caveats": "The MTEB community has documented reproducibility discrepancies between self-reported and independently-reproduced BGE scores (github.com/embeddings-benchmark/mteb issue #1912). Treated as an approximate reference, not a strict pass/fail threshold - see project_plan/PHASE2_MSMARCO_HARNESS.md.",
+    "apples_to_apples": "PARTIAL"
+  },
+  "comparison": {
+    "reference_metric": "nDCG@10",
+    "reference_value": 0.408,
+    "measured_value": 0.4081500190484616,
+    "absolute_difference": 0.00015001904846162484,
+    "interpretation": "CONSISTENT"
+  },
+  "run_duration_sec": 1541.6459839344025,
+  "result_hash": "d5d56d6e574ae5d35ac1d8f957691a69aedfb471ca7c65bb3e01168a8ed97d98",
+  "retrieval_artifact_path": "artifacts\\benchmark\\msmarco\\retrieval\\query_results.parquet",
+  "retrieval_artifact_sha256": "8b16fb176f7303eafc9581a60762db17acc14b87e6d55b89456e431284092b96"
+}

@@ -6342,7 +6342,8 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.4 DEV/TEST Split                          — COMPLETE
   2.5 Evaluation Schema                       — COMPLETE
   2.6 Metric Unit Tests                       — COMPLETE
-  2.7 MS MARCO Harness Validation              — NEXT
+  2.7 MS MARCO Harness Validation             — COMPLETE
+  2.8 Primary Document Evidence Alignment     — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
@@ -7474,4 +7475,327 @@ PASS
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.6 Metric Unit Tests                       — COMPLETE
   2.7 MS MARCO Harness Validation             — NEXT
+```
+
+## 2026-09-01 — Phase 2.7 MS MARCO Harness Validation
+
+### Objective
+
+Validate the project's retrieval + evaluation harness against the
+standard MS MARCO passage-ranking dev-small benchmark (6,980 queries,
+8,841,823-passage corpus) before trusting any future SEC retrieval
+score. A harness-correctness check, not an MS MARCO optimization
+exercise - a correctly-reproduced poor score would PASS; a suspiciously
+strong score from broken qrel handling would FAIL.
+
+### Initial State
+
+```text
+HEAD:                    d807fd2 "Implement and verify Phase 2 evaluation metrics"
+portable baseline:      623 passed, 16 deselected
+evaluation_schema_version/hash: 1 / 7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126
+full suite (pre-Task 2.7): 639 passed
+official SEC TEST evaluations consumed: 0/3
+```
+
+`PROJECT_EXECUTION.md`'s Task 2.7 section ("load the frozen MS MARCO
+artifacts; run the retrieval evaluation code on dev-small; compare with
+reasonable published/known behavior; investigate large deviations;
+record configuration and results") matched this task's detailed prompt
+with no material discrepancy - the full 8.84M-passage corpus and all
+6,980 dev-small queries were used, not a subsample (subsamples were used
+only for the explicitly-labeled pilots).
+
+### MS MARCO Frozen Input Verification
+
+```text
+corpus passages:              8,841,823   (matches historical reference)
+total queries (all splits):     509,962   (matches historical reference)
+validation qrel rows:             7,437   (matches historical reference)
+validation distinct queries:      6,980   (matches historical reference)
+qrels per query:              min=1, median=1.0, max=4; 390/6,980 queries have >1 qrel
+qrel relevance grades:         100% score=1 (binary - verified, never assumed)
+query referential integrity:    100% (0/7,437 rows unmatched)
+corpus referential integrity:   100% (0/7,437 rows unmatched)
+```
+
+**ID type mismatch found and handled**: `corpus.parquet`/`queries.parquet`
+store `_id` as VARCHAR digit strings; `qrels_validation.parquet` stores
+`query-id`/`corpus-id` as BIGINT. Verified the VARCHAR forms have no
+leading zeros before adopting `canonical_id(x) = str(int(x))` as the
+single normalization point (`src.eval.msmarco_harness.canonical_id`) -
+every ID crossing a function boundary in the harness goes through it,
+never compared via raw Python int/str inequality.
+
+### Benchmark Configuration
+
+```text
+model:                 BAAI/bge-small-en-v1.5, revision 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+                        (identical to Phase 1 - reused, not re-selected)
+passage/query prefix:   none / "Represent this sentence for searching relevant passages: " (Phase 1's frozen contract)
+similarity:              cosine, search_mode=exact (no ANN - src.index.lancedb_index's frozen contract, reused unmodified)
+top_k:                   10
+batch size / dtype:      128 / float32
+config_hash:             ba92f05abf90b7e352b4a799d6357743f09bbefde778f891603a71eca5d183b0
+```
+
+No embedding-model selection, fusion-weight optimization, reranker
+tuning, or chunk-size tuning performed - one predetermined configuration
+frozen before measurement. `src/embeddings/bge.py` and
+`src/index/lancedb_index.py` were imported and reused verbatim, never
+modified (`git diff --stat` zero on both throughout the task).
+
+### Published/Reference Baseline
+
+Frozen BEFORE the measured run (Section 13): BAAI/bge-small-en-v1.5
+self-reported nDCG@10 = 0.408 on the BEIR/MTEB MSMARCO retrieval task
+(same standard dev-small population, 6,980 queries), cross-confirmed via
+two independent WebSearch queries. The exact primary-source table cell
+could not be directly rendered via automated fetch during this session
+(HuggingFace card, a citing GitHub issue, and a citing arXiv PDF were
+all fetched but did not surface a readable table) - documented
+explicitly as "corroborated, not primary-source-pinned" evidence, with
+the known MTEB self-report-vs-reproduction discrepancy issue
+(github.com/embeddings-benchmark/mteb #1912) noted as a reason not to
+expect an exact match. `apples_to_apples` rated PARTIAL, not YES. No
+pass threshold was fabricated.
+
+### Resource Preflight
+
+```text
+estimated vector bytes:      12.65 GB
+estimated text bytes:         2.77 GB
+estimated total artifact:     15.41 GB
+free disk (measured):        305.37 GB
+GPU:                          NVIDIA GeForce RTX 5060 Laptop GPU, 8.55 GB VRAM
+```
+
+### Pilot
+
+Two pilots (20,000 then 200,000 passages) run before the full build,
+both validated end to end and surfaced/fixed two real bugs:
+
+```text
+1. list(vectors) instead of a proper pa.FixedSizeListArray broke
+   LanceDB's create_table() schema alignment - fixed by using the same
+   FixedSizeListArray pattern Task 1.4's embed_development_corpus.py
+   already uses.
+2. Reading an embedded shard back via duckdb.read_parquet().to_arrow_table()
+   renamed the vector column's list child field, breaking the same
+   LanceDB schema check - fixed by reading shard files directly via
+   pyarrow.parquet.read_table() (Task 1.5's convention), never
+   round-tripping through DuckDB for LanceDB ingestion.
+```
+
+Measured pilot embedding throughput: ~720-750 passages/sec (real MS
+MARCO text, RTX 5060 Laptop GPU) - faster than Phase 1's 140.6
+chunks/sec, consistent with MS MARCO's much shorter passages (avg. 336
+chars vs. SEC's 512-token chunks).
+
+### Naive Per-Query Evaluation Was Infeasible - Investigated, Not Tuned Around
+
+A first design evaluated each of 6,980 queries via one
+`LanceDB.exact_cosine_search()` call. Measured on the 200k-row pilot:
+~16.3 ms/query, extrapolating to **~14 hours** for the full 8.84M-row
+corpus - purely LanceDB per-query call overhead, on top of the ~3.3-hour
+embedding build. Investigated (Section 46/47) before committing to the
+full run: replaced with `_batched_exact_search()`, a blocked GPU matrix
+multiply computing the mathematically IDENTICAL exact cosine top-k (both
+compute `1 - cosine_similarity`, same top-k) via one batched operation
+per shard instead of 6,980 independent table scans. **Verified exact
+equivalence** against `src.index.lancedb_index.exact_cosine_search()` on
+real pilot data first (identical top-10 IDs, distances agreeing to
+float32 precision, max diff `1.8e-7`) - and this same equivalence check
+runs automatically inside every real `--evaluate` invocation on a
+5-query sample against the live 8.84M-row index. Measured on the
+200k-row pilot with all 6,980 real queries: 6.58s, extrapolating to
+~5 minutes for all 45 shards - confirmed at full scale: **256.5s**.
+`search_mode` remained `exact` throughout - no ANN, no relevance quality
+tradeoff, only per-query call overhead eliminated.
+
+### Index/Embedding Build
+
+Resumable design: 45 row-range shards of 200,000 rows, atomic writes
+(`.parquet.tmp` -> rename), `manifest.json` tracking completed
+`shard_index`/`row_count`/`offset` plus `config_hash`. **The full build
+was interrupted three times** by the local machine going idle/sleeping
+mid-run (a real environmental interruption, not a code defect) - the
+resumable design worked correctly each time (verified: shard file
+timestamps for already-completed shards were unchanged across every
+resume). After a third interrupted attempt made no progress at all, the
+user completed the build directly in a separate terminal outside this
+session. **Before trusting that externally-completed artifact, this
+session independently re-verified it in full**, never taking the report
+at face value: all 45/45 shards present, `manifest.json` row counts
+summing to exactly 8,841,823; `INDEX_DIR/build_config_hash.txt` matching
+the manifest's `config_hash` exactly; the live LanceDB table reporting
+8,841,823 rows, the correct `fixed_size_list<float>[384]` schema, and
+zero ANN indexes; a full scan of every shard file confirming **8,841,823
+unique `corpus_id` values with zero duplicates**; and vector samples
+from the first and last shard both unit-normalized with no NaN/Inf. Only
+after every one of those checks passed did evaluation proceed.
+
+### Harness Implementation
+
+New `src/eval/msmarco_harness.py` (pure logic): `canonical_id`,
+`group_qrels` (never drops a secondary qrel), `evaluate_query`/
+`aggregate_results` (benchmark-specific `passage_recall@k` - the
+fraction of a query's relevant passages retrieved, since 390/6,980
+queries have >1 qrel - explicitly NOT `hit_at_k` reused verbatim, which
+would have silently truncated multi-qrel recall to binary), reusing
+Task 2.6's `reciprocal_rank`/`mean_reciprocal_rank`/`ndcg_at_k`
+unmodified (MS MARCO qrels confirmed 100% binary, matching Task 2.6's
+assumption exactly - no metric extension needed). New
+`scripts/run_msmarco_harness.py`: `--dry-run`/`--pilot`/`--build`/
+`--evaluate` CLI, reusing `src/embeddings/bge.py` and
+`src/index/lancedb_index.py` verbatim.
+
+### Metrics
+
+```text
+passage_recall@10   (mean of per-query fraction retrieved - benchmark convention, not SEC's hit@k)
+passage_mrr          (Task 2.6's mean_reciprocal_rank, unmodified)
+passage_ndcg@10       (Task 2.6's ndcg_at_k, binary relevance, unmodified)
+```
+
+### Measured Result
+
+```text
+evaluated queries:      6,980  (all dev-small queries, none dropped)
+passage_recall@10:      0.6194245463228272  (numerator=4,514, denominator=7,437, diagnostic pooled ratio)
+passage_mrr:            0.3457393004957463
+passage_ndcg@10:        0.4081500190484616
+```
+
+### Reference Comparison
+
+```text
+reference (BEIR/MTEB, bge-small-en-v1.5, nDCG@10): 0.408
+measured:                                            0.4081500190484616
+absolute difference:                                 0.00015 (essentially exact agreement)
+interpretation:                                      CONSISTENT
+```
+
+### Independent Metric Recalculation
+
+`passage_mrr` recomputed via a standalone script importing neither
+`src.eval.msmarco_harness` nor `src.eval.metrics` - raw DuckDB reads of
+the saved retrieval Parquet + qrels Parquet, a plain Python loop:
+**0.3457393004957463** - exact match to the production value.
+
+### Manual Spot Checks
+
+Deterministic - first 5 hit queries and first 5 miss queries by
+canonical `query_id`, never cherry-picked. All 5 hits showed genuinely
+on-topic gold passages found at the reported rank; all 5 misses showed
+genuinely hard disambiguation cases (e.g. `100013` "cortana what is the
+apocalypse" retrieved passages about "apocalypse" the Greek word, while
+gold was specifically about the Marvel Comics villain "Apocalypse (En
+Sabah Nur)") - real semantic misses, not harness bugs. Full examples
+recorded in `project_plan/PHASE2_MSMARCO_HARNESS.md`.
+
+### Determinism
+
+Recomputed all three metrics twice from the saved
+`artifacts/benchmark/msmarco/retrieval/query_results.parquet` (never
+re-running retrieval) - both passes produced the byte-identical
+`compute_result_hash()`
+(`d5d56d6e574ae5d35ac1d8f957691a69aedfb471ca7c65bb3e01168a8ed97d98`),
+matching `results/phase_2_7_msmarco_harness.json`'s stored `result_hash`
+exactly.
+
+### TEST Discipline
+
+`artifacts/eval/phase_2_4_test.json` never read; `load_test_set()` never
+called. `test_access_log` verified unchanged (2 rows, both
+`build_validation` from Task 2.4) before and after this task. **0/3**
+official SEC TEST evaluation runs consumed.
+
+### Regression Gates
+
+`git diff --stat HEAD` over Task 2.6 (`src/eval/metrics.py`,
+`src/eval/evaluation_schema.py`, `src/eval/eval_store.py`), Task 2.5
+(`results/phase_2_5_evaluation_schema.json`), Task 2.4 (all
+`results/phase_2_4_*.json`, `src/eval/dev_test_split.py`,
+`src/eval/test_access.py`), Task 2.1-2.3 (truth contract, tag registry,
+`configs/eval_tags.yaml`, `results/phase_2_3_evaluation_dataset.json`),
+and every Phase 1 module: zero changes in every case.
+
+### Tests
+
+```text
+new Task 2.7 tests: tests/test_msmarco_harness.py (27 tests - 22 portable
+  synthetic-fixture tests covering ID normalization/qrel grouping/
+  per-query evaluation/multi-qrel recall/aggregation/hashing-determinism,
+  4 local_data-marked real-frozen-data verification tests, 1
+  local_data+model+gpu-marked mini-benchmark integration test building a
+  real 500-passage index end to end and verifying batched-search/LanceDB
+  equivalence)
+doctor:              PASS
+portable suite:      645 passed, 21 deselected
+full suite:          666 passed, 0 failed (was 639; +27 new tests)
+```
+
+### Frozen Data Safety
+
+```text
+data/xbrl.duckdb size:      7,011,053,568 bytes - unchanged
+data/edgar_corpus/:         unchanged
+data/msmarco/*.parquet:      unchanged (read-only throughout - all derived
+                             artifacts under artifacts/benchmark/msmarco/,
+                             gitignored via the existing blanket artifacts/ rule)
+artifacts/eval/phase_2_4_test.json: unchanged (hash-verified)
+```
+
+### Files Created / Modified
+
+```text
+src/eval/msmarco_harness.py                                    (new)
+scripts/run_msmarco_harness.py                                 (new)
+tests/test_msmarco_harness.py                                  (new, 27 tests)
+configs/phase_2_7_msmarco_harness.json                          (new, tracked)
+results/phase_2_7_msmarco_harness.json                            (new, tracked)
+artifacts/benchmark/msmarco/                                        (new, GITIGNORED -
+  45 embedding shards + manifest, LanceDB index, retrieval results)
+project_plan/PHASE2_MSMARCO_HARNESS.md                                (new)
+project_plan/REPOSITORY_STRUCTURE.md                                    (updated
+  narrowly: src/eval/, scripts/, configs/ listings)
+Progress.md                                                                (this entry)
+```
+
+No Task 2.1-2.6 artifact, no Phase 1 module, and no frozen `data/`
+content modified. No network calls for source data (WebSearch/WebFetch
+were used only to look up the external published reference number, per
+Section 12's explicit allowance - never for benchmark data). No LLM
+calls for evidence/retrieval decisions, no API spend. GPU used as
+expected for embedding (documented, not incidental).
+
+### Git
+
+```text
+git status --short before commit: new/untracked files only - 0
+  data/artifacts/venv/.env content stageable
+git add -n .:            no artifacts/benchmark/msmarco/ content, no
+  eval.duckdb, no phase_2_4_test.json in the dry-run list
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.7 commit: "Add and validate MS MARCO
+benchmark harness" (chosen over the plainer suggested message since
+this task legitimately implemented benchmark-specific retrieval
+plumbing, not only tests). No Phase 2 completion tag - Task 2.8 remains.
+No remote configured - push deferred.
+
+### Result
+
+```text
+PASS
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.7 MS MARCO Harness Validation             — COMPLETE
+  2.8 Primary Document Evidence Alignment     — NEXT
 ```

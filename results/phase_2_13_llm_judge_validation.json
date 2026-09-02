@@ -1,0 +1,44 @@
+{
+  "task_result": "BLOCKED - AWAITING HUMAN LABELS",
+  "judge_accepted": null,
+  "judge_identity": {
+    "provider": "ollama",
+    "model_tag": "qwen3.5:9b",
+    "model_digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+    "architecture": "qwen35",
+    "parameter_size": "9.7B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.33.2"
+  },
+  "judge_config_hash": "d5644f19f143141d7ee054d57f95ea8ba890a0c5a78a2438a4fda2bf79c1d958",
+  "rubric_version": "faithfulness-binary-v1",
+  "prompt_version": "1.0",
+  "output_schema_version": 1,
+  "calibration_set_sha256": "367b1f5ec7fdf7cacdba0f94dd917f0968b9ae0b6ba4f5ba2ac780a73cbe95c0",
+  "calibration_case_count": 100,
+  "human_labels_sha256": null,
+  "human_labels_complete": 0,
+  "completed_judgment_count": 0,
+  "judge_error_count": 0,
+  "faithfulness_agreement": null,
+  "sanity_fixtures": {
+    "fully_correct_and_supported": "supported (verified)",
+    "wrong_number_contradicted": "unsupported (verified)",
+    "prompt_injection_attempt": "unsupported, reason_codes=[contradiction] (verified - rubric not overridden)"
+  },
+  "protected_test_accessed": false,
+  "official_test_runs_used": 0,
+  "paid_api_calls": 0,
+  "api_spend_usd": 0,
+  "faithfulness_registry_status": {
+    "implemented_before": false,
+    "implemented_after": false,
+    "available_for_current_gold_after": false,
+    "note": "Not flipped - no measured agreement figure exists yet (awaiting human labels)."
+  },
+  "citation_grounding_after": "unchanged (implemented=false, deferred - out of Task 2.13 scope)",
+  "numeric_tolerance_match_after": "unchanged (deferred - out of Task 2.13 scope)",
+  "next_command": "python -u scripts/label_llm_judge_calibration.py --resume",
+  "created_at_utc": "2026-09-02T07:18:42.074895+00:00",
+  "git_sha": "a47240cc94dcfc5cfd8abd15bfb5c0ebb16b12fa"
+}

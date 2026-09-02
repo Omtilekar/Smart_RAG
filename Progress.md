@@ -9163,6 +9163,412 @@ rebuild.
 
 ```text
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
-  2.11 Evaluation Run Logging                 — COMPLETE
-  2.12 Independent Benchmark Validation       — NOT STARTED (next, per PROJECT_EXECUTION.md)
+  2.12 Independent Benchmark Validation       — COMPLETE WITH NOTE
+  2.13 LLM-as-Judge Validation                — NOT STARTED (next, per PROJECT_EXECUTION.md)
+```
+
+## 2026-09-02 — Phase 2.12 Independent Benchmark Validation (FinanceBench)
+
+### Objective
+
+Validate the evaluation/retrieval machinery against FinanceBench, an
+independently authored financial QA benchmark, without changing the
+benchmark to fit the system and without tuning the system to the
+benchmark. FinanceBench is external evidence about the evaluation
+system - never a Phase 3 tuning set.
+
+### Initial State
+
+`git log` HEAD = `258f9c5` ("Add reproducible evaluation run logging",
+Task 2.11). `python --version` 3.11.9. `scripts/dev.py doctor` all PASS.
+`scripts/dev.py test --portable`: 1,031 passed, 28 deselected. Verified
+Task 2.11 completion directly: `src/eval/run_logging.py`,
+`results/phase_2_11_evaluation_run_logging.json`,
+`project_plan/PHASE2_EVALUATION_RUN_LOGGING.md` all present; Task 2.11
+commit `258f9c5` confirmed in `git log`.
+
+### Authoritative Contract
+
+`PROJECT_EXECUTION.md`'s Task 2.12 checklist is materially narrower than
+this task's own drafting prompt - PROJECT_EXECUTION.md wins per this
+task's own rule. Two documented resolutions:
+
+1. **Retrieval-only scope, no generation.** PROJECT_EXECUTION.md never
+   mentions answer generation ("Run the same retrieval harness against
+   it," "Report FinanceBench metrics alongside the internal set" only).
+   Combined with the drafting prompt's own Section 26 fallback, this run
+   performed zero LLM calls and zero API spend; semantic answer accuracy
+   is explicitly deferred to Task 2.13.
+2. **Isolated benchmark namespace, not merged into the SEC corpus.**
+   PROJECT_EXECUTION.md's "add the referenced filings to the development
+   corpus" was interpreted as "acquire the referenced source documents
+   locally" into an isolated `data/financebench/`/
+   `artifacts/benchmark/financebench/<hash>/` namespace - never merged
+   into `data/edgar_corpus/`, Phase 1's chunks/embeddings, or the Phase 1
+   LanceDB table. Required by the drafting prompt's own hard leakage/
+   isolation rules and the project's standing "never mutate a frozen
+   historical baseline" principle.
+
+Full detail in `project_plan/PHASE2_FINANCEBENCH_VALIDATION.md`.
+
+### Official Source
+
+`PatronusAI/financebench` (Hugging Face), revision
+`e04404e3a97f69f79c14d42f24981a1c9c3bcd18`,
+`financebench_merged.jsonl`, sha256
+`7a1c81789e0fd2f1c37057a7ec0097756d726b05e7228e68e57db8e18c54fd0b`.
+Source PDFs from the official `patronus-ai/financebench` GitHub repo,
+commit `cc39aeb4afdf33909ee1412188bf89035950c2eb` - 84/84 referenced
+documents acquired (165.5 MB), 0 missing. License: CC BY-NC 4.0,
+evaluation use only, no redistribution - neither the JSONL nor the PDFs
+are committed to Git (frozen locally under `data/financebench/`,
+gitignored, matching the project's existing `data/*` convention). Only
+the official open-source `OPEN_SOURCE`-labeled 150-example sample was
+accessed; no closed/private example was obtained.
+
+### License
+
+CC BY-NC 4.0 verified directly from the Hugging Face dataset card
+(`cardData.license`). Documented in
+`project_plan/PHASE2_FINANCEBENCH_VALIDATION.md`; enforced in practice
+by gitignoring `data/financebench/` entirely.
+
+### Source Revision / Hashes
+
+`hf_dataset_revision=e04404e3a97f69f79c14d42f24981a1c9c3bcd18`,
+`github_pdf_commit=cc39aeb4afdf33909ee1412188bf89035950c2eb`,
+`dataset_file_sha256=7a1c81789e...`, `document_manifest_sha256`
+(SHA-256 over all 84 individual PDF hashes, computed with Task 2.10's
+`compute_benchmark_config_hash`) recorded in
+`data/financebench/source_manifest.json` (gitignored, regenerable via
+`--download`).
+
+### Dataset Validation
+
+Independently counted (`src.eval.financebench.audit_financebench_dataset`),
+never taken from a README: 150 rows, 150 unique `financebench_id`, 84
+unique `doc_name`, 32 companies, 0 null/empty question or answer, 0
+zero-evidence questions, evidence-count distribution {1: 115, 2: 31, 3:
+4}. `doc_type` (per-question): 10k=112, 10q=15, Earnings=14, 8k=9.
+`question_type`: metrics-generated/domain-relevant/novel-generated = 50
+each. Matches the expected open-source population exactly (150
+questions, 84 documents) - no STOP condition triggered.
+
+### Document Integrity
+
+84/84 referenced documents acquired successfully, 0 missing, 0 parse
+failures (`pdfplumber`, all 84 PDFs have a native extractable text
+layer - no OCR required or used). 22,423 total benchmark chunks
+produced across all 84 documents.
+
+### No-Leakage Validation
+
+Retrieval corpus built exclusively from each document's own source PDF,
+parsed independently, page by page - `evidence_text`, `justification`,
+`answer`, and `question` are never indexed
+(`src.eval.financebench.assert_no_gold_leakage()` raises `LeakageError`
+outright for any of those four field names as a declared corpus
+source - unit-tested). Headline retrieval searched the complete
+84-document/22,423-chunk corpus for every question - no gold-document
+prefilter.
+
+### PDF Parsing
+
+Docling's PDF pipeline requires a layout ML model
+(`docling-project/docling-layout-heron`) that itself requires
+`torchvision` - verified directly: `DocumentConverter.convert()` on a
+real FinanceBench PDF raised `RuntimeError: ... AutoImageProcessor
+requires the Torchvision library`, since this repo deliberately excludes
+torchvision (Task 2.8's own prior regression). Added `pdfplumber==0.11.10`
+(pure Python + `pdfminer.six`, zero torch dependency, `pip check` clean)
+instead, rather than reinstalling torchvision and risking the same
+regression again. `docling-slim` remains HTML-only, never forced onto
+PDFs.
+
+### Evidence Alignment
+
+Zero-indexed page convention confirmed empirically:
+`evidence_page_num=59` on a real `3M_2018_10K` page locates
+`pdfplumber`'s `pdf.pages[59]` (the PDF's 60th printed page), not a
+1-indexed display page - documented explicitly, never conflated.
+Deterministic stated-page-then-adjacent-page alignment
+(`exact`/`normalized_exact`/`ambiguous`/`unmatched`), never an LLM,
+never a fabricated confidence score.
+
+Two real, narrow normalization bugs were found and fixed during the
+required 15-question pilot (correctness fixes, not tuning - Section 35):
+(1) FinanceBench's own evidence-text extraction drops placeholder dash
+glyphs for blank table cells that `pdfplumber` preserves (`"Other —
+net"` vs `"Other net"`, real case on `3M_2018_10K` page 59); (2)
+FinanceBench's evidence-text extraction drops bulleted-list bullet
+glyphs that `pdfplumber` preserves (`"• server microprocessors"` vs
+`"server microprocessors"`, real case on `AMD_2022_10K` page 3). Both
+are extraction-tool-dependent marker glyphs, now treated as whitespace
+before normalized comparison; genuine ASCII hyphens are never touched.
+Pilot alignment improved from 6/15 to 7/15 evaluated after the fixes;
+the remaining unmatched cases were manually traced to real multi-column
+financial-table reading-order divergence between the two extraction
+tools - an honest limitation, not a code defect, and not further
+"fixed" by loosening the alignment criteria.
+
+### Benchmark Chunking
+
+Frozen before any result: same BAAI/bge-small-en-v1.5 tokenizer,
+512-token windows, zero overlap, final partial window kept - reusing
+`src.chunk.fixed_window.compute_token_windows()` directly - with exactly
+one benchmark-specific deviation (explicitly justified, not a new
+production recommendation): a window never crosses a page boundary, so
+gold-chunk-to-page mapping stays unambiguous. Chunk IDs
+(`financebench:<doc_name>:page<NNNNN>:chunk<NNNN>`) namespaced to never
+collide with Phase 1 SEC chunk IDs or Task 2.9's `chunk_uid`; Task 2.9's
+internal SEC canonical chunk schema was not touched.
+
+### Embedding / Index Configuration
+
+Reused exactly from the frozen Phase 1 baseline: `BAAI/bge-small-en-v1.5`
+(revision `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`), 384-dim,
+`normalize_embeddings=true`, exact/flat cosine search, `top_k=10`,
+reranker disabled, no generation. Isolated LanceDB table under
+`artifacts/benchmark/financebench/<benchmark_config_hash>/index/` -
+never mixed into the Phase 1 SEC LanceDB database.
+`benchmark_config_hash` (`a82c1b8c...`) and `index_identity_hash`
+(`0f326ac1...`) computed via Task 2.10's canonical `semantic_hash()` -
+no second hashing convention invented. No BM25/hybrid/chunk-size/model/
+reranker/query-prefix sweep was run.
+
+### Pilot
+
+15-question deterministic pilot spanning all 3 `question_type` values
+and 13 documents/doc_types. Verified source-document resolution, PDF
+parsing, page identity, evidence alignment, chunk generation, embedding/
+index build, retrieval, metric calculation, and (separately) Task 2.11
+run-record construction end-to-end. Labeled PILOT ONLY throughout;
+results were never used as headline numbers. This is where both
+normalization bugs above were found and fixed.
+
+### Full Benchmark
+
+All 150 questions, 84 documents processed. Every question ended in an
+explicit terminal status - no silent denominator reduction:
+
+```text
+status[evaluated]:                    77
+status[blocked_evidence_unmatched]:   73
+```
+
+A parse-time bug (`Path.relative_to()` called on an already-relative
+path while assembling the final result-summary JSON) crashed the script
+*after* the real retrieval computation and the Task 2.11 run record had
+already been fully written and validated - the actual experiment
+succeeded; only the wrap-up summary write failed. Fixed the bug in
+`scripts/run_financebench_validation.py`, then reconstructed
+`results/phase_2_12_financebench_validation.json` from the already-
+written, already-validated run record and per-question diagnostics file
+(re-deriving nothing, re-running no expensive computation, creating no
+second run record) - independently re-verified the aggregate metrics
+match the run record exactly (see Independent Recalculation below)
+before treating the reconstructed summary as trustworthy.
+
+### Retrieval Metrics
+
+```text
+doc_recall@10:      0.9221  (71/77)
+doc_mrr:            0.6346
+evidence_recall@10: 0.2641  (questions_with_gold=77/150)
+evidence_mrr:       0.1531
+```
+
+`evidence_recall@10` is the mean of each question's own
+hits_in_top_k/len(gold_chunks) fraction (macro-average, same
+mathematical shape as Task 2.7's MS MARCO `passage_recall_at_k`) -
+independently implemented and unit-tested against FinanceBench's own
+`doc_name`/chunk-id identifiers, not a reuse of an SEC-shaped metric
+with a mismatched identifier abstraction (Section 23). Evidence coverage
+(77/150, 51%) is reported before the evidence metric, never implied to
+cover all 150 questions.
+
+### Generation Scope
+
+Zero LLM calls, zero API spend - PROJECT_EXECUTION.md's Task 2.12
+checklist requires retrieval-metric validation only.
+`semantic_answer_accuracy` recorded as `"DEFERRED TO TASK 2.13"`.
+
+### Deterministic Answer Metrics
+
+Not computed in this run (no generation was performed, so there are no
+generated answers to score). `numeric_exact_match`/exact-match
+diagnostics remain available in `src.eval.metrics` for a future
+generation-inclusive FinanceBench run if the authoritative scope ever
+requires one.
+
+### Published Comparison
+
+Classified **NOT COMPARABLE**. FinanceBench's own paper accuracy figures
+were human-reviewed for specific model+context configurations this run
+does not reproduce; only deterministic retrieval metrics are reported
+here, never a claimed reproduction of the paper's accuracy.
+
+### Run Logging
+
+`src/eval/run_logging.py`'s `EVALUATION_RUN_SCHEMA_VERSION` bumped
+`1 -> 2` (backward-compatible, `SUPPORTED_RUN_SCHEMA_VERSIONS=(1,2)`) to
+add `evaluation_source`/`benchmark_name`/`benchmark_version`/
+`benchmark_source_hash` - FinanceBench is represented as
+`evaluation_source="external_benchmark"`, `split="open_source_150"`,
+never coerced into Task 2.5's internal `VALID_SPLITS` and never labeled
+the protected internal `test` split. `VALID_SPLITS` itself was not
+modified. A synthetic genuine-v1-shaped record (predating these 4
+fields entirely) still validates/loads correctly
+(`_backfill_v1_defaults()`) - 13 new tests cover the extension. No
+pre-existing real v1 record needed migration (`results/eval_runs/` was
+still empty before this task).
+
+Real run written: `results/eval_runs/1b69b812-0eea-488d-841a-390c471b57e2.json`
+(`run_id=1b69b812-0eea-488d-841a-390c471b57e2`, `run_kind=
+financebench_full_retrieval_validation`, `git_dirty=true` - recorded
+honestly, never auto-refused). Loads and validates cleanly; this is the
+first real (non-synthetic) run record written since Task 2.11 - no fake
+run was created to populate `results/eval_runs/` before this.
+
+### TEST Discipline
+
+`src.eval.financebench`/`scripts/run_financebench_validation.py` never
+import or reference `src.eval.test_access`, `load_test_set()`, or the
+TEST payload (verified directly via grep - zero matches). Official SEC
+TEST evaluations consumed verified unchanged: **0/3**.
+
+### Manual Audit
+
+Pilot's 5-question trace printed alignment status, gold-chunk count, and
+terminal status for a deterministic subset (never cherry-picked
+successes - the printed trace included both `evaluated` and
+`blocked_evidence_unmatched` cases). Two full manual per-page
+investigations (3M_2018_10K page 59, AMD_2022_10K page 3) directly
+diffed FinanceBench's evidence_text against the real parsed page text to
+find the two normalization bugs above.
+
+### Determinism
+
+Benchmark identity/config hashes and run-record `run_record_sha256` are
+pure functions of their inputs (Task 2.10's canonical `semantic_hash()`,
+reused). `ensure_parsed()`'s resumable per-document parsing was verified
+to correctly `"reuse"` all 13 already-parsed pilot documents (0
+re-parsing) rather than accidentally reprocessing them during the full
+run.
+
+### Independent Recalculation
+
+Recomputed `doc_recall@10`/`doc_mrr`/`evidence_recall@10`/`evidence_mrr`
+independently from the saved `per_question_results.json` diagnostics
+(never calling `aggregate_financebench_results()` a second time on the
+same in-memory objects - reconstructed fresh `QuestionRetrievalResult`
+objects from the raw saved ranks/gold-chunk-ids) and compared against
+the values already persisted in the Task 2.11 run record:
+
+```text
+doc_recall@10:      0.922077922077922   (run record: 0.922078)  MATCH
+doc_mrr:            0.6345753452896311  (run record: 0.634575)  MATCH
+evidence_recall@10: 0.2640692640692641  (run record: 0.264069)  MATCH
+evidence_mrr:       0.15307668521954232 (run record: 0.153077)  MATCH
+```
+
+### Regression Gates
+
+Task 2.11: `MANDATORY_ROADMAP_FIELDS` unchanged, secret rejection/tamper
+detection/create-once behavior unchanged (all 107 pre-existing Task 2.11
+tests still pass unmodified); the schema-v2 extension is additive and
+covered by 13 new backward-compatibility tests. Task 2.10: `src/artifacts/versioning.py`
+untouched; canonical hashing/`ArtifactCompatibility` semantics unchanged.
+Task 2.9: `CHUNK_SCHEMA_VERSION`/`CANONICAL_FIELDS`/`chunk_uid` untouched.
+Task 2.8: `gold_evidence_count` remains 0, no promotion. Task 2.1-2.7:
+zero-diff on every prior config/result file. Phase 1: chunking/
+embeddings/index/retriever/generation/citation code untouched; the
+historical 200-question/194-hit/`doc_recall@10=0.970000` smoke result
+was not rerun.
+
+### Tests
+
+`tests/test_financebench_validation.py`: 62 new portable tests (dataset
+validation, leakage guard, marker-glyph normalization, evidence
+alignment incl. ambiguous/unmatched/adjacent-page/no-arbitrary-first-
+match, gold-chunk attribution, table serialization, benchmark chunk
+IDs/chunking incl. never-crosses-page-boundary, benchmark identity,
+retrieval metrics incl. macro-average verification, aggregate-result
+denominator-never-silently-dropped). `tests/test_evaluation_run_logging.py`:
+13 new tests for the schema-v2 external-benchmark extension. All
+synthetic fixtures - zero download, zero PDF parsing, zero model load in
+any portable test.
+
+### Frozen Data
+
+`data/xbrl.duckdb` size independently re-verified at 7,011,053,568
+bytes. `data/edgar_corpus/`, `data/raw/xbrl/`, `data/raw/primary/`,
+`data/msmarco/`: unchanged. New `data/financebench/` directory added
+(gitignored, matching the existing `data/*` convention) - a new frozen-
+input root, not a mutation of any existing one.
+
+### Files Created/Modified
+
+Created: `src/eval/financebench.py`,
+`scripts/run_financebench_validation.py`,
+`tests/test_financebench_validation.py`,
+`configs/phase_2_12_financebench_validation.json`,
+`results/phase_2_12_financebench_validation.json`,
+`results/eval_runs/1b69b812-0eea-488d-841a-390c471b57e2.json`,
+`project_plan/PHASE2_FINANCEBENCH_VALIDATION.md`. Modified: `src/eval/run_logging.py`
+(schema v2 external-benchmark extension), `src/storage.py` (added
+`financebench_root`/`benchmark_artifacts_dir()`), `requirements.txt`
+(added `pdfplumber==0.11.10`), `tests/test_evaluation_run_logging.py`
+(13 new tests), `project_plan/PHASE2_EVALUATION_RUN_LOGGING.md` (schema-
+v2 pointer), `project_plan/REPOSITORY_STRUCTURE.md`, `Progress.md` (this
+entry). No prior-task source file under `src/artifacts/`, `src/chunk/`,
+`src/embeddings/`, `src/index/`, `src/eval/eval_store.py`,
+`src/eval/evaluation_schema.py` was modified.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - data/financebench/ and artifacts/benchmark/financebench/
+  confirmed gitignored (git add -n . excludes both entirely)
+secret scan:              clean (no api_key/password/token/credential
+  pattern found in any new tracked file)
+```
+
+Committed as one coherent Task 2.12 commit: "Validate RAG pipeline on
+FinanceBench". No Phase 2 completion tag (Task 2.13 remains). No remote
+configured - push deferred.
+
+### Result
+
+```text
+PASS WITH NOTE. FinanceBench's official open-source 150-question/84-
+document sample acquired from the frozen official source (CC BY-NC 4.0,
+not redistributed), validated independently, and evaluated leakage-free
+against the frozen Phase 1 baseline retrieval configuration in an
+isolated benchmark namespace. doc_recall@10=0.9221 (71/77) across the
+complete 84-document corpus with no gold-document prefilter -
+comparable in order of magnitude to Phase 1's own internal
+doc_recall@10=0.970000 smoke baseline, no divergence suggesting internal
+generator bias. evidence_recall@10=0.2641 is honestly reported over only
+the 77/150 (51%) questions with defensible exact/normalized-exact
+evidence alignment - the remaining 73 are traced to genuine multi-
+column financial-table extraction-order divergence, not a code defect,
+and are never silently dropped from the denominator or folded into a
+misleading combined figure. Two real normalization bugs found and fixed
+during the mandatory pilot (never tuned based on pilot scores). Zero LLM
+calls/API spend (retrieval-only scope per the authoritative
+PROJECT_EXECUTION.md checklist). Task 2.11's run-logging schema
+extended (v1->v2, backward-compatible) to represent this run's external-
+benchmark identity honestly rather than mislabeling it as the protected
+internal SEC TEST split; 0/3 official TEST evaluations consumed
+throughout. Zero regressions across 1,134 full-suite tests.
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.12 Independent Benchmark Validation       — COMPLETE WITH NOTE
+  2.13 LLM-as-Judge Validation                — NOT STARTED (next, per PROJECT_EXECUTION.md)
 ```

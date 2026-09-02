@@ -1,0 +1,55 @@
+{
+  "benchmark_name": "financebench",
+  "benchmark_version": "financebench-open-source-150-v1",
+  "source": {
+    "hf_dataset_repo": "PatronusAI/financebench",
+    "hf_dataset_revision": "e04404e3a97f69f79c14d42f24981a1c9c3bcd18",
+    "dataset_file_sha256": "7a1c81789e0fd2f1c37057a7ec0097756d726b05e7228e68e57db8e18c54fd0b",
+    "license": "CC BY-NC 4.0 (evaluation use only, no redistribution)"
+  },
+  "question_count": 150,
+  "documents_referenced": 84,
+  "documents_acquired_parsed": 84,
+  "documents_missing": 0,
+  "documents_parse_failed": 0,
+  "benchmark_config_hash": "a82c1b8ce54ea4fd343da5cac484e1d19f8cad9b8702b966cd8e11924ff25391",
+  "retrieval_configuration": {
+    "method": "vector",
+    "index_type": "exact_flat",
+    "distance_metric": "cosine",
+    "top_k": 10
+  },
+  "embedding_identity_hash": "b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84",
+  "index_identity_hash": "0f326ac14638d1f330417a4eaa5eb1a3bb66df425623b88d05807a78a183c59c",
+  "status_counts": {
+    "evaluated": 77,
+    "blocked_evidence_unmatched": 73
+  },
+  "retrieval_metrics": {
+    "doc_recall@10": 0.922077922077922,
+    "doc_mrr": 0.6345753452896311,
+    "evidence_recall@10": 0.2640692640692641,
+    "evidence_mrr": 0.15307668521954232,
+    "evaluated_count": 77,
+    "evidence_questions_with_gold": 77
+  },
+  "generation": {
+    "required": false,
+    "llm_calls": 0,
+    "api_spend_usd": 0,
+    "semantic_answer_accuracy": "DEFERRED TO TASK 2.13"
+  },
+  "published_comparison": {
+    "apples_to_apples": "NOT COMPARABLE",
+    "note": "FinanceBench paper accuracy figures were human-reviewed for specific model+context configurations; this run reports only deterministic retrieval metrics, never a claimed reproduction of the paper accuracy."
+  },
+  "run_id": "1b69b812-0eea-488d-841a-390c471b57e2",
+  "run_record_path": "results/eval_runs/1b69b812-0eea-488d-841a-390c471b57e2.json",
+  "per_question_diagnostics_sha256": "b5faa78958d688a0457c26c4035e0052aa22e3aba3cf7e331b0cce392fea2224",
+  "independent_recomputation_match": true,
+  "test_budget_status": "0/3 (untouched - FinanceBench is external, never internal SEC TEST)",
+  "final_verdict": "PASS WITH NOTE",
+  "final_verdict_note": "Retrieval validation only per PROJECT_EXECUTION.md scope (no generation). evidence_recall@10/evidence_mrr computed only over the 77/150 questions with at least one exact/normalized_exact-aligned gold evidence item - the remaining 73 are blocked_evidence_unmatched (mostly complex multi-column financial tables where FinanceBench and pdfplumber diverge on column reading order) and are honestly excluded from the evidence-metric denominator, never silently counted as failures or successes.",
+  "created_at_utc": "2026-09-02T06:44:50.045460+00:00",
+  "git_sha": "258f9c58f8bb3513e586444d75471cd64dd4c5c7"
+}

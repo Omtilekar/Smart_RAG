@@ -1,0 +1,27 @@
+{
+  "benchmark_name": "financebench",
+  "hf_dataset_repo": "PatronusAI/financebench",
+  "hf_dataset_revision": "e04404e3a97f69f79c14d42f24981a1c9c3bcd18",
+  "dataset_file_sha256": "7a1c81789e0fd2f1c37057a7ec0097756d726b05e7228e68e57db8e18c54fd0b",
+  "document_manifest_sha256": "2be673ece22c3d5c16f421a437c3b7fb9d7c937ce930e963eecb4e06f4f4cb8a",
+  "question_population": "open_source_150",
+  "parser": "pdfplumber-0.11.10",
+  "page_number_convention": "zero_indexed_pdf_page_list_position",
+  "chunking": {
+    "window_size_tokens": 512,
+    "stride_tokens": 512,
+    "overlap_tokens": 0,
+    "partial_window_policy": "keep",
+    "page_boundary_policy": "never_cross",
+    "tokenizer_repo": "BAAI/bge-small-en-v1.5",
+    "tokenizer_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
+  },
+  "table_serialization": "pipe_delimited_rows_newline_joined",
+  "evidence_alignment_version": "1.0",
+  "retrieval": {
+    "method": "vector",
+    "index_type": "exact_flat",
+    "distance_metric": "cosine",
+    "top_k": 10
+  }
+}

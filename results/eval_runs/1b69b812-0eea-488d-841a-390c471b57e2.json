@@ -1,0 +1,51 @@
+{
+  "run_schema_version": 2,
+  "run_id": "1b69b812-0eea-488d-841a-390c471b57e2",
+  "git_sha": "258f9c58f8bb3513e586444d75471cd64dd4c5c7",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "a82c1b8ce54ea4fd343da5cac484e1d19f8cad9b8702b966cd8e11924ff25391",
+  "embedding_model": {
+    "embedding_identity_version": 1,
+    "model_repository": "BAAI/bge-small-en-v1.5",
+    "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "embedding_dimension": 384,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "passage_convention": "raw_text_no_instruction",
+    "query_convention": "prepend:Represent this sentence for searching relevant passages: ",
+    "identity_hash": "b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84"
+  },
+  "index_identity_hash": "0f326ac14638d1f330417a4eaa5eb1a3bb66df425623b88d05807a78a183c59c",
+  "retrieval_config": {
+    "method": "vector",
+    "index_type": "exact_flat",
+    "distance_metric": "cosine",
+    "top_k": 10
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "open_source_150",
+  "eval_set_version": "financebench-open-source-150-v1",
+  "split_version": "financebench-open-source-150-v1",
+  "split_sha256": null,
+  "timestamp": "2026-09-02T06:42:47.379405Z",
+  "metrics": {
+    "doc_recall@10": 0.922078,
+    "doc_mrr": 0.634575,
+    "evidence_recall@10": 0.264069,
+    "evidence_mrr": 0.153077,
+    "evaluated_count": 77
+  },
+  "evaluation_source": "external_benchmark",
+  "benchmark_name": "financebench",
+  "benchmark_version": "financebench-open-source-150-v1",
+  "benchmark_source_hash": "53e6b0014e3c1a55eb731703080a6ead84b5cb44360182fd341f820490f41389",
+  "experiment_name": null,
+  "run_kind": "financebench_full_retrieval_validation",
+  "notes": null,
+  "record_origin": "live",
+  "run_record_sha256": "e6b9c1b7caf557ce6f9277ca02a57d0a197d746c28df1da330196d07e2ccd2ff"
+}

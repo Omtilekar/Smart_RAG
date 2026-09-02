@@ -37,7 +37,11 @@ SEC-RAG/
 │   │                     # question generation, DEV/TEST split, and evidence
 │   │                     # alignment NOT yet implemented; run_logging.py
 │   │                     # (Task 2.11) — immutable git-tracked per-run JSON
-│   │                     # provenance records, consuming Task 2.10 identities
+│   │                     # provenance records, consuming Task 2.10 identities;
+│   │                     # financebench.py (Task 2.12) — isolated external-
+│   │                     # benchmark validation logic (dataset audit, page-
+│   │                     # bounded chunking, evidence alignment, retrieval
+│   │                     # metrics), never touching the internal SEC schema
 │   ├── router/          # planned responsibility: query classification, path selection
 │   ├── rerank/          # planned responsibility: cross-encoder reranking
 │   ├── crag/            # planned responsibility: retrieval confidence / corrective decisions
@@ -63,7 +67,8 @@ SEC-RAG/
 │                         # (no new config for Task 2.9 - it defines schema,
 │                         # not a runnable pipeline; no new config for
 │                         # Task 2.10 either - it hashes/validates existing
-│                         # configs rather than introducing a new one)
+│                         # configs rather than introducing a new one),
+│                         # phase_2_12_financebench_validation.json (Task 2.12)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -90,13 +95,16 @@ SEC-RAG/
 │                         # chunk/embedding/index chain compatibility audit,
 │                         # writes verified-historical manifest.json sidecars),
 │                         # audit_evaluation_run_logging.py (Task 2.11, synthetic-
-│                         # data run-record schema/security/persistence audit)
+│                         # data run-record schema/security/persistence audit),
+│                         # run_financebench_validation.py (Task 2.12, --download/
+│                         # --dry-run/--pilot/--full FinanceBench validation runner)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries;
 │                         # results/eval_runs/<run_id>.json — one immutable
 │                         # git-tracked evaluation-run record per execution
 │                         # (Task 2.11), intentionally empty until a real
-│                         # experiment exists
+│                         # experiment exists (Task 2.12 writes the first
+│                         # real record here, for the FinanceBench full run)
 ├── infra/               # planned: deployment/infrastructure definitions
 │
 ├── prompts/             # IMPLEMENTED — task prompts that drove this project, kept for
@@ -131,7 +139,7 @@ intentionally omitted from the tree above.
 | `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; `index_identity()` — semantic identity binding chunk+embedding+distance-metric+index-type, Task 2.10, see `project_plan/PHASE2_ARTIFACT_VERSIONING.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
 | `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
 | `generation/` | **implemented** | `provider.py` (provider-neutral interface), `openrouter.py` (adapter), `minimal.py`, `citations.py` (Task 1.7), see `project_plan/PHASE1_GENERATION.md` |
-| `eval/` | **partial** | `citation_integrity.py` — mechanical citation-integrity smoke check (Task 1.8), see `project_plan/PHASE1_CITATION_INTEGRITY.md`; `smoke_dataset.py` — deterministic 200-question document-level smoke dataset builder (Task 1.9), see `project_plan/PHASE1_SMOKE_EVALUATION.md`; `baseline_metrics.py` — pure doc_recall@10 metric logic (Task 1.10), see `project_plan/PHASE1_BASELINE_METRICS.md`; `truth_contract.py` — XBRL fact-eligibility contract (Task 2.1, refactored in Task 2.2 to consume the registry), see `project_plan/PHASE2_TRUTH_CONTRACT.md`; `tag_registry.py` — loader/validator for the frozen 15-tag `configs/eval_tags.yaml` (Task 2.2), see `project_plan/PHASE2_TAG_REGISTRY.md`; `evaluation_dataset.py` — record construction/hashing/duplicate+leakage checks for the 2,810-question Phase 2 evaluation dataset (Task 2.3), see `project_plan/PHASE2_EVALUATION_DATASET.md`; `dev_test_split.py` — company-disjoint DEV/TEST connected-component splitter (Task 2.4), see `project_plan/PHASE2_DEV_TEST_SPLIT.md`; `test_access.py` — controlled TEST-set loader with hash verification and a 3-run access budget (Task 2.4); `evaluation_schema.py` — the eval_runs/eval_question_results/eval_retrieved_items/eval_metrics/eval_stage_timings DuckDB schema, metric-definition registry, and schema-hash logic (Task 2.5); `eval_store.py` — the run-lifecycle storage API (start_run/record_*/complete_run/fail_run) all future experiments must use (Task 2.5; Task 2.6 added metric_definitions resync-on-reinit), see `project_plan/PHASE2_EVALUATION_SCHEMA.md`; `metrics.py` — hand-verified deterministic metric functions (recall/hit-at-k, MRR, binary nDCG@k, numeric_exact_match, correct_refusal, rate aggregation) reusing Task 1.10's frozen `doc_recall@10` hit semantics rather than reimplementing them (Task 2.6), see `project_plan/PHASE2_METRIC_TESTS.md`; `msmarco_harness.py` — MS MARCO benchmark-specific ID normalization/qrel grouping/multi-qrel recall+MRR+nDCG aggregation, reusing Task 2.6's metric primitives (Task 2.7), see `project_plan/PHASE2_MSMARCO_HARNESS.md`; primary-document evidence alignment implemented in the new `parse/` package (Task 2.8), see below; `run_logging.py` — the immutable, git-tracked `EvaluationRunRecord` schema/validation/persistence API (`build_run_record`/`validate_run_record`/`write_run_record`/`load_run_record`), binding a metric to Task 2.10's chunk/embedding/index identities plus Task 2.3/2.4's eval-set/split identity (Task 2.11), see `project_plan/PHASE2_EVALUATION_RUN_LOGGING.md` |
+| `eval/` | **partial** | `citation_integrity.py` — mechanical citation-integrity smoke check (Task 1.8), see `project_plan/PHASE1_CITATION_INTEGRITY.md`; `smoke_dataset.py` — deterministic 200-question document-level smoke dataset builder (Task 1.9), see `project_plan/PHASE1_SMOKE_EVALUATION.md`; `baseline_metrics.py` — pure doc_recall@10 metric logic (Task 1.10), see `project_plan/PHASE1_BASELINE_METRICS.md`; `truth_contract.py` — XBRL fact-eligibility contract (Task 2.1, refactored in Task 2.2 to consume the registry), see `project_plan/PHASE2_TRUTH_CONTRACT.md`; `tag_registry.py` — loader/validator for the frozen 15-tag `configs/eval_tags.yaml` (Task 2.2), see `project_plan/PHASE2_TAG_REGISTRY.md`; `evaluation_dataset.py` — record construction/hashing/duplicate+leakage checks for the 2,810-question Phase 2 evaluation dataset (Task 2.3), see `project_plan/PHASE2_EVALUATION_DATASET.md`; `dev_test_split.py` — company-disjoint DEV/TEST connected-component splitter (Task 2.4), see `project_plan/PHASE2_DEV_TEST_SPLIT.md`; `test_access.py` — controlled TEST-set loader with hash verification and a 3-run access budget (Task 2.4); `evaluation_schema.py` — the eval_runs/eval_question_results/eval_retrieved_items/eval_metrics/eval_stage_timings DuckDB schema, metric-definition registry, and schema-hash logic (Task 2.5); `eval_store.py` — the run-lifecycle storage API (start_run/record_*/complete_run/fail_run) all future experiments must use (Task 2.5; Task 2.6 added metric_definitions resync-on-reinit), see `project_plan/PHASE2_EVALUATION_SCHEMA.md`; `metrics.py` — hand-verified deterministic metric functions (recall/hit-at-k, MRR, binary nDCG@k, numeric_exact_match, correct_refusal, rate aggregation) reusing Task 1.10's frozen `doc_recall@10` hit semantics rather than reimplementing them (Task 2.6), see `project_plan/PHASE2_METRIC_TESTS.md`; `msmarco_harness.py` — MS MARCO benchmark-specific ID normalization/qrel grouping/multi-qrel recall+MRR+nDCG aggregation, reusing Task 2.6's metric primitives (Task 2.7), see `project_plan/PHASE2_MSMARCO_HARNESS.md`; primary-document evidence alignment implemented in the new `parse/` package (Task 2.8), see below; `run_logging.py` — the immutable, git-tracked `EvaluationRunRecord` schema/validation/persistence API (`build_run_record`/`validate_run_record`/`write_run_record`/`load_run_record`), binding a metric to Task 2.10's chunk/embedding/index identities plus Task 2.3/2.4's eval-set/split identity (Task 2.11, extended with `evaluation_source`/`benchmark_*` fields in Task 2.12), see `project_plan/PHASE2_EVALUATION_RUN_LOGGING.md`; `financebench.py` — isolated FinanceBench dataset validation, zero-indexed page/evidence alignment, page-bounded benchmark chunking, and adapted retrieval-metric math (Task 2.12), see `project_plan/PHASE2_FINANCEBENCH_VALIDATION.md` |
 | `parse/` | **implemented** | `source_identity.py` — deterministic `primary:{cik}:{accession}` identity for the 990 primary 10-K filings; `primary_html.py` — Docling-based structural parsing (sections/tables), source locators honestly scoped to Docling's own `self_ref`; `inline_xbrl.py` — raw namespace-aware inline-XBRL DOM extraction (contexts/units/divide-units/continuations/numeric normalization), independent of Docling; `evidence_alignment.py` — fact-to-node alignment reusing Task 2.1's truth contract and Task 2.2's tag registry unmodified (Task 2.8), see `project_plan/PHASE2_PRIMARY_EVIDENCE.md` |
 | `router/` | structure only | Rules-first query classification/path selection (Phase 3.8) |
 | `rerank/` | structure only | Cross-encoder reranking (Phase 3.6) |

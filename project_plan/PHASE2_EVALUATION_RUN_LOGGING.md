@@ -61,12 +61,22 @@ runner, not invented here.
 ## Run-record schema version
 
 ```text
-EVALUATION_RUN_SCHEMA_VERSION = 1
+EVALUATION_RUN_SCHEMA_VERSION = 2   (bumped from 1 by Task 2.12)
 ```
 
 Distinct from `chunk_schema_version` (Task 2.9), `artifact_manifest_version`
 (Task 2.10), `eval_set_version`/`split_version` (Task 2.3/2.4) - a
 run-record layout change bumps this version alone.
+
+**Task 2.12 update**: version 2 added `evaluation_source`/`benchmark_name`/
+`benchmark_version`/`benchmark_source_hash` to represent an external
+benchmark (e.g. FinanceBench) honestly, without forcing it through
+`VALID_SPLITS` or lying about the protected internal `test` split. Full
+detail in `project_plan/PHASE2_FINANCEBENCH_VALIDATION.md`'s "Run
+logging - external-benchmark extension" section. Version 1 records
+remain fully readable (`SUPPORTED_RUN_SCHEMA_VERSIONS = (1, 2)`); every
+field/rule documented below for `evaluation_source="internal_phase2"`
+(the only value that existed before Task 2.12) is unchanged.
 
 ## Mandatory Task 2.11 fields (PROJECT_EXECUTION.md, verbatim, 11/11)
 

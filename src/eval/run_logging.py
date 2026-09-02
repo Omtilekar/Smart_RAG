@@ -42,7 +42,21 @@ from src.artifacts.versioning import (
 from src.artifacts.versioning import validate_sha256 as _versioning_validate_sha256
 from src.eval.evaluation_schema import VALID_SPLITS
 
-EVALUATION_RUN_SCHEMA_VERSION = 1
+EVALUATION_RUN_SCHEMA_VERSION = 2
+# Task 2.12 bumped the schema 1 -> 2 to add `evaluation_source` +
+# `benchmark_name`/`benchmark_version`/`benchmark_source_hash` (external-
+# benchmark identity, e.g. FinanceBench) - a genuinely new field set, so
+# a version bump is correct (Task 2.11's own evolution policy). Version 1
+# records remain fully readable: SUPPORTED_RUN_SCHEMA_VERSIONS accepts
+# both, and a v1 record's absent `evaluation_source` is treated as the
+# v1-implicit "internal_phase2".
+SUPPORTED_RUN_SCHEMA_VERSIONS: tuple[int, ...] = (1, 2)
+
+# Distinguishes an internal Phase 2 evaluation run (Task 2.5's VALID_SPLITS
+# apply, no benchmark identity) from an external benchmark run (Task 2.12+;
+# `split` is the benchmark's own population label, not one of
+# dev/test/ci - never lied about as the protected internal `test` split).
+EVALUATION_SOURCES: tuple[str, ...] = ("internal_phase2", "external_benchmark")
 
 # Exactly PROJECT_EXECUTION.md's Task 2.11 roadmap fields - never silently
 # dropped even when a value is genuinely not applicable (e.g.
@@ -274,6 +288,10 @@ class EvaluationRunRecord:
     split_sha256: str | None
     timestamp: str
     metrics: dict
+    evaluation_source: str
+    benchmark_name: str | None
+    benchmark_version: str | None
+    benchmark_source_hash: str | None
     experiment_name: str | None
     run_kind: str | None
     notes: str | None
@@ -301,6 +319,10 @@ def build_run_record(
     run_id: str | None = None,
     timestamp: str | None = None,
     git_state: Mapping[str, Any] | None = None,
+    evaluation_source: str = "internal_phase2",
+    benchmark_name: str | None = None,
+    benchmark_version: str | None = None,
+    benchmark_source_hash: str | None = None,
     experiment_name: str | None = None,
     run_kind: str | None = None,
     notes: str | None = None,
@@ -311,7 +333,16 @@ def build_run_record(
     before returning anything - never a partially-valid record. Callers
     inject `run_id`/`timestamp`/`git_state` for deterministic tests;
     real invocations leave them None and get a fresh UUIDv4, the real
-    current UTC instant, and the real resolved Git state."""
+    current UTC instant, and the real resolved Git state.
+
+    `evaluation_source="internal_phase2"` (default) behaves exactly as
+    Task 2.11 originally specified: `split` must be one of Task 2.5's
+    `VALID_SPLITS`. `evaluation_source="external_benchmark"` (Task 2.12+)
+    represents an external benchmark honestly instead: `split` is the
+    benchmark's own population label (never coerced into
+    dev/test/ci - never lied about as the protected internal `test`
+    split), and `benchmark_name`/`benchmark_version`/`benchmark_source_hash`
+    become required."""
     run_id = run_id or generate_run_id()
     validate_run_id(run_id)
 
@@ -328,8 +359,10 @@ def build_run_record(
     validate_reranker_config(reranker_config)
     validate_generation_model(generation_model)
 
-    if split not in VALID_SPLITS:
-        raise RunLogValidationError(f"split {split!r} not in {VALID_SPLITS}")
+    _validate_evaluation_source_fields(
+        evaluation_source=evaluation_source, split=split, benchmark_name=benchmark_name,
+        benchmark_version=benchmark_version, benchmark_source_hash=benchmark_source_hash,
+    )
     if not isinstance(eval_set_version, str) or not eval_set_version.strip():
         raise RunLogValidationError("eval_set_version must be a non-empty string")
     if not isinstance(split_version, str) or not split_version.strip():
@@ -364,6 +397,10 @@ def build_run_record(
         "split_sha256": split_sha256,
         "timestamp": timestamp,
         "metrics": dict(metrics),
+        "evaluation_source": evaluation_source,
+        "benchmark_name": benchmark_name,
+        "benchmark_version": benchmark_version,
+        "benchmark_source_hash": benchmark_source_hash,
         "experiment_name": experiment_name,
         "run_kind": run_kind,
         "notes": notes,
@@ -374,6 +411,28 @@ def build_run_record(
 
     payload["run_record_sha256"] = compute_run_record_sha256(payload)
     return EvaluationRunRecord(**payload)
+
+
+def _validate_evaluation_source_fields(*, evaluation_source: str, split: str, benchmark_name: str | None,
+                                        benchmark_version: str | None, benchmark_source_hash: str | None) -> None:
+    if evaluation_source not in EVALUATION_SOURCES:
+        raise RunLogValidationError(f"evaluation_source {evaluation_source!r} not in {EVALUATION_SOURCES}")
+
+    if evaluation_source == "external_benchmark":
+        if not isinstance(split, str) or not split.strip():
+            raise RunLogValidationError("split must be a non-empty string (the benchmark's own population label)")
+        for name, value in (("benchmark_name", benchmark_name), ("benchmark_version", benchmark_version)):
+            if not isinstance(value, str) or not value.strip():
+                raise RunLogValidationError(f"{name} is required (non-empty string) when evaluation_source='external_benchmark'")
+        validate_sha256(benchmark_source_hash, "benchmark_source_hash")
+    else:
+        if split not in VALID_SPLITS:
+            raise RunLogValidationError(f"split {split!r} not in {VALID_SPLITS}")
+        if benchmark_name is not None or benchmark_version is not None or benchmark_source_hash is not None:
+            raise RunLogValidationError(
+                "benchmark_name/benchmark_version/benchmark_source_hash must be null when "
+                "evaluation_source='internal_phase2' - never populated for an internal run"
+            )
 
 
 def _assert_matches_compatibility(compatibility: ArtifactCompatibility, *, chunk_schema_version: int,
@@ -418,8 +477,11 @@ def validate_run_record(record: "EvaluationRunRecord | Mapping[str, Any]") -> No
     if missing:
         raise RunLogValidationError(f"run record missing mandatory field(s): {missing}")
 
-    if data.get("run_schema_version") != EVALUATION_RUN_SCHEMA_VERSION:
-        raise RunLogValidationError(f"unsupported run_schema_version {data.get('run_schema_version')!r}")
+    schema_version = data.get("run_schema_version")
+    if schema_version not in SUPPORTED_RUN_SCHEMA_VERSIONS:
+        raise RunLogValidationError(
+            f"unsupported run_schema_version {schema_version!r} (supported: {SUPPORTED_RUN_SCHEMA_VERSIONS})"
+        )
 
     validate_run_id(data["run_id"])
     validate_git_sha(data["git_sha"])
@@ -431,8 +493,17 @@ def validate_run_record(record: "EvaluationRunRecord | Mapping[str, Any]") -> No
     validate_reranker_config(data["reranker_config"])
     validate_generation_model(data["generation_model"])
 
-    if data["split"] not in VALID_SPLITS:
-        raise RunLogValidationError(f"split {data['split']!r} not in {VALID_SPLITS}")
+    if schema_version == 1:
+        # A pre-Task-2.12 record predates evaluation_source entirely -
+        # implicitly internal_phase2, original split semantics apply.
+        if data["split"] not in VALID_SPLITS:
+            raise RunLogValidationError(f"split {data['split']!r} not in {VALID_SPLITS}")
+    else:
+        _validate_evaluation_source_fields(
+            evaluation_source=data.get("evaluation_source", "internal_phase2"), split=data["split"],
+            benchmark_name=data.get("benchmark_name"), benchmark_version=data.get("benchmark_version"),
+            benchmark_source_hash=data.get("benchmark_source_hash"),
+        )
     if not isinstance(data["eval_set_version"], str) or not data["eval_set_version"].strip():
         raise RunLogValidationError("eval_set_version must be a non-empty string")
     split_sha256 = data.get("split_sha256")
@@ -483,7 +554,21 @@ def load_run_record(path: Path) -> EvaluationRunRecord:
     except json.JSONDecodeError as exc:
         raise RunLogError(f"{path} is not valid JSON: {exc}") from exc
     validate_run_record(data)
-    return EvaluationRunRecord(**data)
+    return EvaluationRunRecord(**_backfill_v1_defaults(data))
+
+
+def _backfill_v1_defaults(data: Mapping[str, Any]) -> dict:
+    """A genuine `run_schema_version=1` record on disk predates
+    `evaluation_source`/`benchmark_*` entirely - fills in their v1-implicit
+    values so the current dataclass (which always carries these fields)
+    can still represent it. Never changes what was already validated;
+    only supplies the default a v1 record always implicitly meant."""
+    filled = dict(data)
+    filled.setdefault("evaluation_source", "internal_phase2")
+    filled.setdefault("benchmark_name", None)
+    filled.setdefault("benchmark_version", None)
+    filled.setdefault("benchmark_source_hash", None)
+    return filled
 
 
 def list_run_records(directory: Path | None = None) -> list[Path]:

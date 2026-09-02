@@ -113,6 +113,21 @@ class StoragePaths:
     def xbrl_db(self) -> Path:
         return self.data_root / "xbrl.duckdb"
 
+    @property
+    def financebench_root(self) -> Path:
+        """Task 2.12 - frozen third-party FinanceBench source (JSONL +
+        referenced PDFs), isolated from the internal SEC corpus roots
+        above. Read-only once acquired, exactly like the other frozen-
+        input roots on this class."""
+        return self.data_root / "financebench"
+
+    def benchmark_artifacts_dir(self, benchmark_name: str, benchmark_config_hash: str) -> Path:
+        """Task 2.12 - isolated generated-output namespace for an
+        external benchmark's derived parse/chunk/embedding/index
+        artifacts. Never shares a directory with the SEC
+        chunks_dir()/embeddings_dir()/index_dir() family above."""
+        return self.artifacts_root / "benchmark" / safe_component(benchmark_name) / safe_component(benchmark_config_hash)
+
     # ------------------------------------------------- generated outputs
     # Deterministic, versioned locations under artifacts_root. Same input
     # always maps to the same path; different input always maps elsewhere.

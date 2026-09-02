@@ -527,6 +527,101 @@ class TestArtifactCompatibilityIntegration:
 
 # --------------------------------------------------------------- real Phase 1 (local_data)
 
+# --------------------------------------------------------------- Task 2.12 schema-v2 extension
+
+class TestExternalBenchmarkExtension:
+    def test_default_evaluation_source_is_internal(self):
+        record = build()
+        assert record.evaluation_source == "internal_phase2"
+        assert record.benchmark_name is None
+
+    def test_current_schema_version_is_2(self):
+        assert rl.EVALUATION_RUN_SCHEMA_VERSION == 2
+        assert 2 in rl.SUPPORTED_RUN_SCHEMA_VERSIONS
+
+    def test_external_benchmark_record_builds(self):
+        record = build(
+            evaluation_source="external_benchmark", split="open_source_150",
+            benchmark_name="financebench", benchmark_version="financebench-open-source-150-v1",
+            benchmark_source_hash=HASH_A,
+        )
+        assert record.split == "open_source_150"
+        assert record.benchmark_name == "financebench"
+
+    def test_external_benchmark_split_not_forced_into_valid_splits(self):
+        # "open_source_150" is deliberately NOT in VALID_SPLITS - this must
+        # succeed for evaluation_source="external_benchmark" specifically.
+        record = build(evaluation_source="external_benchmark", split="open_source_150",
+                        benchmark_name="financebench", benchmark_version="v1", benchmark_source_hash=HASH_A)
+        assert record.split not in ("dev", "test", "ci")
+
+    def test_external_benchmark_never_labeled_internal_test(self):
+        # A reader can never mistake an external run for the protected
+        # internal SEC TEST split: evaluation_source is always recorded
+        # alongside split, structurally distinguishing the two even though
+        # `split` itself is just a free-form population label for an
+        # external run.
+        record = build(evaluation_source="external_benchmark", split="open_source_150",
+                        benchmark_name="financebench", benchmark_version="v1", benchmark_source_hash=HASH_A)
+        assert record.evaluation_source == "external_benchmark"
+        assert record.split != "test"
+
+    def test_external_benchmark_missing_name_rejected(self):
+        with pytest.raises(rl.RunLogValidationError):
+            build(evaluation_source="external_benchmark", split="open_source_150",
+                  benchmark_name=None, benchmark_version="v1", benchmark_source_hash=HASH_A)
+
+    def test_external_benchmark_missing_version_rejected(self):
+        with pytest.raises(rl.RunLogValidationError):
+            build(evaluation_source="external_benchmark", split="open_source_150",
+                  benchmark_name="financebench", benchmark_version=None, benchmark_source_hash=HASH_A)
+
+    def test_external_benchmark_malformed_source_hash_rejected(self):
+        with pytest.raises(rl.RunLogValidationError):
+            build(evaluation_source="external_benchmark", split="open_source_150",
+                  benchmark_name="financebench", benchmark_version="v1", benchmark_source_hash="not-a-hash")
+
+    def test_internal_run_with_benchmark_fields_rejected(self):
+        with pytest.raises(rl.RunLogValidationError):
+            build(benchmark_name="financebench")
+
+    def test_invalid_evaluation_source_rejected(self):
+        with pytest.raises(rl.RunLogValidationError):
+            build(evaluation_source="not-a-real-source")
+
+    def test_v1_record_without_new_fields_still_validates(self):
+        # Simulates a genuine pre-Task-2.12 record on disk: no
+        # evaluation_source/benchmark_* keys at all, run_schema_version=1.
+        record = build()
+        data = record.to_dict()
+        data["run_schema_version"] = 1
+        del data["evaluation_source"]
+        del data["benchmark_name"]
+        del data["benchmark_version"]
+        del data["benchmark_source_hash"]
+        data["run_record_sha256"] = rl.compute_run_record_sha256(data)
+        rl.validate_run_record(data)
+
+    def test_v1_record_write_read_round_trip(self, tmp_path):
+        record = build()
+        data = record.to_dict()
+        data["run_schema_version"] = 1
+        for k in ("evaluation_source", "benchmark_name", "benchmark_version", "benchmark_source_hash"):
+            del data[k]
+        data["run_record_sha256"] = rl.compute_run_record_sha256(data)
+        target = tmp_path / f"{data['run_id']}.json"
+        target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        loaded = rl.load_run_record(target)
+        assert loaded.run_id == data["run_id"]
+
+    def test_unsupported_schema_version_rejected(self):
+        record = build()
+        data = record.to_dict()
+        data["run_schema_version"] = 999
+        with pytest.raises(rl.RunLogValidationError):
+            rl.validate_run_record(data)
+
+
 @pytest.mark.local_data
 class TestRealPhase1Integration:
     def test_real_artifact_identities_populate_a_run_record(self, tmp_path):

@@ -55,3 +55,13 @@ pyyaml==6.0.3
 # dependency itself.
 docling-slim==2.124.0
 docling-parse==7.16.0
+
+# pdfplumber (Task 2.12) - FinanceBench's referenced filings are PDFs, and
+# Docling's PDF pipeline requires a layout ML model that itself requires
+# torchvision (verified directly: DocumentConverter.convert() on a real
+# PDF raises "AutoImageProcessor requires the Torchvision library"),
+# which this project deliberately excludes (see docling-slim note above).
+# pdfplumber (pure Python + pdfminer.six) provides page text + table
+# extraction with zero torch/torchvision dependency - verified `pip
+# check` clean after installation.
+pdfplumber==0.11.10

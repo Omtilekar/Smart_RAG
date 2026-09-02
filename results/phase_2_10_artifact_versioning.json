@@ -1,0 +1,70 @@
+{
+  "artifact_manifest_version": 1,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": {
+    "historical": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+    "recomputed": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+    "legacy_compatibility": "PASS"
+  },
+  "chunk_artifact": {
+    "directory": "C:\\Om\\Codes\\RAG\\artifacts\\chunks\\f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+    "row_count": 162357
+  },
+  "embedding_artifact": {
+    "directory": "C:\\Om\\Codes\\RAG\\artifacts\\embeddings\\f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd\\BAAI--bge-small-en-v1.5",
+    "row_count": 162357,
+    "embedding_identity": {
+      "embedding_identity_version": 1,
+      "model_repository": "BAAI/bge-small-en-v1.5",
+      "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "embedding_dimension": 384,
+      "vector_dtype": "float32",
+      "normalize_embeddings": true,
+      "passage_convention": "raw_text_no_instruction",
+      "query_convention": "prepend:Represent this sentence for searching relevant passages: "
+    },
+    "embedding_identity_hash": "b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84"
+  },
+  "index_artifact": {
+    "directory": "C:\\Om\\Codes\\RAG\\artifacts\\indexes\\f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd\\BAAI--bge-small-en-v1.5",
+    "row_count": 162357,
+    "ann_indexes": 0,
+    "index_identity": {
+      "index_identity_version": 1,
+      "chunk_schema_version": 1,
+      "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+      "embedding_identity_hash": "b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84",
+      "distance_metric": "cosine",
+      "index_type": "exact_flat",
+      "table_name": "chunks"
+    },
+    "index_identity_hash": "ace70ee67d8e98e019d221f2a0215a5b88498a0fc5dcbe73ac7ef1277630b111"
+  },
+  "eval_set_version": {
+    "eval_set_version": "phase2-v1",
+    "dataset_sha256": "bf85e1a12ac70645d906a75fa79563c06dbb7620d6e870d4eb29505a326f922a",
+    "split_version": "phase2-split-v1",
+    "dev_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+    "test_sha256": "6ce8bf8d1b33d449e7a259175592a0f5a0ecd56059582eade483c19b3c8c8f3e",
+    "ci_sha256": "adc544629a98026634d0200ee943e978c8436150dcb9e7028e758b77f1730c09",
+    "test_payload_opened": false,
+    "note": "TEST hash is a frozen digest already committed in phase_2_4_split_summary.json - reading it here does not materialize or access the protected TEST question corpus."
+  },
+  "test_access_discipline": {
+    "total_access_log_rows": 2,
+    "official_test_runs_used": 0,
+    "budget": 3
+  },
+  "chain_compatibility": "PASS",
+  "negative_self_checks": {
+    "stale_chunk_hash_rejected": "PASS",
+    "stale_embedding_identity_rejected": "PASS",
+    "stale_index_identity_rejected": "PASS",
+    "schema_version_mismatch_rejected": "PASS",
+    "eval_version_mismatch_rejected": "PASS"
+  },
+  "historical_artifacts_modified": false,
+  "note": "manifest.json sidecars written next to each Phase 1 artifact directory are new files only - chunks.parquet, embeddings.parquet, and the LanceDB table data were never rewritten. Labeled 'verified historical artifact provenance' - they did not exist at original build time.",
+  "created_at_utc": "2026-09-02T04:46:53.918267+00:00",
+  "git_sha": "6d16c266a678fe0654528cc9ba2178823cb4309b"
+}

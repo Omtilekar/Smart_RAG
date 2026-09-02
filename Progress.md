@@ -8605,5 +8605,280 @@ portable + 2 local_data tests. No prior-task artifact modified.
 ```text
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.9 Freeze Chunk Metadata Schema            — COMPLETE
-  2.10 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
+  2.10 Config Hashing & Artifact Versioning   — COMPLETE
+  2.11 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
+```
+
+## 2026-09-02 — Phase 2.10 Config Hashing and Artifact Versioning
+
+### Objective
+
+Freeze the repository-wide configuration/artifact identity and
+compatibility contract: hash chunking configuration; version chunk/index
+directories; store embedding-model identity; store eval-set version;
+make stale-index/new-config mismatches fail loudly; add CI assertions
+for artifact compatibility. Provenance and compatibility enforcement
+only - no chunking ablation, no embedding benchmark, no indexing
+experiment, no retrieval evaluation, no Task 2.11 run-logging layer.
+
+### Initial State
+
+`git log` HEAD = `6d16c26` ("Freeze canonical chunk metadata schema",
+Task 2.9). `python --version` 3.11.9 (`.venv\Scripts\python.exe`).
+`scripts/dev.py doctor` all PASS. `scripts/dev.py test --portable`: 844
+passed, 25 deselected. Working tree clean except this task's own prompt
+file.
+
+### Authoritative Contract
+
+`PROJECT_EXECUTION.md`'s Task 2.10 checklist (hash chunking
+configuration; version chunk/index directories; store embedding-model
+identity; store eval-set version; prevent stale-index/new-config
+mismatches; add CI assertions) matches this task's own prompt exactly -
+no discrepancy found.
+
+### Existing Hash Audit
+
+`src/chunk/fixed_window.py::chunk_config_hash()` already implemented the
+correct canonical-JSON-then-SHA-256 primitive
+(`json.dumps(sort_keys=True, separators=(",",":"))` + `hashlib.sha256`).
+Per Section 5's default expectation ("preserve it if correct; centralize
+it; test it"), it was refactored into a thin delegating wrapper around
+the new `src.artifacts.versioning.compute_chunk_config_hash()` rather
+than reimplemented - its external signature and return value are
+unchanged (verified: `legacy_chunk_config_hash(config) ==
+compute_chunk_config_hash(config)` for the real frozen config).
+
+### Canonical Serialization
+
+`src/artifacts/versioning.py::canonical_json_bytes()`:
+`json.dumps(payload, sort_keys=True, separators=(",", ":"),
+ensure_ascii=False, allow_nan=False).encode("utf-8")`. NaN/+-Infinity
+rejected via `allow_nan=False` (native `ValueError`); sets, arbitrary
+objects, callables, and `Path` objects rejected because `json.dumps` has
+no native encoding for them (native `TypeError`) - both wrapped into one
+`ConfigHashError` rather than hand-rolling a second unsupported-type
+check. Key-order independence, nested structures, and Unicode verified
+directly (`TestCanonicalSerialization`, 15 tests).
+
+### Chunk Config Hash
+
+`compute_chunk_config_hash(config) = semantic_hash(config)`. Captures
+tokenizer repo/revision, window size, overlap/stride, special-token
+policy, partial-window policy, frontmatter/body policy, decode-offset
+policy, normalizer/manifest hash linkage - excludes batch size, output
+path, `created_at`, GPU name, Git SHA (none of these were ever in Phase
+1's `build_chunk_config()` dict to begin with).
+
+### Legacy Compatibility
+
+Independently recomputed the frozen Phase 1 hash from the real
+`configs/chunk_development_corpus.json` via the new centralized utility:
+
+```text
+historical:   f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+recomputed:   f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd
+legacy compatibility: PASS
+```
+
+Byte-identical (`ensure_ascii=False` vs. the original's default
+`ensure_ascii=True` produce identical bytes here since the config
+content is pure ASCII). No STOP condition triggered; Task 2.9's
+`chunk_uid`/`chunk_local_id`/`chunk_schema_version` were not touched or
+redefined.
+
+### Chunk Artifact Versioning
+
+`storage.chunks_dir(chunk_config_hash)` unchanged -
+`artifacts/chunks/<chunk_config_hash>/`. Phase 1's chunk Parquet was not
+rebuilt, moved, or rewritten. A verified sidecar
+`artifacts/chunks/<hash>/manifest.json` (new file only, git-ignored) is
+written by the new audit script, explicitly labeled `"provenance_label":
+"verified historical artifact provenance"`.
+
+### Embedding Identity
+
+`src/embeddings/bge.py::embedding_identity()` - structured identity from
+the module's own frozen constants: `model_repository=BAAI/bge-small-en-v1.5`,
+`model_revision=5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`,
+`embedding_dimension=384`, `vector_dtype=float32`,
+`normalize_embeddings=true`, plus explicit passage/query conventions.
+`embedding_identity_hash = b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84`
+for the real Phase 1 configuration - deliberately more than the sanitized
+`"BAAI--bge-small-en-v1.5"` filesystem label; distinguishes
+same-repository-different-revision/dimension/normalization from one
+another (verified: `TestEmbeddingIdentity`, 7 tests).
+
+### Index Identity
+
+`src/index/lancedb_index.py::index_identity()` binds
+`chunk_schema_version` + `chunk_config_hash` + `embedding_identity_hash`
++ `distance_metric="cosine"` + `index_type="exact_flat"` +
+`table_name="chunks"`. `index_identity_hash =
+ace70ee67d8e98e019d221f2a0215a5b88498a0fc5dcbe73ac7ef1277630b111` for
+the real Phase 1 index. `index_type` is the deliberate Phase 3 extension
+point (IVF_PQ/FTS/hybrid) - not implemented here.
+
+### Eval-Set Version
+
+Reused, never recomputed, from Task 2.3/2.4's already-frozen artifacts:
+`eval_set_version=phase2-v1` (`results/phase_2_3_evaluation_dataset_summary.json`),
+`split_version=phase2-split-v1`, `dev_sha256`/`test_sha256`/`ci_sha256`
+(`results/phase_2_4_split_summary.json`). `test_sha256` is a frozen
+digest already committed from Task 2.4 - reading it does not materialize
+or access the protected TEST question corpus.
+
+### Manifest Contract
+
+`ARTIFACT_MANIFEST_VERSION=1`, tracked separately from
+`chunk_schema_version`. `build_chunk_manifest`/`build_embedding_manifest`/
+`build_index_manifest` construct the three manifest shapes;
+`validate_artifact_manifest(manifest, artifact_type)` checks required
+fields, artifact-type match, manifest-version support, and SHA-256 hash-
+field format (malformed hashes rejected outright, never silently
+lowercased). `manifest_semantic_fingerprint()` excludes
+`created_at_utc`/`git_sha` - verified two manifests differing only in
+provenance produce the identical fingerprint.
+
+### Compatibility Enforcement
+
+`ArtifactCompatibility(chunk_schema_version, chunk_config_hash,
+embedding_identity_hash, index_identity_hash, eval_set_version)` +
+`assert_artifact_compatible()`, raising `ArtifactCompatibilityError`
+(never a warning, never a silent rebuild/newest-directory fallback) on:
+chunk-hash mismatch, embedding-identity mismatch, index-identity
+mismatch, schema-version mismatch, eval-version mismatch, and row-count
+mismatch across the chunk/embedding/index chain. No implicit "latest"
+semantics exist anywhere in `src.storage`/`src.artifacts.versioning`.
+
+### Negative Mismatch Validation
+
+All 15 Section-31 scenarios covered in `tests/test_artifact_versioning.py`:
+window size, overlap, tokenizer revision, embedding repository/revision/
+dimension/normalization, distance metric, index type, chunk schema
+version, eval-set version, malformed hash, missing manifest field, wrong
+artifact type, row-count mismatch - every one raises
+`ArtifactCompatibilityError` or `ArtifactManifestError`. Real-manifest
+negative self-checks (tampered copies of the actual Phase 1 manifests,
+never the real artifacts) also run inside
+`scripts/audit_artifact_compatibility.py` - all 5 PASS.
+
+### CI Assertions
+
+`tests/test_artifact_versioning.py`: 83 tests (81 portable + 2
+`local_data`-marked). Portable tests use only tiny synthetic
+configs/manifests - CI needs no 26 GB dataset. `local_data` tests replay
+the real Phase 1 chunk -> embedding -> index chain end-to-end (no model
+load, no GPU).
+
+### Real Phase 1 Audit
+
+`scripts/audit_artifact_compatibility.py` (read-only, no model load, no
+GPU):
+
+```text
+chunk config hash legacy compatibility:  PASS
+chunk artifact:      162,357 rows
+embedding artifact:  162,357 rows, identity_hash b39a67c9...
+index artifact:      162,357 rows, 0 ANN indexes, identity_hash ace70ee6...
+eval_set_version:    phase2-v1 / split phase2-split-v1
+official TEST runs used: 0/3
+valid chain compatibility: PASS
+```
+
+Written to `results/phase_2_10_artifact_versioning.json`. Idempotent -
+re-run twice, produced byte-identical hashes both times.
+
+### TEST Discipline
+
+No TEST question payload opened. `test_access_log` verified unchanged: 2
+rows, both `kind='build_validation'`, `run_number IS NULL` - 0/3 official
+TEST evaluation runs consumed, identical to before this task.
+
+### Regression Gates
+
+Task 2.9: `CHUNK_SCHEMA_VERSION`/`CANONICAL_FIELDS`/`chunk_uid` semantics
+untouched (`src/chunk/metadata_schema.py` not modified); all 162,357
+Phase 1 derived UIDs still unique (re-verified via the full suite's
+`local_data` run). Task 2.8: `src/parse/`, `build_primary_evidence.py`,
+and `results/phase_2_8_primary_evidence_summary.json` zero-diff. Task
+2.1-2.7: zero-diff on every prior config/result file. Phase 1: chunk
+count/embeddings/index row count/exact cosine semantics unchanged and
+independently re-verified (162,357 end-to-end); `src/retrieval/baseline.py`
+and `src/generation/` untouched. Frozen data: `data/xbrl.duckdb` size
+confirmed unchanged at 7,011,053,568 bytes; `git status --short` shows
+no changes anywhere under `data/`.
+
+### Tests
+
+`scripts/dev.py test --portable`: 925 passed, 27 deselected (844 + 81
+new portable = 925; 25 + 2 new `local_data` = 27) - zero regressions.
+`scripts/dev.py test` (full, including all `local_data`/`model`/`gpu`-
+marked tests): **952 passed, 0 failed**.
+
+### Frozen Data
+
+`data/xbrl.duckdb`, `data/edgar_corpus/`, `data/raw/xbrl/`,
+`data/raw/primary/`, `data/msmarco/`: unchanged (no writes performed;
+`xbrl.duckdb` size independently re-verified at 7,011,053,568 bytes).
+
+### Files Created/Modified
+
+Created: `src/artifacts/__init__.py`, `src/artifacts/versioning.py`,
+`scripts/audit_artifact_compatibility.py`,
+`tests/test_artifact_versioning.py`,
+`results/phase_2_10_artifact_versioning.json`,
+`project_plan/PHASE2_ARTIFACT_VERSIONING.md`. Modified narrowly:
+`src/chunk/fixed_window.py` (`chunk_config_hash()` delegates to the
+centralized utility; unused `hashlib` import removed), `src/embeddings/bge.py`
+(added `embedding_identity()`), `src/index/lancedb_index.py` (added
+`INDEX_TYPE`/`index_identity()`), `src/storage.py` (added
+`embeddings_dir_for_identity()`/`index_dir_for_identity()`, existing
+methods unchanged), `.gitignore` (anchored the `artifacts/` rule to
+`/artifacts/` - it was unintentionally also matching the new tracked
+`src/artifacts/` package; verified the top-level generated `artifacts/`
+root is still fully ignored), `project_plan/REPOSITORY_STRUCTURE.md`,
+`Progress.md` (this entry).
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - no data/artifacts-payload/venv/.env content stageable
+git add -n .:            only src/artifacts/*.py tracked from the new
+  package; the generated artifacts/ root (including the new
+  manifest.json sidecars) confirmed still ignored
+secret scan:              clean
+```
+
+Committed as one coherent Task 2.10 commit: "Enforce artifact config
+compatibility". No Phase 2 completion tag. No remote configured - push
+deferred.
+
+### Result
+
+```text
+PASS. Centralized canonical config-hashing/semantic-hash utility
+(src.artifacts.versioning) established; Phase 1's existing chunk-config
+hash implementation preserved and delegated to it (legacy compatibility:
+PASS, byte-identical to the frozen f1dc04d4... hash). Embedding and
+index semantic identities defined and bound to real Phase 1 artifacts.
+Chunk/embedding/index manifest contract established; verified historical
+manifest sidecars written for all three real Phase 1 artifact
+directories without touching the underlying Parquet/LanceDB data.
+ArtifactCompatibility + assert_artifact_compatible enforce loud,
+specific failure (ArtifactCompatibilityError) for every required
+mismatch scenario (15/15 Section-31 negative cases covered). Real
+162,357-row chunk -> embedding -> index chain independently verified
+compatible end-to-end. Zero regressions across 952 full-suite tests. No
+TEST access; 0/3 official runs consumed. No network/LLM/API/new-GPU
+dependency.
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.10 Config Hashing & Artifact Versioning   — COMPLETE
+  2.11 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
 ```

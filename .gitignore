@@ -20,7 +20,10 @@ temp/
 *.log
 
 # ---- Large generated artifacts ----
-artifacts/
+# Anchored to repo root (leading /) - an unanchored "artifacts/" would also
+# match src/artifacts/ (Task 2.10's tracked config-hashing/versioning
+# package), which must be committed.
+/artifacts/
 logs/
 
 *.duckdb

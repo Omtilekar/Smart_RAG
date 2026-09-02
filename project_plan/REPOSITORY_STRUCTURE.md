@@ -15,6 +15,9 @@ implemented versus planned.
 ```text
 SEC-RAG/
 ├── src/
+│   ├── artifacts/       # IMPLEMENTED (Task 2.10) — versioning.py: canonical
+│   │                     # config hashing, embedding/index identity, artifact
+│   │                     # manifests, compatibility enforcement
 │   ├── ingest/          # IMPLEMENTED — data acquisition + validation + audit
 │   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter
 │   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet;
@@ -56,7 +59,9 @@ SEC-RAG/
 │                         # phase_2_7_msmarco_harness.json (Task 2.7),
 │                         # phase_2_8_primary_evidence.json (Task 2.8)
 │                         # (no new config for Task 2.9 - it defines schema,
-│                         # not a runnable pipeline)
+│                         # not a runnable pipeline; no new config for
+│                         # Task 2.10 either - it hashes/validates existing
+│                         # configs rather than introducing a new one)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -78,7 +83,10 @@ SEC-RAG/
 │                         # run_msmarco_harness.py (Task 2.7),
 │                         # build_primary_evidence.py (Task 2.8),
 │                         # audit_chunk_metadata_schema.py (Task 2.9, read-only
-│                         # Phase 1 + Task 2.8 compatibility audit)
+│                         # Phase 1 + Task 2.8 compatibility audit),
+│                         # audit_artifact_compatibility.py (Task 2.10, read-only
+│                         # chunk/embedding/index chain compatibility audit,
+│                         # writes verified-historical manifest.json sidecars)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -107,11 +115,12 @@ intentionally omitted from the tree above.
 
 | Package | Status | Will eventually contain |
 |---|---|---|
+| `artifacts/` | **implemented** | `versioning.py` — canonical config-hashing/semantic-hash primitive, embedding/index identity, chunk/embedding/index artifact manifests, `ArtifactCompatibility`/`assert_artifact_compatible` loud-mismatch enforcement (Task 2.10), see `project_plan/PHASE2_ARTIFACT_VERSIONING.md` |
 | `ingest/` | **implemented** | MS MARCO / EDGAR-CORPUS / XBRL / primary-doc fetchers, `validate.py`, `audit_data.py` |
 | `normalize/` | **implemented** | `edgar_markdown.py` — minimal EDGAR-CORPUS -> Markdown/YAML-frontmatter renderer (Task 1.2), see `project_plan/PHASE1_NORMALIZATION.md` |
 | `chunk/` | **implemented** | `fixed_window.py` — minimal 512-token fixed-window chunker (Task 1.3), see `project_plan/PHASE1_CHUNKING.md`; `metadata_schema.py` — the canonical 23-field chunk record schema, `chunk_uid`/`chunk_local_id` identity algorithms, offset/section/date/accession semantics (Task 2.9), see `project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md`; later section-aware chunking pipeline (Phase 3.2) |
-| `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md` |
-| `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
+| `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md`; `embedding_identity()` — structured semantic identity (repository/revision/dimension/dtype/normalization/convention), Task 2.10 |
+| `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; `index_identity()` — semantic identity binding chunk+embedding+distance-metric+index-type, Task 2.10, see `project_plan/PHASE2_ARTIFACT_VERSIONING.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
 | `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |
 | `generation/` | **implemented** | `provider.py` (provider-neutral interface), `openrouter.py` (adapter), `minimal.py`, `citations.py` (Task 1.7), see `project_plan/PHASE1_GENERATION.md` |
 | `eval/` | **partial** | `citation_integrity.py` — mechanical citation-integrity smoke check (Task 1.8), see `project_plan/PHASE1_CITATION_INTEGRITY.md`; `smoke_dataset.py` — deterministic 200-question document-level smoke dataset builder (Task 1.9), see `project_plan/PHASE1_SMOKE_EVALUATION.md`; `baseline_metrics.py` — pure doc_recall@10 metric logic (Task 1.10), see `project_plan/PHASE1_BASELINE_METRICS.md`; `truth_contract.py` — XBRL fact-eligibility contract (Task 2.1, refactored in Task 2.2 to consume the registry), see `project_plan/PHASE2_TRUTH_CONTRACT.md`; `tag_registry.py` — loader/validator for the frozen 15-tag `configs/eval_tags.yaml` (Task 2.2), see `project_plan/PHASE2_TAG_REGISTRY.md`; `evaluation_dataset.py` — record construction/hashing/duplicate+leakage checks for the 2,810-question Phase 2 evaluation dataset (Task 2.3), see `project_plan/PHASE2_EVALUATION_DATASET.md`; `dev_test_split.py` — company-disjoint DEV/TEST connected-component splitter (Task 2.4), see `project_plan/PHASE2_DEV_TEST_SPLIT.md`; `test_access.py` — controlled TEST-set loader with hash verification and a 3-run access budget (Task 2.4); `evaluation_schema.py` — the eval_runs/eval_question_results/eval_retrieved_items/eval_metrics/eval_stage_timings DuckDB schema, metric-definition registry, and schema-hash logic (Task 2.5); `eval_store.py` — the run-lifecycle storage API (start_run/record_*/complete_run/fail_run) all future experiments must use (Task 2.5; Task 2.6 added metric_definitions resync-on-reinit), see `project_plan/PHASE2_EVALUATION_SCHEMA.md`; `metrics.py` — hand-verified deterministic metric functions (recall/hit-at-k, MRR, binary nDCG@k, numeric_exact_match, correct_refusal, rate aggregation) reusing Task 1.10's frozen `doc_recall@10` hit semantics rather than reimplementing them (Task 2.6), see `project_plan/PHASE2_METRIC_TESTS.md`; `msmarco_harness.py` — MS MARCO benchmark-specific ID normalization/qrel grouping/multi-qrel recall+MRR+nDCG aggregation, reusing Task 2.6's metric primitives (Task 2.7), see `project_plan/PHASE2_MSMARCO_HARNESS.md`; primary-document evidence alignment implemented in the new `parse/` package (Task 2.8), see below |

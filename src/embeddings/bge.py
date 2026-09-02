@@ -113,6 +113,25 @@ def encode_queries(model, texts: list[str], batch_size: int = DEFAULT_BATCH_SIZE
     return vectors.astype(VECTOR_DTYPE, copy=False)
 
 
+def embedding_identity() -> dict:
+    """Task 2.10 - the structured semantic identity of this exact Phase 1
+    BGE embedding configuration (repository + resolved revision +
+    dimension + dtype + normalization + passage/query convention), not
+    merely the sanitized "BAAI--bge-small-en-v1.5" filesystem label. Built
+    from this module's own frozen constants - never duplicated/guessed
+    elsewhere."""
+    from src.artifacts.versioning import compute_embedding_identity
+    return compute_embedding_identity(
+        model_repository=MODEL_REPO,
+        model_revision=MODEL_REVISION,
+        embedding_dimension=EMBEDDING_DIMENSION,
+        vector_dtype=str(np.dtype(VECTOR_DTYPE)),
+        normalize_embeddings=True,
+        passage_convention="raw_text_no_instruction",
+        query_convention=f"prepend:{QUERY_INSTRUCTION}",
+    )
+
+
 def validate_vectors(vectors: np.ndarray, *, expect_normalized: bool = True,
                       norm_tolerance: float = 1e-3) -> None:
     """Raises ValueError on the first violated invariant:

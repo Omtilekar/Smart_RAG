@@ -154,6 +154,35 @@ class StoragePaths:
     def eval_dir(self, eval_version: str) -> Path:
         return self.artifacts_root / "eval" / safe_component(eval_version)
 
+    # ------------------------------------- Task 2.10 identity-hash-keyed paths
+    # `embeddings_dir`/`index_dir` above key on a raw model-name string,
+    # which is a real (Section 18) collision risk: the same model
+    # repository reused with a different revision/dimension/normalization
+    # would resolve to the same directory. These new methods key on the
+    # full embedding_identity_hash instead (collision-proof by
+    # construction) for any NEW artifact built under Task 2.10's identity
+    # contract, while `embeddings_dir`/`index_dir` themselves are left
+    # untouched so the existing Phase 1 on-disk layout stays readable
+    # (Section 28 - no destructive migration of the Phase 1 baseline).
+
+    def embeddings_dir_for_identity(self, chunk_config_hash: str, embedding_identity_hash: str) -> Path:
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(chunk_config_hash, "chunk_config_hash")
+        validate_sha256(embedding_identity_hash, "embedding_identity_hash")
+        return (
+            self.artifacts_root / "embeddings"
+            / safe_component(chunk_config_hash) / safe_component(embedding_identity_hash)
+        )
+
+    def index_dir_for_identity(self, chunk_config_hash: str, embedding_identity_hash: str) -> Path:
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(chunk_config_hash, "chunk_config_hash")
+        validate_sha256(embedding_identity_hash, "embedding_identity_hash")
+        return (
+            self.artifacts_root / "indexes"
+            / safe_component(chunk_config_hash) / safe_component(embedding_identity_hash)
+        )
+
     # ------------------------------------------- frozen-input existence
 
     def require_file(self, path: Path) -> Path:

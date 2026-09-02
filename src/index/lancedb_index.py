@@ -47,8 +47,31 @@ EXPECTED_COLUMNS: tuple[str, ...] = (
 )
 
 
+INDEX_TYPE = "exact_flat"  # no ANN index - matches this module's frozen Phase 1 contract
+
+
 class VectorIndexError(ValueError):
     """Raised for a malformed query vector or a table that fails validation."""
+
+
+def index_identity(*, chunk_schema_version: int, chunk_config_hash: str,
+                    embedding_identity_hash_value: str) -> dict:
+    """Task 2.10 - the structured semantic identity of this exact Phase 1
+    LanceDB index configuration (exact/flat search, cosine, table
+    "chunks"), bound to the chunk and embedding semantics that produced it.
+    `INDEX_TYPE`/`DISTANCE_METRIC`/`TABLE_NAME` are this module's own
+    frozen constants - never duplicated/guessed elsewhere. Extensible for
+    Phase 3 (IVF_PQ/FTS/hybrid) via a different `index_type` computed the
+    same way, without changing this module's Phase 1 contract."""
+    from src.artifacts.versioning import compute_index_identity
+    return compute_index_identity(
+        chunk_schema_version=chunk_schema_version,
+        chunk_config_hash=chunk_config_hash,
+        embedding_identity_hash=embedding_identity_hash_value,
+        distance_metric=DISTANCE_METRIC,
+        index_type=INDEX_TYPE,
+        table_name=TABLE_NAME,
+    )
 
 
 def open_database(db_path):

@@ -22,7 +22,6 @@ project_plan/PHASE1_CHUNKING.md for the full rationale of each decision):
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 
@@ -164,6 +163,13 @@ def chunk_config_hash(config: dict) -> str:
     """SHA-256 over canonical JSON (sort_keys, no whitespace) - the same
     convention already established by Task 1.1's development_manifest_sha256
     and Task 1.2's normalization_build_sha256, reused deliberately rather
-    than inventing a new one."""
-    blob = json.dumps(config, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()
+    than inventing a new one.
+
+    Task 2.10 - delegates to the one centralized canonical-hashing
+    primitive (src.artifacts.versioning.compute_chunk_config_hash) rather
+    than maintaining a second independent json.dumps+hashlib.sha256
+    implementation. Verified byte-identical to the original inline
+    implementation for the real frozen Phase 1 config (legacy
+    compatibility: PASS) - this function's return value is unchanged."""
+    from src.artifacts.versioning import compute_chunk_config_hash
+    return compute_chunk_config_hash(config)

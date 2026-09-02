@@ -1,0 +1,15 @@
+{
+  "parser_name": "docling",
+  "parser_version": "1.0",
+  "table_serialization": "markdown",
+  "table_row_group_size": 50,
+  "section_detection_policy": "last-occurrence-of-canonical-Item-heading-regex",
+  "node_id_scheme": "{document_id}#node-{ordinal:05d}",
+  "inline_xbrl_extraction_version": "1.1",
+  "numeric_normalization_version": "1.1",
+  "alignment_version": "1.2",
+  "evidence_schema_version": "1.0",
+  "truth_contract_version": "2.0",
+  "tag_registry_source": "configs/eval_tags.yaml",
+  "parser_config_hash": "84f6cf2e9cf04921cbffc20cf446eac03885e0a87f05e03c9eb71d4eb6c6288d"
+}

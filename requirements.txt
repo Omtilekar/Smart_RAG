@@ -32,3 +32,26 @@ python-dotenv==1.2.3
 
 # --- Phase 2 evaluation tag registry config (Task 2.2, configs/eval_tags.yaml) ---
 pyyaml==6.0.3
+
+# --- Phase 2 primary-document structural parsing (Task 2.8, src/parse/primary_html.py) ---
+# docling-slim (not the full `docling` metapackage) - deliberately: the
+# full `docling` package hard-requires docling-ibm-models (its PDF/OCR
+# vision-model backend), which requires torchvision. A naive
+# `pip install docling` pulled in a torchvision build that broke
+# transformers/sentence-transformers (Phase 1's BGE embedding pipeline)
+# at import time (`RuntimeError: operator torchvision::nms does not
+# exist` - a torch/torchvision ABI mismatch, not fixed by reinstalling a
+# version-matched torchvision from the same index). docling-slim
+# provides the exact same `docling.document_converter` module and full
+# HTML/XHTML parsing this project uses (verified directly: identical
+# text/table counts on a real filing) without OCR/vision dependencies at
+# all - consistent with this project's own rule (no OCR for HTML,
+# project_plan/PHASE2_PRIMARY_EVIDENCE.md's "Docling contract").
+# docling-parse is declared explicitly too: docling.document_converter
+# imports it unconditionally at module level for its PDF backend (even
+# though this project only exercises the HTML backend), and it is not
+# listed in docling-slim's own dependency metadata, so pip would not
+# install it automatically otherwise. It has no torch/torchvision
+# dependency itself.
+docling-slim==2.124.0
+docling-parse==7.16.0

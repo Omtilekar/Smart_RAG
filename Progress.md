@@ -6343,7 +6343,8 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.5 Evaluation Schema                       — COMPLETE
   2.6 Metric Unit Tests                       — COMPLETE
   2.7 MS MARCO Harness Validation             — COMPLETE
-  2.8 Primary Document Evidence Alignment     — NEXT
+  2.8 Primary Document Evidence Alignment     — COMPLETE WITH NOTE
+  2.9 Freeze Chunk Metadata Schema            — NEXT
 
 Known Phase 1 warning:
 Task 1.7a citation-format compliance remains 8/10.
@@ -6357,6 +6358,11 @@ project_plan/PHASE2_DEV_TEST_SPLIT.md.
 Task 2.6 deferred numeric_tolerance_match/citation_grounding/faithfulness
 (no frozen tolerance policy / no evidence gold / needs LLM judge) - see
 project_plan/PHASE2_METRIC_TESTS.md.
+Task 2.8's 990 primary filings are all fiscal_year 2021-2024 (0 fall in
+Task 2.1's frozen 2016-2020 window) - eligible_fact_count=0,
+gold_evidence_count=0 by structural necessity, not a parser defect;
+chunk_recall@10/chunk_mrr's available_for_current_gold stays false - see
+project_plan/PHASE2_PRIMARY_EVIDENCE.md.
 ```
 
 ## 2026-08-31 — Phase 2.3 Build the Full Evaluation Dataset
@@ -7798,4 +7804,517 @@ PASS
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.7 MS MARCO Harness Validation             — COMPLETE
   2.8 Primary Document Evidence Alignment     — NEXT
+```
+
+## 2026-09-02 — Phase 2.8 Primary Document Parsing + Inline-XBRL Evidence Alignment
+
+### Objective
+
+Parse the 990 primary 10-K HTML filings (tables and inline-XBRL intact,
+unlike EDGAR-CORPUS) while preserving document structure, and align
+inline-XBRL facts back to deterministic structural evidence units, so
+the project can obtain real chunk-level evidence labels. Purpose:
+evaluation, not feature expansion.
+
+### Precondition / Task 2.7 Verification
+
+Per this task's own Section 0 hard precondition, Task 2.8 was NOT
+started on first invocation - independently verified in the actual
+repository (not trusted from the prompt) that `results/phase_2_7_
+msmarco_harness.json` did not yet exist, `Progress.md` still showed
+"2.7 — NEXT", and no Task 2.7 commit existed (MS MARCO's full 8.84M-
+passage embedding build was still running in the background, having
+been interrupted three times by the local machine going idle). Reported
+"TASK 2.8 NOT STARTED" and waited. Task 2.8 began only after Task 2.7
+was independently re-verified COMPLETE: `results/phase_2_7_msmarco_
+harness.json` existed, `Progress.md`'s final Phase Status block showed
+"2.7 — COMPLETE", and `git log` showed the Task 2.7 commit
+(`6c4c00d "Add and validate MS MARCO benchmark harness"`).
+
+### Initial State
+
+```text
+HEAD:                    6c4c00d "Add and validate MS MARCO benchmark harness"
+portable baseline:      645 passed, 21 deselected
+full baseline:          666 passed
+primary source count:    990 files, 4,476,551,759 bytes (990 unique CIKs, 990 unique accessions)
+truth_contract_version/hash: 2.0 / 8ce68e8f53395f8f983e0002c53e62a31bb121b8551f28e739fcebb7f462988c
+tag_registry_version/hash:   1 / a230373e2a788423026142beb93c5c454a291f23468d46cfb40f5692e48b8070
+official SEC TEST evaluations consumed: 0/3
+```
+
+### Authoritative Sources
+
+`PROJECT_EXECUTION.md`'s Task 2.8 bullets (parse HTML preserving tables/
+inline-XBRL, extract inline XBRL, align to source positions, map to
+chunks, produce a chunk-level gold subset, validate manually) matched
+this task's detailed prompt with no material scope discrepancy.
+`REVIEW_RESOLUTIONS.md` confirmed still absent, not invented.
+`PROJECT_SPEC.md`'s Stage 1 explicitly named Docling for HTML->structured
+parsing - used as specified, but never trusted for inline-XBRL identity
+(see Docling contract below).
+
+**Discrepancy noted and resolved per Section 2's own rule ("PROJECT_
+EXECUTION.md WINS")**: this task's own prompt calls itself "the final
+planned engineering task of Phase 2," but `PROJECT_EXECUTION.md`'s own
+structure lists Phase 2 subtasks through **2.13** (2.9 chunk metadata
+schema, 2.10 config hashing, 2.11 evaluation run logging, 2.12
+FinanceBench validation, 2.13 LLM-as-judge validation) - all still
+Phase 2, not Phase 3. Phase 2 is therefore **not** closed by Task 2.8;
+the Phase 2 Exit Review below reflects this explicitly, and no Phase 2
+completion tag was created.
+
+### Critical Finding, Surfaced to the User Before Any Code Was Written
+
+Independently verified before any parsing/alignment code existed: all
+990 primary filings are fiscal_year 2021-2024 (28 FY2021, 23 FY2022,
+849 FY2023, 90 FY2024) - **0/990 fall inside the frozen Task 2.1 truth
+contract's 2016-2020 window**, confirmed by joining every primary-doc
+accession against `data/xbrl.duckdb`'s real `submissions.fiscal_year`.
+This means TRUTH-CONTRACT-ELIGIBLE facts = 0 and GOLD evidence = 0 for
+this entire population under the current, unmodified truth contract, no
+matter how well parsing/alignment works - a hard structural certainty,
+not a probabilistic risk. Surfaced to the user via `AskUserQuestion`
+before any engineering investment (Stop-Condition-I territory - "a new
+truth rule appears necessary... surface the conflict") rather than
+silently building a pipeline that could never produce a real result, or
+silently weakening Task 2.1's frozen window. **User's explicit decision**
+("Build full pipeline, report 0 gold honestly"): build the complete
+pipeline anyway, verify it against the real `facts` table (any fiscal
+year - the correctness check, never `eligible_facts()` itself) to prove
+the mechanism works, and report 0 eligible/gold honestly rather than
+manufacturing a truth-contract change.
+
+### Parser Design
+
+New `src/parse/` package (never inside `scripts/`/`tests/`/`src/eval/`):
+`source_identity.py` (deterministic `primary:{cik}:{accession}` identity,
+SHA-256 source hash, zero-byte/duplicate rejection), `primary_html.py`
+(Docling-based structural parsing), `inline_xbrl.py` (raw namespace-
+aware inline-XBRL DOM extraction, fully independent of Docling),
+`evidence_alignment.py` (alignment, reusing Task 2.1/2.2 unmodified).
+`scripts/build_primary_evidence.py` orchestrates only (--dry-run/
+--pilot/--full, resumability, atomic artifact I/O).
+
+### A Real Dependency-Breakage Bug Found and Fixed (Phase 1 Regression Risk)
+
+`pip install docling` (the full metapackage) pulled in `docling-ibm-
+models` (Docling's PDF/OCR vision backend), which requires `torchvision`
+- the resulting `torchvision==0.28.0` build was ABI-incompatible with
+this project's pinned `torch==2.13.0+cu130`
+(`RuntimeError: operator torchvision::nms does not exist`), breaking
+`transformers`/`sentence-transformers` import entirely (Phase 1's BGE
+embedding pipeline). **Caught immediately** by re-running the full
+existing test suite after installing Docling (7 failures, all embedding-
+related) - never assumed a new dependency was safe just because Task
+2.8's own new code worked. Reinstalling a version-and-index-matched
+`torchvision+cu130` build did NOT fix it (same ABI error). **Root cause
+and fix**: this project only needs Docling's HTML/XHTML backend, never
+PDF/OCR - `docling-slim` (a declared sub-component of the full `docling`
+package) provides the identical `docling.document_converter` module and
+identical HTML parsing behavior (verified: identical text/table counts
+on the same real filing) without `docling-ibm-models`/`torch` extras/
+`torchvision` anywhere in its dependency graph. `docling-parse` (needed
+- imported unconditionally by `docling.document_converter` for its PDF
+backend, but itself torch-free) declared alongside it.
+`requirements.txt` now pins `docling-slim==2.124.0` +
+`docling-parse==7.16.0`, never the full `docling` package. Verified
+clean after the fix: `pip check` PASS, `scripts/dev.py doctor` PASS
+(exit 0), full existing test suite (756 tests at that point) PASS with
+zero regressions, Docling HTML conversion unchanged.
+
+### A Real Case-Sensitivity Bug Found Before Any Extraction Code Was Trusted
+
+A first, naive `lxml.etree.HTMLParser`-based extraction attempt found
+**0** `ix:nonFraction`/`ix:nonNumeric` elements in a real filing known
+to contain over a thousand. Root cause: HTML is case-insensitive, so
+`HTMLParser` silently lowercases every tag (`ix:nonFraction` ->
+`ix:nonfraction`), and namespace-aware `.iter()` then matches nothing.
+Fixed by using `etree.XMLParser` instead (primary filings are well-
+formed XHTML+inline-XBRL) - confirmed 1,357 `nonFraction` elements found
+in the same file once parsed as XML.
+`tests/test_inline_xbrl.py::test_case_sensitivity_preserved` guards this
+regression permanently.
+
+### Structural Schema
+
+`StructuralNode(document_id, node_id, parent_node_id, node_type, section_id,
+section_title, source_order, source_locator, text, content_type, table_id,
+table_part)`. `node_id = "{document_id}#node-{ordinal:05d}"` - deterministic
+ordinal, not a hash (Section 13 requires determinism, not hashing).
+`source_locator` is Docling's own `self_ref` (e.g. `"#/texts/42"`) -
+honestly documented as such, since Docling's HTML backend has no page/
+bbox provenance to give a true raw-HTML XPath/byte-offset (Section 14).
+Section detection: regex `^Item\s+\d{1,2}[A-C]?\.\s+` restricted to 23
+canonical SEC Item identifiers, taking the **last** occurrence of each
+(real filings repeat every Item heading once in a TOC and once as the
+real header, in the same relative order) - verified against a real
+filing: all 23 canonical Items correctly detected, zero TOC
+contamination.
+
+### Table Handling
+
+Real Docling row/column grids preserved (never flattened to one
+paragraph). Small tables (<=50 data rows) -> one node; larger tables
+split into row-group parts with the header repeated in every part,
+sharing one `table_id`, deterministic `table_part` ordinal - fully
+reconstructable (verified by test). Serialization baseline: Markdown
+(matches Docling's own native export and PROJECT_SPEC.md's Stage 1
+description) - one reproducible baseline, not a Phase 3 format ablation.
+
+### Inline-XBRL Extraction
+
+Every `ix:nonFraction`/`ix:nonNumeric` extracted in document order,
+`ix:continuation` chains resolved (multi-hop verified), raw AND
+normalized values both preserved. `xsi:nil="true"` facts handled
+explicitly (2/1357 in the first real sample) - `normalized_value=None`,
+never coerced to zero or raised as an error.
+
+### Context / Unit Handling
+
+Every `xbrli:context` parsed into period (instant/duration) and sorted
+dimensions (`xbrldi:explicitMember`, never silently stripped). Every
+`xbrli:unit` parsed, including `<xbrli:divide>` compound units (see EPS
+below). `context_to_truth_contract_period()` converts to the same
+`(ddate, qtrs)` fields the raw `facts` table uses - **verified against a
+real fact**: a 2023-01-01..2023-12-31 duration context maps to
+`ddate=20231231, qtrs=4`, matching the real `data/xbrl.duckdb` Revenues
+row for the same accession exactly.
+
+### Numeric Normalization
+
+`decimal.Decimal` throughout, never `float()` on the raw string. Handles
+every transform observed in this corpus: `ixt:num-dot-decimal`/
+`numdotdecimal`, `ixt:num-comma-decimal`/`numcommadecimal` (European),
+`ixt:fixed-zero`/`fixedzero`, `ixt:zerodash`, and `ixt-sec:numwordsen`
+(English number words). An unrecognized `format` raises explicitly,
+never guessed. **Verified against a real raw fact**: displayed
+`"1,875,448"` with `scale="3"` normalizes to `1875448000`, matching
+`data/xbrl.duckdb`'s real row exactly.
+
+**Second real bug (EPS/divide units)**: the pilot's first pass produced
+2,634 `parse_error` records (3.5%). Root cause: `EarningsPerShareBasic`/
+`Diluted` use a `<xbrli:divide>` unit (USD/shares), which `extract_units()`'s
+first version did not parse at all. Verified against a real raw fact
+before fixing: Amazon's inline `EarningsPerShareDiluted` fact uses
+exactly this divide unit, and the real `facts` table row for the same
+accession/tag stores `uom='USD'` (SEC's own pipeline strips the
+denominator - matching Task 2.2's registry decision). Fixed:
+`XbrlUnit` now parses `<xbrli:divide>`, `unit_to_uom()` maps a
+USD/shares divide unit to canonical `"USD"`. Dropped `parse_error` to
+1,304 after this fix.
+
+**Third real bug (classification order)**: the remaining 1,304
+`parse_error` records were 100% `canonical_unit=None` on tags never in
+the registry anyway (pure-count concepts like
+`NumberOfRealEstateProperties` using custom count units). Root cause:
+`scripts/build_primary_evidence.py` required a resolved unit BEFORE
+checking tag support. Fixed by checking tag support first - result: **0
+`parse_error` records** on the 20-filing pilot.
+
+**Fourth real bug (numwordsen compounds), found on the full 990-document
+run**: first full pass finished 986/990 success, 4 failures - each a
+distinct compound number word not yet covered (`"one billion"` x2,
+`"One hundred three"`, `"three hundred two"`). Fixed via a proper
+recursive "X hundred [Y]" + thousand/million/billion-multiplier grammar.
+Verifying the fix directly against the 4 failed documents (before
+re-running anything at scale) surfaced two more real gaps
+(`"twenty three"` space-separated tens+ones, `"one hundred thirty
+three"` hundred + space-separated remainder) - fixed the same way.
+Because the fix did not change `build_config()`'s versioned content
+(already bumped for the three pilot-discovered bugs), `parser_config_hash`
+was unchanged, so re-running `--full` **resumed all 986 already-
+successful documents and reprocessed only the 4 failed ones in 51.5
+seconds** - final result: **990/990 (100%) parsed, 0 failures, 0
+`parse_error` records** across the entire corpus.
+
+### Truth-Contract / Tag-Registry Integration
+
+`src.eval.tag_registry.get_registry()` and `src.eval.truth_contract`'s
+frozen constants imported directly - no eligibility rule reimplemented,
+no competing truth contract created (`git diff --stat` zero on both
+files throughout). `check_eligibility_dimensions()` evaluates every
+Task 2.1/2.2 rule independently so a diagnostic report shows WHICH rule
+blocks eligibility, not just yes/no.
+
+### Evidence Schema
+
+`EvidenceRecord(evidence_schema_version, evidence_id, document_id, cik,
+accession, fiscal_year, section_id, section_title, node_ids, content_type,
+concept_name, concept_namespace, context_ref, unit_ref, raw_display_value,
+normalized_value, canonical_unit, alignment_status, eligible_for_gold,
+truth_contract_version/hash, tag_registry_version/hash)`.
+`evidence_id = "{document_id}#fact-{element_id or 'order-NNNNN'}"`.
+
+### Alignment Algorithm
+
+Accession-first (Section 34) - `FactIdentity(accession, cik, tag, ddate,
+qtrs, uom)` restricts the raw `facts` query to the exact filing before
+any value comparison, additionally requiring `coreg`/`segments` blank to
+match `src.eval.truth_contract`'s own grain exactly. **A real bug found
+and fixed**: without this filter, a dimensional duplicate row for the
+same grain (e.g. a related-party breakdown of `Revenues`) could be
+picked up instead of the real value (caught in a unit test: 39M vs. the
+correct 1.875B). Dimensional facts are now classified
+`ineligible_dimensional` **before** any raw query is attempted (a
+blank-segment query is a category mismatch for them, never a genuine
+"unmatched"). Explicit statuses (Section 42, never a confidence score):
+`unsupported_tag`, `ineligible_dimensional`, `ambiguous`, `unmatched`,
+`ineligible_year_window`, `exact_no_node`, `exact`. Gold promotion
+requires `alignment_status=="exact"` AND every eligibility dimension -
+ambiguous matches are never resolved by first-match selection.
+`find_candidate_nodes()` returns EVERY structural node containing a
+fact's raw text, never collapsed to one (Section 44).
+
+### Pilot
+
+20 filings, selected deterministically by evenly-spaced rank across
+`source_size_bytes` (never hand-picked). All four real bugs above were
+found and fixed during the pilot's three iterations (structural nodes/
+inline-XBRL/EPS-units/classification-order) or immediately after (the
+numwordsen gaps, found on the full run). Final pilot result:
+
+```text
+20/20 parsed, 0 failed
+node_count: 44,780   table_count: 2,792
+inline_fact_count: 74,722 (66,727 nonFraction + 7,995 nonNumeric)
+context_count: 16,411   unit_count: 234
+status_counts: unsupported_tag=63,426, ineligible_year_window=1,185,
+               ineligible_dimensional=2,045, unmatched=35, ambiguous=0, parse_error=0
+gold_evidence_count: 0
+```
+
+### Pilot Manual Audit
+
+Deterministic, first-by-`evidence_id`, never cherry-picked. Table
+would-be-gold: Amazon `IncomeTaxExpenseBenefit`, `sign="-"` ->
+`-3217000000`, correctly aligned to its table node. Narrative would-be-
+gold: `CashAndCashEquivalentsAtCarryingValue` "6.1" -> `6100000.0`,
+aligned to its paragraph. EPS: Amazon `EarningsPerShareDiluted` "3.24"
+-> `Decimal("3.24")`, `uom="USD"` - matches the real raw facts row
+exactly. Negative values: 137 in the pilot, all sign-correct. Unmatched
+audit (Section 65, all 35 investigated, never just a percentage): all
+attributable to narrative/MD&A prose repeating a headline figure at
+coarser rounding precision than the financial statements' exact tagged
+value - a genuine source/XBRL discrepancy, correctly left unmatched
+rather than fuzzy-matched (no tolerance policy exists).
+
+### Full Run
+
+```text
+source documents: 990, parsed: 990 (100%), failed: 0
+structural nodes: 2,365,581   tables: 136,592
+inline facts: 2,603,110 (2,393,329 nonFraction + 209,781 nonNumeric)
+contexts: 663,479   units: 10,963
+status_counts: unsupported_tag=2,240,712, ineligible_dimensional=95,853,
+               ineligible_year_window=45,769, unmatched=6,944, ambiguous=0, parse_error=0
+eligible_fact_count: 0   gold_evidence_count: 0
+```
+
+### Coverage
+
+Node-correlation coverage on would-be-gold facts: 42,249 table + 3,484
+narrative = 45,733/45,769 (99.92%) correlated to >=1 structural node;
+only 36 (0.08%) found no node. `unmatched_count`/`inline_fact_count` =
+6,944/2,603,110 = 0.27%.
+
+### Table Coverage
+
+136,592 tables extracted across 990 filings (avg. ~138/filing); 42,249
+would-be-gold facts correlated to table nodes specifically.
+
+### Tag Coverage
+
+All 15 Task 2.2 registry tags represented among would-be-gold facts:
+`NetIncomeLoss` (8,265), `IncomeTaxExpenseBenefit` (7,182),
+`EarningsPerShareBasic`/`Diluted` (4,812/4,777 - direct proof the EPS
+divide-unit fix works at scale), `StockholdersEquity` (3,330),
+`RevenueFromContractWithCustomerExcludingAssessedTax` (3,252),
+`Revenues` (2,827), `Assets` (2,571), `OperatingIncomeLoss` (2,541),
+`CashAndCashEquivalentsAtCarryingValue` (2,475), `Liabilities` (1,483),
+`GrossProfit` (790), `OperatingExpenses` (674),
+`ResearchAndDevelopmentExpense` (493), `CostOfRevenue` (297). By unit:
+USD 45,624 / CAD 145 - the CAD facts are reported honestly as NOT
+necessarily fully-eligible-except-year (registry per-tag units are USD;
+`ineligible_year_window` status does not itself check unit match).
+
+### Ambiguous Cases
+
+**0** across the entire 990-filing corpus - the accession-first,
+coreg/segments-blank raw-match grain never produced a same-grain value
+conflict.
+
+### Unmatched Cases
+
+6,944/2,603,110 (0.27%) - the same root cause diagnosed on the pilot
+(narrative/MD&A rounding vs. exact financial-statement tagging) scales
+consistently to the full corpus; not fuzzy-matched.
+
+### Reproducibility
+
+`parser_config_hash=84f6cf2e9cf04921cbffc20cf446eac03885e0a87f05e03c9eb71d4eb6c6288d`,
+`canonical_evidence_hash=32381b6cee8e8bd3fbb741f9f4326dc27384b283829bfdb5da388ab5e6c5dcc2`
+(SHA-256 over the sorted map of per-document evidence-file-name ->
+SHA-256, scales to millions of records without one giant in-memory
+structure). **Directly verified**: the same real filing processed twice
+via `process_document()`, bypassing the resume cache, produced byte-
+identical structural-node/inline-XBRL-fact/evidence-record JSON both
+times. Manifest-based resume verified working correctly through 3
+interruptions during the full run (machine idle/sleep, same pattern as
+Task 2.7's MS MARCO build) with zero rework each time.
+
+### Metric Registry Impact
+
+None. `chunk_recall@10`/`chunk_mrr`'s `available_for_current_gold`
+correctly **stays `false`** - Task 2.8 did not change the flag "simply
+because Task 2.8 ran" (Section 79's explicit warning); it changes only
+once real, usable chunk-level gold exists, which it does not yet (0
+gold evidence records, by structural necessity). `evaluation_schema_version`/
+`hash` unchanged - verified via `git diff --stat` on `src/eval/
+evaluation_schema.py` (zero changes).
+
+### TEST Discipline
+
+No SEC DEV/TEST retrieval evaluation run. `artifacts/eval/phase_2_4_
+test.json` never read; `load_test_set()` never called.
+`test_access_log` verified unchanged (2 rows, both `build_validation`)
+before and after this task. Official TEST evaluation runs consumed:
+**0/3**.
+
+### Regression Gates
+
+`git diff --stat HEAD` over Task 2.7 (`src/eval/msmarco_harness.py`,
+`scripts/run_msmarco_harness.py`, `configs/phase_2_7_msmarco_harness.json`,
+`results/phase_2_7_msmarco_harness.json`), Task 2.1-2.6 (truth contract,
+tag registry, `configs/eval_tags.yaml`, evaluation dataset, metrics,
+evaluation schema, eval store, dev/test split, test access), and every
+Phase 1 module: zero changes in every case. Frozen data byte-identical
+before/after: `data/xbrl.duckdb` 7,011,053,568 bytes; `data/edgar_corpus/`
+unchanged; `data/msmarco/*.parquet` unchanged; `data/raw/primary/` 990
+files / 4,476,551,759 bytes, both exactly unchanged (read-only
+throughout).
+
+### Tests
+
+```text
+new Task 2.8 tests: tests/test_inline_xbrl.py (42 tests - hand-built
+  XHTML+inline-XBRL fixtures covering numeric normalization for every
+  observed transform including all numwordsen compound forms, contexts/
+  units/divide-units, continuations including multi-hop and broken-
+  chain rejection, malformed-but-recoverable HTML, case-sensitivity
+  regression, 1 local_data-marked real-fact cross-check);
+  tests/test_primary_html_parser.py (15 tests - source identity, section
+  detection incl. TOC-vs-real-header disambiguation, table row-group
+  splitting/reconstruction/serialization, 1 local_data+model-marked real
+  Docling determinism check); tests/test_primary_evidence_alignment.py
+  (34 tests - bare_tag_name/unit_to_uom incl. divide-unit EPS mapping,
+  accession-first raw matching incl. the dimensional-duplicate
+  regression, eligibility-dimension checks against the real registry,
+  alignment-status priority ordering, multi-occurrence node candidate
+  matching)
+doctor:              PASS
+portable suite:      740 passed, 23 deselected
+full suite:          763 passed, 0 failed
+```
+
+One transient, unrelated test failure (`sklearn` DLL blocked by a
+Windows Application Control policy scan on a freshly-written file) was
+observed once and confirmed non-reproducible by re-running the same
+test and the full suite again immediately after - not a real
+regression, not caused by any Task 2.8 code change.
+
+### Files Created / Modified
+
+```text
+src/parse/__init__.py                                           (new)
+src/parse/source_identity.py                                    (new)
+src/parse/primary_html.py                                       (new)
+src/parse/inline_xbrl.py                                        (new)
+src/parse/evidence_alignment.py                                 (new)
+scripts/build_primary_evidence.py                               (new)
+tests/test_inline_xbrl.py                                       (new, 42 tests)
+tests/test_primary_html_parser.py                                (new, 15 tests)
+tests/test_primary_evidence_alignment.py                          (new, 34 tests)
+configs/phase_2_8_primary_evidence.json                             (new, tracked)
+results/phase_2_8_primary_evidence_summary.json                       (new, tracked)
+artifacts/primary_docs/                                                  (new, GITIGNORED -
+  990 parsed/inline_xbrl/evidence JSON files + manifest + failures)
+requirements.txt                                                            (updated:
+  docling-slim==2.124.0 + docling-parse==7.16.0 added, with the
+  torchvision-ABI-break rationale documented inline)
+project_plan/DEPENDENCIES.md                                                  (updated
+  narrowly: Docling no longer "deferred", now Task-2.8-scheduled)
+project_plan/PHASE2_PRIMARY_EVIDENCE.md                                          (new)
+project_plan/REPOSITORY_STRUCTURE.md                                              (updated
+  narrowly: src/parse/ package, configs/, scripts/, results/ listings)
+Progress.md                                                                          (this entry)
+```
+
+No Task 2.1-2.7 artifact, no Phase 1 module, and no frozen `data/`
+content modified. No network calls for source data. No LLM evidence
+decisions - alignment is entirely deterministic. GPU used only for
+Phase 1's own BGE regression-verification (unrelated to Task 2.8's own
+work, which is CPU-only). API spend: $0.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - 0 data/artifacts/venv/.env content stageable
+git add -n .:            no artifacts/primary_docs/ content, no
+  data/raw/primary/ content in the dry-run list
+secret scan:            clean
+```
+
+Committed as one coherent Task 2.8 commit: "Parse primary filings and
+align XBRL evidence". No Phase 2 completion tag (Phase 2 remains IN
+PROGRESS - Tasks 2.9-2.13 remain per `PROJECT_EXECUTION.md`'s own
+structure). No remote configured - push deferred.
+
+### Result
+
+```text
+PASS WITH NOTE: the parsing/alignment pipeline is fully correct and
+verified (990/990 documents parsed, 0 parse errors, 0 ambiguous
+matches, 99.92% node-correlation coverage on would-be-gold facts,
+45,769 facts independently confirmed to match the real source-of-truth
+database and every truth-contract rule except the fiscal-year window).
+eligible_fact_count and gold_evidence_count are 0 today by structural
+necessity (all 990 primary filings are FY2021-2024, entirely outside
+Task 2.1's frozen 2016-2020 window) - not a defect, and explicitly not
+resolved by weakening Task 2.1. A future task extending/versioning the
+truth contract's supported window would let this same, already-proven
+pipeline immediately start producing real chunk-level gold evidence.
+```
+
+### Phase 2 Exit Review
+
+Because `PROJECT_EXECUTION.md`'s own Phase 2 structure continues
+through Task 2.13 (this task's own prompt's "final planned engineering
+task of Phase 2" framing is superseded per the documented Section-2
+discrepancy resolution above), a full Phase 2 exit review is **not**
+performed here - Phase 2 is not closing. For continuity, current status
+of every Phase 2 subtask completed so far:
+
+```text
+2.1 XBRL Truth Contract:                  COMPLETE
+2.2 Supported Tag Registry:               COMPLETE
+2.3 Evaluation Dataset:                   COMPLETE WITH NOTE (50 narrative pending_review, not gold)
+2.4 DEV/TEST Split:                       COMPLETE
+2.5 Evaluation Schema:                    COMPLETE
+2.6 Metric Unit Tests:                    COMPLETE (numeric_tolerance_match/citation_grounding/faithfulness deferred)
+2.7 MS MARCO Harness Validation:          COMPLETE
+2.8 Primary Evidence Alignment:           COMPLETE WITH NOTE (0 gold evidence - FY window mismatch, pipeline proven correct)
+2.9 - 2.13:                               NOT STARTED
+```
+
+No phase tag created - Phase 2 has not reached its exit criteria (Tasks
+2.9-2.13 remain per the authoritative roadmap). Phase 3 not started.
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.8 Primary Document Evidence Alignment     — COMPLETE WITH NOTE
+  2.9 Freeze Chunk Metadata Schema            — NEXT
 ```

@@ -85,9 +85,11 @@ keeps a fresh clone from silently downgrading to CPU-only torch.
   imported by current code in `src/ingest/`, or (b) explicitly required by
   the near-term `PROJECT_EXECUTION.md` plan (Phase 0/1: PyArrow for
   Parquet chunk output, LanceDB for the vector index, FastAPI for later
-  serving, python-dotenv for Task 0.5's configuration system). Phase 5
-  research dependencies (Docling, ColBERT, graph libraries) are
-  deliberately deferred until their feature is actually scheduled.
+  serving, python-dotenv for Task 0.5's configuration system). Docling
+  was added in Task 2.8, once primary-document HTML parsing was
+  actually scheduled (`project_plan/PHASE2_PRIMARY_EVIDENCE.md`) - the
+  originally-deferred Phase 5 research dependencies still deliberately
+  deferred are ColBERT and graph libraries.
 - No formatter/linter (black/ruff/mypy/pre-commit) has been adopted by this
   project, so none was added to `requirements-dev.txt` just because this
   task exists.

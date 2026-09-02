@@ -17,7 +17,10 @@ SEC-RAG/
 ├── src/
 │   ├── ingest/          # IMPLEMENTED — data acquisition + validation + audit
 │   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter
-│   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet
+│   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet;
+│   │                     # metadata_schema.py (Task 2.9) — canonical chunk record
+│   │                     # schema (chunk_uid/chunk_local_id identity, field
+│   │                     # types/nullability/enums), no new chunking pipeline
 │   ├── embeddings/      # IMPLEMENTED (Task 1.4) — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding
 │   ├── index/           # IMPLEMENTED (Task 1.5) — exact-cosine LanceDB vector index
 │   ├── retrieval/       # IMPLEMENTED (Task 1.6) — baseline natural-language vector retriever
@@ -52,6 +55,8 @@ SEC-RAG/
 │                         # phase_2_4_dev_test_split.json (Task 2.4),
 │                         # phase_2_7_msmarco_harness.json (Task 2.7),
 │                         # phase_2_8_primary_evidence.json (Task 2.8)
+│                         # (no new config for Task 2.9 - it defines schema,
+│                         # not a runnable pipeline)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -71,7 +76,9 @@ SEC-RAG/
 │                         # build_dev_test_split.py (Task 2.4),
 │                         # init_evaluation_schema.py (Task 2.5),
 │                         # run_msmarco_harness.py (Task 2.7),
-│                         # build_primary_evidence.py (Task 2.8)
+│                         # build_primary_evidence.py (Task 2.8),
+│                         # audit_chunk_metadata_schema.py (Task 2.9, read-only
+│                         # Phase 1 + Task 2.8 compatibility audit)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries
 ├── infra/               # planned: deployment/infrastructure definitions
@@ -102,7 +109,7 @@ intentionally omitted from the tree above.
 |---|---|---|
 | `ingest/` | **implemented** | MS MARCO / EDGAR-CORPUS / XBRL / primary-doc fetchers, `validate.py`, `audit_data.py` |
 | `normalize/` | **implemented** | `edgar_markdown.py` — minimal EDGAR-CORPUS -> Markdown/YAML-frontmatter renderer (Task 1.2), see `project_plan/PHASE1_NORMALIZATION.md` |
-| `chunk/` | **implemented** | `fixed_window.py` — minimal 512-token fixed-window chunker (Task 1.3), see `project_plan/PHASE1_CHUNKING.md`; later section-aware (Phase 3.2) |
+| `chunk/` | **implemented** | `fixed_window.py` — minimal 512-token fixed-window chunker (Task 1.3), see `project_plan/PHASE1_CHUNKING.md`; `metadata_schema.py` — the canonical 23-field chunk record schema, `chunk_uid`/`chunk_local_id` identity algorithms, offset/section/date/accession semantics (Task 2.9), see `project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md`; later section-aware chunking pipeline (Phase 3.2) |
 | `embeddings/` | **implemented** | `bge.py` — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding (Task 1.4), see `project_plan/PHASE1_EMBEDDINGS.md` |
 | `index/` | **implemented** | `lancedb_index.py` — exact-cosine LanceDB vector table (Task 1.5), see `project_plan/PHASE1_VECTOR_INDEX.md`; later BM25/FTS, graph tables (Phase 3.4, 5.4) |
 | `retrieval/` | **implemented** | `baseline.py` — vector-only baseline retriever (Task 1.6), see `project_plan/PHASE1_RETRIEVER.md`; later hybrid fusion + metadata filtering (Phase 3.5, 3.9) |

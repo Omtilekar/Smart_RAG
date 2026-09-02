@@ -8316,5 +8316,294 @@ No phase tag created - Phase 2 has not reached its exit criteria (Tasks
 ```text
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.8 Primary Document Evidence Alignment     — COMPLETE WITH NOTE
-  2.9 Freeze Chunk Metadata Schema            — NEXT
+  2.9 Freeze Chunk Metadata Schema            — COMPLETE
+  2.10 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
+```
+
+## 2026-09-02 — Phase 2.9 Freeze Chunk Metadata Schema
+
+### Objective
+
+Freeze the canonical chunk-record schema every future chunker, index,
+retriever, and evidence-labeling component must produce/consume - field
+set, types, nullability, enums, and a global `chunk_uid`/document-local
+`chunk_local_id` identity algorithm. Schema semantics only: no new
+chunking pipeline built, nothing rechunked/re-embedded/re-indexed, zero
+records promoted to gold.
+
+### Initial State
+
+`git log` HEAD = `e3f3d29` ("Parse primary filings and align XBRL
+evidence", Task 2.8). `python --version` 3.11.9. `scripts/dev.py doctor`
+all PASS. `scripts/dev.py test --portable`: 740 passed, 23 deselected -
+matches the task's own historical reference exactly.
+
+### Authoritative Contract
+
+`PROJECT_EXECUTION.md`'s Task 2.9 section matches this task's own
+prompt field list exactly - no discrepancy found, nothing required
+stopping or overriding.
+
+### Phase 1 Baseline Schema Audit
+
+Directly inspected the real Phase 1 artifact
+(`artifacts/chunks/f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd/chunks.parquet`):
+162,357 rows, 16 columns (`chunk_id, document_id, cik, company,
+form_type, fiscal_year, source, source_filename, source_split, ordinal,
+text, token_count, chunk_config_hash, normalizer_version,
+normalization_build_sha256, development_manifest_sha256`), 1,493 unique
+`document_id`s, 162,357 unique `chunk_id`s (format
+`"{document_id}::chunk{ordinal}"`). Confirmed via `src/chunk/fixed_window.py`
+that `char_start`/`char_end` are computed transiently (tokenizer
+offset-mapping, `slice_chunk_text()`) purely to slice each chunk's
+`text` field, but were never added to the persisted 16-column schema -
+the frozen artifact itself never carried this information. No existing
+SEC-accession-format regex convention found anywhere in `src/` prior to
+this task.
+
+### Task 2.8 Compatibility Audit
+
+Inspected `data/xbrl.duckdb`'s `submissions` table: `period` (fiscal
+period end, YYYYMMDD) and `filed` (actual filing date, YYYYMMDD) ARE
+authoritatively available for primary documents via accession lookup
+(verified against a real row: accession `0000100122-24-000002` ->
+`form='10-K', fiscal_year=2023, period='20231231', filed='20240209'`) -
+meaning `period_end`/`filed_date` can be legitimately populated for the
+`primary` source, unlike `edgar_corpus` (no accession linkage at all).
+
+### Canonical Schema
+
+`src/chunk/metadata_schema.py` - the ONE authoritative source; the
+PyArrow schema, `project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md`'s field
+table, and `results/phase_2_9_chunk_metadata_schema.json` are all
+derived from `CANONICAL_FIELDS`, never independently maintained. 23
+fields: `chunk_schema_version, chunk_uid, chunk_local_id, document_id,
+accession, cik, company, form_type, fiscal_year, period_end,
+filed_date, sic, section_id, section_title, ordinal, char_start,
+char_end, content_type, table_id, source, text, token_count,
+chunk_config_hash`.
+
+### Field Types / Nullability
+
+Types and nullability match the table in
+`project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md` exactly; verified 1:1
+against `CANONICAL_FIELDS` in `tests/test_chunk_metadata_schema.py::TestCanonicalSchema`
+(parametrized per-field nullability test, field count = 23, PyArrow
+schema derivation test).
+
+### Document Identity
+
+`source` (`edgar_corpus | primary`) + `document_id` together
+unambiguously identify a source document. `edgar_corpus` reuses Phase
+1's existing identity as-is; `primary` reuses Task 2.8's
+`f"primary:{cik}:{accession}"` convention. Verified `chunk_uid` never
+collides across sources even when `document_id` is reused
+(`test_cross_source_isolation_same_document_id`).
+
+### Accession Policy
+
+Hyphenated `NNNNNNNNNN-NN-NNNNNN` (`ACCESSION_RE`), matching the
+convention already used across Tasks 1.9/2.1/2.3/2.4/2.8. NULL always
+for `edgar_corpus` (no reliable linkage - never fabricated);
+authoritatively populated for `primary` from Task 2.8's own source
+identity.
+
+### `chunk_local_id`
+
+`build_chunk_local_id(ordinal, section_id=None)` ->
+`"chunk{ordinal:06d}"` or `"{section_id}:chunk{ordinal:06d}"`.
+Deliberately NOT Phase 1's `"{document_id}::chunk{ordinal}"` pattern
+(that embeds global information, defeating the purpose of a document-
+*local* identifier per the task's own explicit warning). Computable
+from purely local information, no cross-document lookup.
+
+### `chunk_uid`
+
+SHA-256 over canonical JSON (`sort_keys=True, separators=(",", ":")`)
+of exactly five identity-bearing ingredients: `chunk_schema_version,
+source, document_id, chunk_config_hash, chunk_local_id`. Never Python's
+`hash()`, never a random UUID. Verified deterministic, sensitive to
+each of the five ingredients independently, and cross-source-isolated
+(`tests/test_chunk_metadata_schema.py::TestChunkUid`, 11 tests).
+
+### Offset Semantics
+
+Zero-based, half-open `[char_start, char_end)`. Both NULL or both
+populated - never one-sided; NULL is correct whenever no defensible
+contiguous span exists (e.g. a serialized table), never an approximate
+offset. `validate_offsets()` supports an optional round-trip check
+against real source/chunk text.
+
+### Section Semantics
+
+`section_id`/`section_title` both NULL when a chunk spans/crosses
+sections or identity is genuinely ambiguous - never defaulted to the
+first heading seen.
+
+### Content Types
+
+`prose | table | table_summary` only (deliberately small). `table_id`
+required (non-NULL) when `content_type` is `table`/`table_summary`;
+NULL normal for `prose`.
+
+### Table Identity
+
+Reuses Task 2.8's deterministic table-identity contract
+(`{document_id}#table-{ordinal:04d}`) where available, rather than
+inventing a second convention.
+
+### Date / SIC Semantics
+
+`period_end`/`filed_date`/`sic` populated only from an authoritative
+source: `primary` from `submissions.period`/`filed` (accession-keyed)
+and the frozen raw SEC `sub.txt` datasets (same source Task 2.4's
+DEV/TEST split reads) for `sic`; all three NULL for `edgar_corpus`
+(no accession linkage exists to key any lookup against). Never
+inferred/estimated/defaulted.
+
+### Extension Metadata Policy
+
+`validate_chunk_record`/`validate_chunk_table` permit and ignore
+unknown extra dict keys beyond `CANONICAL_FIELDS` - a source-specific
+component may attach additional metadata without violating the
+canonical contract.
+
+### Schema Evolution
+
+A schema-semantics change increments `CHUNK_SCHEMA_VERSION` (and
+therefore every derived `chunk_uid`, since it is one of the five
+identity ingredients). A chunking-configuration change is Task 2.10's
+`chunk_config_hash` responsibility, not a version bump - it changes
+`chunk_uid` only because `chunk_config_hash` is itself one of the five
+ingredients. Historical records are never silently reinterpreted under
+a new version.
+
+### Phase 1 Compatibility Result
+
+`scripts/audit_chunk_metadata_schema.py` mapped all 162,357 real
+Phase 1 rows into the canonical schema, read-only (frozen Parquet never
+rewritten): `source<-"edgar_corpus"`, `accession/period_end/filed_date/
+sic/section_id/section_title/char_start/char_end/table_id<-None`,
+`content_type<-"prose"`, `chunk_local_id`/`chunk_uid` newly computed.
+
+```text
+rows_audited:       162357
+unique_chunk_uids:  162357
+all_uids_unique:    true
+```
+
+`(document_id, chunk_config_hash, chunk_local_id)` unique within every
+document. Source artifact confirmed unmodified.
+
+### Primary Compatibility Result
+
+Deterministic 10-node sample (5 narrative + 5 table structural nodes,
+by `source_order`) from one real Task 2.8 parsed artifact
+(`artifacts/primary_docs/parsed/primary-100122-0000100122-24-000002.json`,
+accession `0000100122-24-000002`), mapped via real `submissions`/`sub.txt`
+lookups (never a new primary-document chunk corpus - out of Task 2.9's
+scope):
+
+```text
+samples_audited:         10
+unique_chunk_uids:       10
+all_uids_unique:         true
+accession_populated:     true
+period_end_populated:    true
+filed_date_populated:    true
+sic_populated:           true
+```
+
+`chunk_config_hash`/`token_count` in this sample are explicitly labeled
+audit-only placeholders (no real Phase 3 chunking configuration or
+tokenizer exists yet) - documented in both the result JSON and
+`project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md`. `char_start`/`char_end`
+NULL - Docling's HTML backend carries no byte/char provenance (same
+documented limitation as Task 2.8).
+
+### Determinism
+
+`build_chunk_local_id`, `build_chunk_uid`, `canonical_pyarrow_schema`
+are pure functions of their inputs - independently re-run, the audit
+script produced byte-identical `chunk_uid`s both times.
+
+### Tests
+
+`tests/test_chunk_metadata_schema.py` - 106 tests total (104 portable +
+2 `local_data`-marked): canonical schema shape/nullability (9),
+`chunk_local_id` (6), `chunk_uid` determinism/sensitivity/isolation
+(11), accession validation (9), offset half-open semantics (9), ISO
+date validation (6), record validation incl. content-type/table_id
+cross-field rule (23), table validation incl. global uniqueness (10),
+real Phase 1 artifact compatibility (162,357 unique UIDs,
+`local_data`), real Task 2.8 artifact compatibility (`local_data`). All
+104 portable tests pass in 0.25s; both `local_data` tests pass in
+3.93s.
+
+### TEST Discipline
+
+No SEC TEST access performed. `test_access_log` verified unchanged: 2
+rows, both `kind='build_validation'`, `run_number` NULL - 0/3 official
+TEST evaluation runs consumed, identical to before this task.
+
+### Regression Gates
+
+`scripts/dev.py doctor`: all PASS. `scripts/dev.py test --portable`:
+844 passed, 25 deselected (740 + 104 new = 844; 23 + 2 new
+`local_data`-marked = 25) - zero regressions. `git diff --stat` on
+Task 2.8's own artifacts (`src/parse/`, `scripts/build_primary_evidence.py`,
+`configs/phase_2_8_primary_evidence.json`,
+`results/phase_2_8_primary_evidence_summary.json`) and every prior
+Task 2.1-2.7 result/config file: zero diff. `data/xbrl.duckdb`,
+`data/edgar_corpus/`, `data/raw/primary/`, `data/msmarco/`: untouched
+(git status confirms no changes under `data/`). Phase 1 artifacts
+(`fixed_window.py`, `chunks.parquet`, embeddings, LanceDB index,
+retriever, generation, baseline metrics): untouched.
+
+### Files Created/Modified
+
+Created: `src/chunk/metadata_schema.py`,
+`scripts/audit_chunk_metadata_schema.py`,
+`tests/test_chunk_metadata_schema.py`,
+`results/phase_2_9_chunk_metadata_schema.json`,
+`project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md`. Modified narrowly:
+`project_plan/REPOSITORY_STRUCTURE.md` (new `chunk/metadata_schema.py`,
+`scripts/audit_chunk_metadata_schema.py` entries), `Progress.md` (this
+entry).
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - no data/artifacts/venv/.env content stageable
+git add -n .:            no artifacts/ content, no data/ content in
+  the dry-run list
+secret scan:             clean
+```
+
+Committed as one coherent Task 2.9 commit: "Freeze canonical chunk
+metadata schema". No Phase 2 completion tag (Phase 2 remains IN
+PROGRESS - Tasks 2.10-2.13 remain). No remote configured - push
+deferred.
+
+### Result
+
+```text
+PASS. Canonical 23-field chunk metadata schema frozen with a
+deterministic, collision-resistant chunk_uid/chunk_local_id identity
+algorithm. Verified against all 162,357 real Phase 1 chunk rows
+(100% unique UIDs) and a real 10-node Task 2.8 primary-document sample
+(100% unique UIDs, accession/period_end/filed_date/sic all populated
+from authoritative sources). Zero records promoted to gold;
+gold_evidence_count remains 0; chunk_recall@10/chunk_mrr's
+available_for_current_gold remain false. Zero regressions across 844
+portable + 2 local_data tests. No prior-task artifact modified.
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.9 Freeze Chunk Metadata Schema            — COMPLETE
+  2.10 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
 ```

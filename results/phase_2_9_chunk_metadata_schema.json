@@ -1,0 +1,419 @@
+{
+  "chunk_schema_version": 1,
+  "canonical_fields": [
+    {
+      "name": "chunk_schema_version",
+      "type": "int32",
+      "nullable": false,
+      "description": "Identifies what the chunk record's fields MEAN (this module's version) - distinct from chunk_config_hash, which identifies HOW the chunk was generated."
+    },
+    {
+      "name": "chunk_uid",
+      "type": "string",
+      "nullable": false,
+      "description": "Globally unique, deterministic chunk identity across all supported SEC sources - SHA-256 over canonical JSON of {chunk_schema_version, source, document_id, chunk_config_hash, chunk_local_id}. Changes iff any of those five inputs changes."
+    },
+    {
+      "name": "chunk_local_id",
+      "type": "string",
+      "nullable": false,
+      "description": "Deterministic identity of the chunk inside its source document, for one chunking configuration - computable from purely local information (no cross-document lookup)."
+    },
+    {
+      "name": "document_id",
+      "type": "string",
+      "nullable": false,
+      "description": "Canonical source-document identity. Source-specific format (see project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md) - `source` + `document_id` together unambiguously identify the source document."
+    },
+    {
+      "name": "accession",
+      "type": "string",
+      "nullable": true,
+      "description": "SEC accession (hyphenated NNNNNNNNNN-NN-NNNNNN) where authoritatively known. NULL for EDGAR-CORPUS (no reliable accession linkage exists) - never fabricated from filename/CIK/year."
+    },
+    {
+      "name": "cik",
+      "type": "int64",
+      "nullable": false,
+      "description": "SEC Central Index Key - canonical integer, never a zero-padded string."
+    },
+    {
+      "name": "company",
+      "type": "string",
+      "nullable": false,
+      "description": "Display company name. Never used as identity (names change/vary) - identity is cik/document_id/accession."
+    },
+    {
+      "name": "form_type",
+      "type": "string",
+      "nullable": false,
+      "description": "SEC filing type (e.g. \"10-K\") - never silently normalized from an amendment or other form."
+    },
+    {
+      "name": "fiscal_year",
+      "type": "int32",
+      "nullable": false,
+      "description": "Fiscal year, never conflated with filing year."
+    },
+    {
+      "name": "period_end",
+      "type": "date32[day]",
+      "nullable": true,
+      "description": "Reporting-period end date, where authoritatively known (e.g. from a submission's `period` field). NULL, never a manufactured \"Dec 31 of fiscal_year\"."
+    },
+    {
+      "name": "filed_date",
+      "type": "date32[day]",
+      "nullable": true,
+      "description": "Actual SEC filing date, where authoritatively known. NULL, never inferred from fiscal_year + an offset."
+    },
+    {
+      "name": "sic",
+      "type": "int32",
+      "nullable": true,
+      "description": "SEC Standard Industrial Classification code, where available from frozen raw SEC metadata. NULL, never guessed from company name."
+    },
+    {
+      "name": "section_id",
+      "type": "string",
+      "nullable": true,
+      "description": "Stable machine-readable section identity (e.g. \"item_7\"). NULL when a chunk spans/crosses sections or section identity is genuinely ambiguous - never the first heading seen."
+    },
+    {
+      "name": "section_title",
+      "type": "string",
+      "nullable": true,
+      "description": "Human-readable section title, where confidently available. NULL rather than synthesized."
+    },
+    {
+      "name": "ordinal",
+      "type": "int32",
+      "nullable": false,
+      "description": "Zero-based canonical chunk order within the document - never a Parquet/LanceDB physical row number."
+    },
+    {
+      "name": "char_start",
+      "type": "int64",
+      "nullable": true,
+      "description": "Zero-based, half-open [char_start, char_end) start offset into the canonical document text consumed by the chunker. NULL (with char_end) when no defensible contiguous span exists."
+    },
+    {
+      "name": "char_end",
+      "type": "int64",
+      "nullable": true,
+      "description": "Half-open interval end (exclusive). NULL (with char_start) when no defensible contiguous span exists - never an approximate/source-dependent offset."
+    },
+    {
+      "name": "content_type",
+      "type": "string",
+      "nullable": false,
+      "description": "One of CONTENT_TYPES: prose | table | table_summary."
+    },
+    {
+      "name": "table_id",
+      "type": "string",
+      "nullable": true,
+      "description": "Deterministic table identity (Task 2.8's table-identity contract, reused where available). Required when content_type is table/table_summary; NULL is normal for prose."
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "nullable": false,
+      "description": "One of SOURCE_VALUES: edgar_corpus | primary. MS MARCO is never a value here - it is a separate benchmark track."
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "nullable": false,
+      "description": "The actual retrieval text - never the embedding vector, never the full source document, never metadata appended into the string."
+    },
+    {
+      "name": "token_count",
+      "type": "int32",
+      "nullable": false,
+      "description": "Token count per the chunking configuration's own tokenizer - never recomputed with an unrelated tokenizer during validation."
+    },
+    {
+      "name": "chunk_config_hash",
+      "type": "string",
+      "nullable": false,
+      "description": "Opaque semantic identity of the chunking configuration (SHA-256 hex, this project's convention). Task 2.9 validates format/presence only - Task 2.10 owns how it is computed/matched across artifacts."
+    }
+  ],
+  "content_types": [
+    "prose",
+    "table",
+    "table_summary"
+  ],
+  "source_values": [
+    "edgar_corpus",
+    "primary"
+  ],
+  "chunk_uid_algorithm": "SHA-256 over canonical JSON of {chunk_schema_version, source, document_id, chunk_config_hash, chunk_local_id}",
+  "chunk_local_id_contract": "document-local, computable without cross-document information; format \"chunk{ordinal:06d}\" or \"{section_id}:chunk{ordinal:06d}\"",
+  "offset_contract": "zero-based, half-open [char_start, char_end); both-NULL or both-populated; NULL when no defensible contiguous span exists",
+  "phase1_compatibility": {
+    "rows_audited": 162357,
+    "unique_chunk_uids": 162357,
+    "unique_local_ids": 162357,
+    "all_uids_unique": true,
+    "field_coverage": {
+      "chunk_schema_version": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_uid": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_local_id": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "document_id": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "accession": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "cik": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "company": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "form_type": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "fiscal_year": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "period_end": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "filed_date": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "sic": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "section_id": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "section_title": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "ordinal": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "char_start": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "char_end": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "content_type": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "table_id": {
+        "populated": 0,
+        "null": 162357,
+        "population_pct": 0.0
+      },
+      "source": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "text": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "token_count": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_config_hash": {
+        "populated": 162357,
+        "null": 0,
+        "population_pct": 100.0
+      }
+    },
+    "source_artifact_modified": false
+  },
+  "primary_compatibility": {
+    "samples_audited": 10,
+    "narrative_samples": 5,
+    "table_samples": 5,
+    "unique_chunk_uids": 10,
+    "all_uids_unique": true,
+    "accession_populated": true,
+    "period_end_populated": true,
+    "filed_date_populated": true,
+    "sic_populated": true,
+    "field_coverage": {
+      "chunk_schema_version": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_uid": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_local_id": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "document_id": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "accession": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "cik": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "company": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "form_type": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "fiscal_year": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "period_end": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "filed_date": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "sic": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "section_id": {
+        "populated": 0,
+        "null": 10,
+        "population_pct": 0.0
+      },
+      "section_title": {
+        "populated": 0,
+        "null": 10,
+        "population_pct": 0.0
+      },
+      "ordinal": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "char_start": {
+        "populated": 0,
+        "null": 10,
+        "population_pct": 0.0
+      },
+      "char_end": {
+        "populated": 0,
+        "null": 10,
+        "population_pct": 0.0
+      },
+      "content_type": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "table_id": {
+        "populated": 5,
+        "null": 5,
+        "population_pct": 50.0
+      },
+      "source": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "text": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "token_count": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      },
+      "chunk_config_hash": {
+        "populated": 10,
+        "null": 0,
+        "population_pct": 100.0
+      }
+    },
+    "source_artifact_modified": false,
+    "note": "chunk_config_hash and token_count in this sample are audit-only placeholders (Task 2.9 does not build a real Phase 3 chunking configuration or tokenizer pipeline) - see project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md."
+  },
+  "cross_source_uid_isolation": true,
+  "known_limitations": [
+    "Phase 1 chunks: char_start/char_end were computed transiently during chunking but never persisted in the frozen artifact - honestly NULL, not re-derived by rechunking.",
+    "Phase 1 chunks: section_id is NULL (fixed-window chunking is section-oblivious) and accession/period_end/filed_date/sic are NULL (no accession linkage exists for EDGAR-CORPUS).",
+    "Primary sample: char_start/char_end are NULL - Docling's HTML backend has no byte/char source provenance (documented in Task 2.8).",
+    "Primary sample: chunk_config_hash and token_count are audit-only placeholders, not a real Phase 3 chunking configuration/tokenizer.",
+    "Task 2.8's 45,769 would-be-gold evidence facts remain status quo - Task 2.9 does not promote them; chunk_recall@10/chunk_mrr's available_for_current_gold remain false."
+  ],
+  "created_at_utc": "2026-09-02T04:24:49.507565+00:00",
+  "git_sha": "e3f3d29edd0ae21c50ab44ac4c11374bd3f471bf"
+}

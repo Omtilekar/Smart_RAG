@@ -77,3 +77,10 @@ results/*
 !results/*.csv
 !results/*.json
 !results/*.md
+# Task 2.11 - one small immutable JSON per evaluation run. A directory
+# matched by "results/*" blocks git from even looking inside it for a
+# nested un-ignore pattern, so the directory itself must be re-included
+# before its *.json contents can be (narrow exception, not a blanket
+# un-ignore of results/).
+!results/eval_runs/
+!results/eval_runs/*.json

@@ -8880,5 +8880,289 @@ dependency.
 ```text
 Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.10 Config Hashing & Artifact Versioning   — COMPLETE
-  2.11 (next, per PROJECT_EXECUTION.md)       — NOT STARTED
+  2.11 Evaluation Run Logging                 — COMPLETE
+  2.12 Independent Benchmark Validation       — NOT STARTED (next, per PROJECT_EXECUTION.md)
+```
+
+## 2026-09-02 — Phase 2.11 Evaluation Run Logging
+
+### Objective
+
+Implement the repository-wide evaluation-run-logging contract: one
+small, immutable, git-tracked JSON record per execution binding a
+metric to exactly the code, artifacts, configuration, and evaluation
+identity that produced it. Roadmap-mandatory fields: `run_id`,
+`git_sha`, `chunk_config_hash`, `embedding_model`, `retrieval_config`,
+`reranker_config`, `generation_model`, `split`, `eval_set_version`,
+`timestamp`, `metrics`. Provenance and logging only - no new retrieval
+algorithm, no reranking implementation, no generation experiment, no
+Phase 3 evaluation, no TEST access.
+
+### Initial State
+
+`git log` HEAD = `efeaa37` ("Enforce artifact config compatibility",
+Task 2.10). `python --version` 3.11.9. `scripts/dev.py doctor` all PASS.
+`scripts/dev.py test --portable`: 925 passed, 27 deselected. Working
+tree clean except this task's own prompt file.
+
+### Authoritative Contract
+
+`PROJECT_EXECUTION.md`'s Task 2.11 section matches this task's own
+prompt's mandatory-field list exactly - no discrepancy found. Re-read
+`PROJECT_EXECUTION.md`'s full Phase 2 task list at task start: Phase 2
+continues through 2.12 (FinanceBench) and 2.13 (LLM-as-judge) - Task
+2.11 does not close Phase 2.
+
+### Existing System Discovery
+
+Real repository inspection surfaced a genuine, worth-documenting overlap
+Task 2.5 already built an `eval_runs` DuckDB table
+(`artifacts/eval/eval.duckdb`, via `src/eval/eval_store.py`'s
+`start_run`/`record_metric`/`complete_run` lifecycle) with many of the
+same conceptual fields. That table is `.gitignore`d (Task 2.4) - a
+local, mutable, queryable experiment log invisible to a bare git clone.
+Task 2.11's records are the complementary artifact: one small,
+individually immutable, git-tracked JSON file per execution, durable and
+citable even without the local DuckDB file. Documented the relationship
+explicitly in `PHASE2_EVALUATION_RUN_LOGGING.md`; `src/eval/eval_store.py`
+and `src/eval/evaluation_schema.py` were not modified.
+
+### Run Schema
+
+`src/eval/run_logging.py`, `EVALUATION_RUN_SCHEMA_VERSION = 1`, distinct
+from `chunk_schema_version`/`artifact_manifest_version`/`eval_set_version`/
+`split_version`. `MANDATORY_ROADMAP_FIELDS` = exactly the 11
+`PROJECT_EXECUTION.md` fields, always present (including an explicit
+`null` for `generation_model` on a retrieval-only run - never a silently
+omitted key).
+
+### Run ID Contract
+
+`generate_run_id()` -> `uuid.uuid4()` string; `run_id` identifies one
+execution, never a config (verified: same semantic config built twice
+via `build_run_record()` produces two different `run_id`s). Injectable
+for deterministic tests. Never Python's `hash()`.
+
+### Timestamp Contract
+
+`current_utc_timestamp()` -> UTC ISO-8601 ending in `Z`
+(`2026-09-02T15:42:13.123456Z`). Naive/non-UTC/locale-formatted
+timestamps rejected by `validate_timestamp()`. Injectable for
+deterministic tests.
+
+### Git Provenance
+
+`current_git_state()` resolves real `git rev-parse HEAD` (validated: 40
+lowercase hex - `HEAD`/`main`/`latest`/`unknown` rejected outright) and
+`git status --porcelain` for `git_dirty`. Raises `RunLogError` (fails
+loudly) rather than pretending reproducibility if Git provenance cannot
+be resolved. Dirty runs are recorded honestly, never auto-refused.
+
+### Artifact Compatibility Integration
+
+Reuses Task 2.10's `ArtifactCompatibility`/`ArtifactCompatibilityError`
+directly - `build_run_record(..., artifact_compatibility=...)` checks
+the record's own chunk/embedding/index/eval-version identities against
+the supplied snapshot before the record is constructed; any mismatch
+raises `ArtifactCompatibilityError` (Task 2.10's own type, never a new
+wrapper) and no record is written. No duplicate identity-hashing logic
+was created - `chunk_config_hash`/embedding identity/index identity are
+consumed, never recomputed.
+
+### Embedding Model Contract
+
+Uses Task 2.10's own `compute_embedding_identity()` field names directly
+(`model_repository`, `model_revision`, `embedding_dimension`,
+`vector_dtype`, `normalize_embeddings`) plus `identity_hash` (added by
+the caller, since the identity dict itself doesn't carry the hash) -
+never a competing/renamed embedding-identity schema. A repository name
+alone is insufficient (Task 2.10 already proved this).
+
+### Retrieval Config
+
+Plain structured mapping (`method`, `top_k`, `distance_metric`,
+`index_type`, ...) - only fields that actually define retrieval
+behavior; never claims BM25/hybrid/reranking that doesn't exist.
+`compute_config_semantic_hash()` reuses Task 2.10's `semantic_hash()`
+directly for an optional fingerprint (verified: key-order independent,
+`top_k`/metric/index-type changes all change the hash).
+
+### Reranker Config
+
+Explicit `{"enabled": false}` contract when no reranker exists (roadmap
+requires the field regardless); `{"enabled": true, "model", "revision", ...}`
+for a future enabled reranker, with `model`/`revision` required whenever
+`enabled=true`. No reranker implementation added.
+
+### Generation Model
+
+`null` for retrieval-only; `{"provider", "model"}` structured object
+when generation is part of a run. No API call made during this task.
+Secret fields (e.g. an accidental `api_key`) are rejected generically by
+the recursive secret scan, not by convention alone.
+
+### Split / Eval-Set Identity
+
+`split` reuses Task 2.5's own frozen `VALID_SPLITS = ("dev", "test", "ci")`
+(`src.eval.evaluation_schema.VALID_SPLITS`) directly - no second split
+enum created. `eval_set_version`/`split_version` reused from Task
+2.3/2.4's frozen result files (`phase2-v1` / `phase2-split-v1`, verified
+directly). `split_sha256` binds to the appropriate frozen digest
+(`dev_sha256`/`ci_sha256`/`test_sha256` from
+`results/phase_2_4_split_summary.json`) - reading it never opens the
+protected TEST question payload; the run logger itself never loads any
+dataset.
+
+### Metrics Contract
+
+`dict[str, int|float]`; rejects empty/non-string names, `bool` (checked
+explicitly before the numeric check, since `bool` is a Python `int`
+subclass), `NaN`, `+-Infinity`. An unavailable metric (e.g. Task 2.8's
+`chunk_recall@10`) is simply omitted from the mapping - never fabricated
+as `0.0`.
+
+### Persistence
+
+`results/eval_runs/<run_id>.json` - one immutable file per run, never a
+single appended array. `write_run_record()` validates fully first, then
+creates the target with Python's exclusive-create mode (`open(path,
+"x")`) - fails outright (`RunRecordExistsError`) if the `run_id` already
+exists; verified the original file is byte-unchanged after a rejected
+duplicate-write attempt. UTF-8, valid JSON, one trailing newline, stable
+declared-field key order.
+
+**`.gitignore` fix required**: `results/*`'s existing blanket rule
+blocks Git from even inspecting a nested directory's own un-ignore
+patterns (`!results/*.json` only covers files directly inside
+`results/`, not a subdirectory) - `results/eval_runs/` would have been
+silently swallowed. Fixed with the minimum necessary addition
+(`!results/eval_runs/` + `!results/eval_runs/*.json`); verified via `git
+add -n` (not `git check-ignore`'s exit code, which reports the deciding
+pattern even when it's a negation) that the path is now genuinely
+trackable, with no other protection weakened.
+
+### Immutability
+
+One run record = one historical execution; never edited in place, never
+overwritten. A repeated experiment gets a new `run_id` and a new file.
+
+### Run-Record Integrity
+
+`run_record_sha256 = semantic_hash()` over the record with
+`run_record_sha256` itself excluded (Task 2.10's canonical primitive,
+never a second hashing implementation). `validate_run_record()`/
+`load_run_record()` recompute and compare, raising
+`RunRecordIntegrityError` on any mismatch - verified against tampered
+`metrics`/`git_sha`/`chunk_config_hash`.
+
+### Security
+
+`_check_no_secrets()` recursively rejects (case/separator-insensitively)
+any key containing `api_key`/`apikey`/`password`/`secret`/`authorization`/
+`bearer`/`credential`/`token`, anywhere in the record (dicts and lists).
+Hard failure on the field path, never silent redaction; the credential
+value itself never appears in the raised message (verified directly).
+Confirmed no false-positive collision with legitimate field names
+(`top_k`, `distance_metric`, `index_type`, `model_revision`).
+
+### TEST Discipline
+
+No TEST question payload opened; the run logger never loads any
+dataset. `test_access_log` verified unchanged (0 rows with a non-null
+`run_number`) - 0/3 official TEST evaluation runs consumed.
+
+### Tests
+
+`tests/test_evaluation_run_logging.py`: 107 tests (106 portable + 1
+`local_data`-marked). Covers required fields, run IDs, timestamps, Git
+provenance, hashes/tampering, embedding model, retrieval/reranker/
+generation config, split/eval-version, metrics (incl. NaN/Inf/bool
+rejection and the unavailable-metric-not-zero contract), persistence
+(round trip, duplicate rejection, malformed-JSON rejection, sorted
+listing), security (recursive secret rejection incl. no-leak-in-
+exception check), and 6 Task 2.10 artifact-compatibility integration
+scenarios (compatible passes; chunk/embedding/index/eval-version/schema-
+version mismatch each raises `ArtifactCompatibilityError`). The
+`local_data` test builds a real Task 2.10 Phase 1 identity chain into a
+run record with no model load and no retrieval.
+
+`scripts/audit_evaluation_run_logging.py` (synthetic data only):
+schema/mandatory-field check, 5 Task 2.10 integration checks, 4 secret-
+rejection checks, tamper detection, duplicate-run-id detection,
+write/read round trip, the `.gitignore` trackability probe, real eval/
+split metadata read, and TEST-access-discipline check - all PASS.
+Written to `results/phase_2_11_evaluation_run_logging.json`.
+
+### Regression Gates
+
+Task 2.10: `src/artifacts/versioning.py` untouched; real chain
+(chunks/embeddings/index = 162,357/162,357/162,357, compatible) unchanged
+- re-verified via the existing Task 2.10 `local_data` tests passing
+unmodified in the full suite. Task 2.9: `CHUNK_SCHEMA_VERSION`/
+`CANONICAL_FIELDS`/`chunk_uid` untouched; 162,357 Phase 1 UIDs still
+unique (re-verified via the full suite's own `local_data` run). Task
+2.8: `src/parse/`/`build_primary_evidence.py`/
+`phase_2_8_primary_evidence_summary.json` zero-diff. Task 2.1-2.7:
+zero-diff on every prior config/result file. Phase 1: no chunking/
+embedding/index/retriever/generation/citation code touched; the
+historical 200-question/194-hit/`doc_recall@10=0.970000` smoke result
+was not rerun.
+
+### Frozen Data
+
+`data/xbrl.duckdb`, `data/edgar_corpus/`, `data/raw/xbrl/`,
+`data/raw/primary/`, `data/msmarco/`: unchanged (no writes performed;
+`xbrl.duckdb` size independently re-verified at 7,011,053,568 bytes).
+
+### Files Created/Modified
+
+Created: `src/eval/run_logging.py`,
+`scripts/audit_evaluation_run_logging.py`,
+`tests/test_evaluation_run_logging.py`,
+`results/phase_2_11_evaluation_run_logging.json`,
+`project_plan/PHASE2_EVALUATION_RUN_LOGGING.md`. Modified narrowly:
+`.gitignore` (added the two-line `results/eval_runs/` exception),
+`project_plan/REPOSITORY_STRUCTURE.md`, `Progress.md` (this entry). No
+prior-task source file (`src/artifacts/`, `src/chunk/`,
+`src/embeddings/`, `src/index/`, `src/eval/eval_store.py`,
+`src/eval/evaluation_schema.py`) was modified.
+
+### Git
+
+```text
+git status --short before commit: new/modified tracked-worthy files
+  only - no data/artifacts-payload/venv/.env content stageable
+git add -n .:            results/eval_runs/ confirmed trackable and
+  currently empty (no fake first experiment); no other new .gitignore
+  exceptions introduced
+secret scan:              clean
+```
+
+Committed as one coherent Task 2.11 commit: "Add reproducible evaluation
+run logging". No Phase 2 completion tag (Phase 2 continues through 2.12
+FinanceBench and 2.13 LLM-as-judge per the current local
+`PROJECT_EXECUTION.md`). No remote configured - push deferred.
+
+### Result
+
+```text
+PASS. Reproducible evaluation-run-logging contract established
+(src.eval.run_logging): all 11 PROJECT_EXECUTION.md-mandatory fields
+enforced, Task 2.10 artifact identities consumed (never duplicated),
+Task 2.5's VALID_SPLITS and Task 2.3/2.4's eval_set_version/split_version
+reused (never redefined). Immutable, git-tracked, tamper-evident JSON
+run records with a create-once persistence guarantee and a recursive
+secret-rejection gate. results/eval_runs/ intentionally left empty - no
+fake historical or first-experiment record created. Zero regressions
+across 1,059 full-suite tests. No TEST access; 0/3 official runs
+consumed. No network/LLM/API/new-GPU dependency. No large artifact
+rebuild.
+```
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.11 Evaluation Run Logging                 — COMPLETE
+  2.12 Independent Benchmark Validation       — NOT STARTED (next, per PROJECT_EXECUTION.md)
 ```

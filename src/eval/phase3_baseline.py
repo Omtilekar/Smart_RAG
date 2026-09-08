@@ -110,6 +110,28 @@ def _dedup_preserve_order(ids: Sequence[str]) -> list[str]:
     return seen
 
 
+def document_relevances_at_k(ranked_document_ids: Sequence[str], target_document_id: str, k: int) -> list[int]:
+    """Binary relevance vector for document-level nDCG@k, over a
+    CHUNK-ranked result list. A document can supply multiple chunks to
+    the same top-k window - marking every occurrence relevant would let a
+    single relevant document be credited more than once and push DCG past
+    IDCG(num_relevant=1) (verified directly: this exact bug produced
+    ndcg@10=2.28 on the first formal run). Only the FIRST occurrence of
+    `target_document_id` is marked 1; every later occurrence of the same
+    document is 0 - "one hit maximum", identical to Task 1.10's own
+    document-hit definition and to `first_hit_rank()`'s MINIMUM-matching-
+    rank convention."""
+    relevances: list[int] = []
+    matched = False
+    for document_id in ranked_document_ids[:k]:
+        if not matched and document_id == target_document_id:
+            relevances.append(1)
+            matched = True
+        else:
+            relevances.append(0)
+    return relevances
+
+
 # --------------------------------------------------------------- applicability
 
 def question_shape(question: Mapping[str, Any]) -> tuple[str, str | None]:
@@ -454,6 +476,7 @@ __all__ = [
     "SINGLE_TARGET_SHAPES", "MULTI_TARGET_SHAPES", "NOT_APPLICABLE_SHAPES",
     "Phase3BaselineError", "document_id_for", "question_shape",
     "classify_applicability", "question_target_document_ids",
+    "document_relevances_at_k",
     "CoverageResult", "audit_question_coverage", "audit_dev_coverage",
     "select_phase3_dev_scope", "compute_phase3_dev_scope_sha256", "compute_question_ids_sha256",
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",

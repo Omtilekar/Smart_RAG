@@ -233,7 +233,7 @@ def run(*, top_k: int = p3.RETRIEVAL_TOP_K) -> dict:
 
         rank10 = first_hit_rank(ranked_document_ids, {target_id}, k=10)
         doc_mrr_values.append(reciprocal_rank(rank10))
-        relevances10 = [1 if did == target_id else 0 for did in ranked_document_ids[:10]]
+        relevances10 = p3.document_relevances_at_k(ranked_document_ids, target_id, k=10)
         ndcg10 = ndcg_at_k(relevances10, num_relevant=1, k=10)
         assert ndcg10 is not None  # num_relevant is always 1 for this frozen single-target scope
         doc_ndcg_values.append(ndcg10)

@@ -297,6 +297,29 @@ class TestMetricReuse:
         assert rank is None
         assert reciprocal_rank(rank) == 0.0
 
+    def test_document_relevances_marks_only_first_occurrence(self):
+        """Regression: the first formal run computed doc_ndcg@10=2.28
+        (impossible - nDCG is bounded [0,1]) because a document supplying
+        two chunks to the same top-10 window got credited twice. Only the
+        first occurrence of the target document may be marked relevant."""
+        ranked = ["target", "other", "target", "other"]
+        relevances = p3.document_relevances_at_k(ranked, "target", k=4)
+        assert relevances == [1, 0, 0, 0]
+        assert sum(relevances) == 1
+
+    def test_document_relevances_no_match(self):
+        relevances = p3.document_relevances_at_k(["a", "b", "c"], "target", k=3)
+        assert relevances == [0, 0, 0]
+
+    def test_ndcg_never_exceeds_one_with_duplicate_document_chunks(self):
+        import math
+        ranked = ["target", "other", "target", "other", "other"]
+        relevances = p3.document_relevances_at_k(ranked, "target", k=5)
+        ndcg = ndcg_at_k(relevances, num_relevant=1, k=5)
+        assert ndcg is not None
+        assert 0.0 <= ndcg <= 1.0
+        assert ndcg == pytest.approx(1.0)  # hit at rank 1
+
     def test_doc_ndcg_at_10_uses_task_2_6_ndcg(self):
         import math
         relevances = [0, 0, 1, 0]  # hit at rank 3

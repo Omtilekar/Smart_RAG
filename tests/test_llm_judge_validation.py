@@ -224,6 +224,25 @@ class _FakeStorage:
         self.repo_root = repo_root
 
 
+def _write_calibration(lbl, storage, cases):
+    path = storage.repo_root / lbl.CALIBRATION_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"case_count": len(cases), "cases": cases}), encoding="utf-8")
+
+
+def _min_case(case_id):
+    return {"case_id": case_id, "question": "Q", "reference_answer": "R",
+            "candidate_answer": "C", "evidence": "E"}
+
+
+class TestWriteLabelRejectsInvalidFaithfulness:
+    @pytest.mark.parametrize("bad_value", ["maybe", "SUPPORTED", "", None, 4, True])
+    def test_non_enum_faithfulness_rejected(self, lbl, tmp_path, bad_value):
+        storage = _FakeStorage(tmp_path)
+        with pytest.raises(ValueError):
+            lbl.write_label(storage, "case1", bad_value, "")
+
+
 class TestHumanLabelLoading:
     def test_write_then_load_round_trip(self, lbl, tmp_path):
         storage = _FakeStorage(tmp_path)
@@ -248,3 +267,70 @@ class TestHumanLabelLoading:
         lbl.write_label(storage, "case1", "supported", "")
         target_dir = tmp_path / lbl.HUMAN_LABELS_DIR
         assert not any(p.suffix == ".tmp" for p in target_dir.glob("*"))
+
+    def test_dual_ordinal_remnant_label_file_rejected_loudly(self, lbl, tmp_path):
+        """A label file from the reverted dual-ordinal (correctness+
+        faithfulness 0-4) design must never be silently treated as valid
+        or converted - it must be quarantined by a human before labeling
+        can continue under the authoritative binary schema."""
+        storage = _FakeStorage(tmp_path)
+        labels_dir = tmp_path / lbl.HUMAN_LABELS_DIR
+        labels_dir.mkdir(parents=True)
+        (labels_dir / "case1.json").write_text(
+            json.dumps({"case_id": "case1", "correctness": 4, "faithfulness": 3,
+                        "derived_verdict": "pass", "reviewer": "reviewer_1"}),
+            encoding="utf-8",
+        )
+        with pytest.raises(SystemExit):
+            lbl.load_existing_labels(storage)
+
+    def test_unrelated_malformed_label_file_rejected_loudly(self, lbl, tmp_path):
+        storage = _FakeStorage(tmp_path)
+        labels_dir = tmp_path / lbl.HUMAN_LABELS_DIR
+        labels_dir.mkdir(parents=True)
+        (labels_dir / "case1.json").write_text(
+            json.dumps({"case_id": "case1", "faithfulness": "maybe", "reviewer": "reviewer_1"}),
+            encoding="utf-8",
+        )
+        with pytest.raises(SystemExit):
+            lbl.load_existing_labels(storage)
+
+
+class TestInteractiveLabelingSingleBinaryDimension:
+    def test_quit_saves_nothing(self, lbl, tmp_path, monkeypatch):
+        storage = _FakeStorage(tmp_path)
+        _write_calibration(lbl, storage, [_min_case("c1")])
+        inputs = iter(["q"])
+        monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
+        lbl.run_labeling(storage)
+        assert lbl.load_existing_labels(storage) == {}
+
+    def test_skip_saves_nothing_and_advances(self, lbl, tmp_path, monkeypatch):
+        storage = _FakeStorage(tmp_path)
+        _write_calibration(lbl, storage, [_min_case("c1"), _min_case("c2")])
+        inputs = iter(["s", "supported", ""])
+        monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
+        lbl.run_labeling(storage)
+        labels = lbl.load_existing_labels(storage)
+        assert "c1" not in labels
+        assert labels["c2"]["faithfulness"] == "supported"
+
+    def test_invalid_input_reprompts_until_valid(self, lbl, tmp_path, monkeypatch):
+        storage = _FakeStorage(tmp_path)
+        _write_calibration(lbl, storage, [_min_case("c1")])
+        inputs = iter(["maybe", "4", "unsupported", ""])
+        monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
+        lbl.run_labeling(storage)
+        labels = lbl.load_existing_labels(storage)
+        assert labels["c1"]["faithfulness"] == "unsupported"
+
+    def test_full_session_two_cases_labeled(self, lbl, tmp_path, monkeypatch):
+        storage = _FakeStorage(tmp_path)
+        _write_calibration(lbl, storage, [_min_case("c1"), _min_case("c2")])
+        inputs = iter(["supported", "", "unsupported", "note here"])
+        monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
+        lbl.run_labeling(storage)
+        labels = lbl.load_existing_labels(storage)
+        assert len(labels) == 2
+        assert labels["c1"]["faithfulness"] == "supported"
+        assert labels["c2"]["faithfulness"] == "unsupported"

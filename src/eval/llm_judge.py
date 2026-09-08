@@ -132,7 +132,11 @@ class JudgeConfig:
     ollama_version: str
     temperature: float
     seed: int
-    think: bool
+    think: bool | None  # None = do not send the `think` field at all (Task 2.13
+    # cross-model study: gpt-oss:20b crashes/returns empty content when
+    # `think=false` is combined with structured `format` on this install's
+    # hardware - reproduced twice; omitting the parameter is the
+    # non-invented fix, never a substitute model).
     stream: bool
     num_ctx: int
     rubric_version: str
@@ -229,17 +233,19 @@ def build_request_payload(item: JudgeInput, config: JudgeConfig) -> dict:
     for forbidden in _FORBIDDEN_REQUEST_SUBSTRINGS:
         if forbidden in user_message:
             raise JudgeError(f"refusing to send request: forbidden field {forbidden!r} present in judge input")
-    return {
+    payload = {
         "model": config.model_tag,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ],
         "stream": config.stream,
-        "think": config.think,
         "format": _JSON_SCHEMA,
         "options": {"temperature": config.temperature, "seed": config.seed, "num_ctx": config.num_ctx},
     }
+    if config.think is not None:
+        payload["think"] = config.think
+    return payload
 
 
 def parse_judge_response(raw_content: str) -> tuple[str, tuple[str, ...], str]:
@@ -335,7 +341,75 @@ def agreement_rate(pairs: list[tuple[str, str]]) -> dict:
         "agreement_count": agree,
         "disagreement_count": n - agree,
         "over_crediting_count": over_crediting,
+        "over_crediting_rate": over_crediting / n,
         "under_crediting_count": under_crediting,
+        "under_crediting_rate": under_crediting / n,
+    }
+
+
+def confusion_matrix(pairs: list[tuple[str, str]]) -> dict:
+    """Full 2x2 confusion matrix for the binary faithfulness label, keyed
+    `"<a>_<b>"` where `pairs` is `(a_label, b_label)` - PROJECT_EXECUTION.md's
+    required agreement reporting shape. Used both for the human-vs-judge
+    contract (a=human, b=judge; see `agreement_rate()`) and the Task 2.13
+    cross-model study (a=model_a, b=model_b; see `cross_model_agreement()`/
+    `disagreement_direction()`) - reported alongside, never instead of,
+    those directional figures."""
+    if not pairs:
+        raise JudgeError("confusion_matrix called with zero pairs")
+    for h, j in pairs:
+        if h not in FAITHFULNESS_LABELS or j not in FAITHFULNESS_LABELS:
+            raise JudgeError(f"labels must be one of {FAITHFULNESS_LABELS}, got human={h!r} judge={j!r}")
+
+    matrix = {f"{h}_{j}": 0 for h in FAITHFULNESS_LABELS for j in FAITHFULNESS_LABELS}
+    for h, j in pairs:
+        matrix[f"{h}_{j}"] += 1
+    return matrix
+
+
+def cross_model_agreement(pairs: list[tuple[str, str]]) -> dict:
+    """Task 2.13 cross-model agreement study: two INDEPENDENT judge
+    models, no human ground truth. Deliberately does not reuse
+    `agreement_rate()`'s field names (`over_crediting`/`under_crediting`)
+    - those imply one side is correct, which is exactly what the
+    cross-model study must not claim. `pairs` is (model_a_label,
+    model_b_label)."""
+    if not pairs:
+        raise JudgeError("cross_model_agreement called with zero pairs")
+    for a, b in pairs:
+        if a not in FAITHFULNESS_LABELS or b not in FAITHFULNESS_LABELS:
+            raise JudgeError(f"labels must be one of {FAITHFULNESS_LABELS}, got model_a={a!r} model_b={b!r}")
+
+    n = len(pairs)
+    agree = sum(1 for a, b in pairs if a == b)
+    return {
+        "n": n,
+        "agreement_rate": agree / n,
+        "agreement_count": agree,
+        "disagreement_count": n - agree,
+    }
+
+
+def disagreement_direction(pairs: list[tuple[str, str]]) -> dict:
+    """Neutral disagreement-direction breakdown for two independent
+    judges - 'model_a more permissive' (a=supported, b=unsupported) and
+    'model_b more permissive' (a=unsupported, b=supported), never
+    'correct'/'incorrect'. `pairs` is (model_a_label, model_b_label)."""
+    if not pairs:
+        raise JudgeError("disagreement_direction called with zero pairs")
+    for a, b in pairs:
+        if a not in FAITHFULNESS_LABELS or b not in FAITHFULNESS_LABELS:
+            raise JudgeError(f"labels must be one of {FAITHFULNESS_LABELS}, got model_a={a!r} model_b={b!r}")
+
+    n = len(pairs)
+    a_more_permissive = sum(1 for a, b in pairs if a == "supported" and b == "unsupported")
+    b_more_permissive = sum(1 for a, b in pairs if a == "unsupported" and b == "supported")
+    return {
+        "n": n,
+        "model_a_more_permissive_count": a_more_permissive,
+        "model_a_more_permissive_rate": a_more_permissive / n,
+        "model_b_more_permissive_count": b_more_permissive,
+        "model_b_more_permissive_rate": b_more_permissive / n,
     }
 
 

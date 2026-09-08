@@ -700,6 +700,22 @@ Known judge failure modes to check for in the disagreements: preference for
 verbose answers, run-to-run inconsistency, and agreement with whatever
 content is presented.
 
+> **Task 2.13 methodology amendment (2026-09-08, user-approved):** the
+> checklist above — specifically "hand-label 100 answers" and "report
+> agreement rate... against blinded human labels" — was never completed as
+> written. Manual 100-case human calibration is deferred/not performed. By
+> explicit user decision, the completed cross-model agreement study
+> (`qwen3.5:9b` vs `gpt-oss:20b`, 88.0% exact agreement, Cohen's kappa 0.737 —
+> see `results/phase_2_13_cross_model_agreement.json` and
+> `project_plan/PHASE2_LLM_JUDGE_VALIDATION.md`) is accepted as the Task 2.13
+> substitute. This substitution does **not** make the judge human-validated.
+> `faithfulness.implemented` in the Task 2.5/2.6 metric registry must not be
+> flipped solely because of cross-model agreement, and no
+> accuracy/precision/recall/F1 against human truth may be claimed from this
+> study. The original checklist above is left unchecked and unmodified as
+> the historical record of what was actually planned and not literally
+> satisfied.
+
 ## Deliverables
 
 - XBRL truth contract
@@ -728,6 +744,9 @@ content is presented.
 - [ ] The TEST split is frozen and protected from routine experimentation.
 - [ ] FinanceBench has been run and any gap versus the internal set explained.
 - [ ] Judge agreement against human labels is measured and recorded.
+      **Amended 2026-09-08** — unmet as literally written (no human labels
+      were collected); satisfied instead via the user-approved cross-model
+      agreement substitute above. Not human validation.
 
 ## If short on time
 
@@ -1481,14 +1500,29 @@ A successful project has:
 Data Preparation   ✅ COMPLETE
 Phase 0            ✅ COMPLETE
 Phase 1            ⚠️ COMPLETE WITH WARN (Task 1.7a citation-format compliance: 8/10)
-Phase 2            ⬜ NEXT
+Phase 2            ⚠️ COMPLETE WITH NOTE (see below)
 Phase 3            ⬜ NOT STARTED
 Phase 4            ⬜ NOT STARTED
 Phase 5            ⭐ STRETCH
 ```
 
-See `Progress.md` for the full dated engineering log behind this summary,
-including every Phase 0/1 subtask entry and the Phase 1 Independent Task
-Verification audit.
+```text
+Phase 2 — COMPLETE WITH NOTE
 
-**Next action:** begin Phase 2 — Make the Numbers Trustworthy.
+NOTE:
+The original human LLM-judge calibration was not performed.
+By explicit user-approved roadmap amendment, Task 2.13 used a completed
+cross-model agreement study instead:
+qwen3.5:9b vs gpt-oss:20b,
+88.0% exact agreement, Cohen's kappa 0.737.
+This is not human validation.
+```
+
+See `Progress.md` for the full dated engineering log behind this summary,
+including every Phase 0/1 subtask entry, the Phase 1 Independent Task
+Verification audit, and the Task 2.13 cross-model agreement study
+(2026-09-08).
+
+**Next action:** begin Phase 3 — Make It Good (see Phase 3 section above for
+subtask order; do not start implementation from this document alone without
+re-reading the exact next subtask).

@@ -9915,3 +9915,379 @@ Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
   2.13 LLM-as-Judge Validation                — IN PROGRESS (infrastructure complete,
                                                   BLOCKED on genuine human labeling)
 ```
+
+## Task 2.13 correction (2026-09-02) — human labeling is dual-ordinal, not binary
+
+The user opened `scripts/label_llm_judge_calibration.py --resume` before
+labeling started and found it asked only for a single binary
+`Faithfulness [supported/unsupported]` score. On review of the drafting
+prompt's own Section 22/23, the user explicitly instructed the CLI to
+follow the frozen dual-ordinal contract instead: two independent scores
+per case, `correctness [0-4]` (against the reference answer) and
+`faithfulness [0-4]` (against the evidence), each strictly validated as
+an integer 0-4, with a binary `derived_verdict` computed afterward
+(`pass` if both >= 3, else `fail`) rather than asked of the human
+directly. This reverses the earlier "Authoritative Contract" note above
+for the **human-labeling side only** - see
+`project_plan/PHASE2_LLM_JUDGE_VALIDATION.md`'s "Reversal (2026-09-02)"
+subsection for the full record.
+
+No prior human-label files existed
+(`artifacts/eval/llm_judge_calibration/human_labels/` had never been
+created - confirmed before making any change), so there was nothing to
+quarantine. A loud, non-silent legacy-schema guard was still added to
+`load_existing_labels()`: a label file missing valid `correctness`/
+`faithfulness` integers now raises `SystemExit` and instructs manual
+quarantine, rather than ever being silently dropped or converted.
+
+The Qwen judge itself (`src/eval/llm_judge.py`) was **not** touched - it
+still emits a single binary faithfulness label. This opens a genuine,
+documented gap: `scripts/run_llm_judge_validation.py --full` now detects
+a dual-ordinal human-label schema and refuses before spending any judge
+compute, since there is no non-invented way to compute per-dimension
+(exact/within-1/MAE/quadratic-weighted-kappa) agreement against a judge
+dimension (`correctness`) the judge was never asked to score. Resolving
+this - most plausibly by extending the judge to also score
+`correctness` - is a separate decision, not made here, since the judge
+config is frozen and must not change without explicit instruction.
+
+Changed: `scripts/label_llm_judge_calibration.py` (rewritten: dual-score
+prompt loop, `validate_score()`, `derive_verdict()`, legacy-schema
+guard); `scripts/run_llm_judge_validation.py` (`cmd_full` STOP guard on
+dual-ordinal labels; `write_result_summary`'s `human_labels_sha256` now
+hashes all three fields); `results/phase_2_13_llm_judge_validation.json`
+(interim structure updated: `human_label_schema`,
+`judge_vs_human_agreement_status`); `tests/test_llm_judge_validation.py`
+(+14 tests: `validate_score`/`derive_verdict` unit tests, `write_label`
+out-of-range/non-int rejection for both dimensions, missing-argument
+`TypeError`, legacy-file `SystemExit`, and interactive-CLI regression
+tests proving a case is never saved with only one dimension filled -
+quit or skip between the two prompts discards the case entirely);
+`project_plan/PHASE2_LLM_JUDGE_VALIDATION.md` updated throughout.
+
+Regression: `scripts/dev.py doctor` PASS. Full suite and portable-only
+counts recorded in this same correction pass - see the git commit for
+this change for the exact numbers.
+
+Formal human labeling has **not** been run by anyone, LLM or human, as
+part of this correction - only the CLI infrastructure was fixed. Waiting
+for the user to run:
+
+    python -u scripts/label_llm_judge_calibration.py --resume
+
+Protected SEC TEST remains unopened, 0/3 official runs used throughout.
+
+## Task 2.13 correction reverted (2026-09-02) — restored to authoritative binary contract
+
+The dual-ordinal correction directly above was itself reverted the same
+day. The user asked for the exact local `PROJECT_EXECUTION.md` Task
+2.13 section to be re-read; it specifies exactly one human label per
+case - `faithfulness (supported/unsupported)` - with no `correctness`
+dimension and no 0-4 scale. The dual-ordinal design traced back to the
+drafting prompt's Section 22/23, not `PROJECT_EXECUTION.md`, and per
+this task's own standing rule ("PROJECT_EXECUTION.md always wins") it
+should not have been adopted for the human-labeling contract either.
+This is recorded, not erased, in
+`project_plan/PHASE2_LLM_JUDGE_VALIDATION.md`'s "Reversal reverted
+(2026-09-02)" subsection, alongside the original "Reversal" note it
+undoes - the full back-and-forth is kept explicit rather than
+overwritten.
+
+Verified again before touching anything:
+`artifacts/eval/llm_judge_calibration/human_labels/` still did not exist
+- zero label files on disk under either schema. Nothing needed
+quarantining in either direction.
+
+`scripts/label_llm_judge_calibration.py` restored to the single
+`Faithfulness [supported/unsupported]` prompt (the human's label is
+directly the verdict, never derived). `load_existing_labels()`'s
+legacy-schema guard now flags a `correctness`-bearing file (a remnant of
+the reverted design) instead of a binary-only one. `scripts/run_llm_judge_validation.py`'s
+`cmd_full` STOP guard was correspondingly flipped, restoring the
+original human-supported/unsupported vs. judge-supported/unsupported
+comparison via `lj.agreement_rate()`/`lj.cohens_kappa()`. Two small,
+non-scope-changing reporting additions were made to
+`src/eval/llm_judge.py` at the same time: `over_crediting_rate`/
+`under_crediting_rate` fields on `agreement_rate()`'s return dict, and a
+new `confusion_matrix()` helper (full 2x2 human-x-judge breakdown) -
+both requested explicitly, neither adds a numeric acceptance threshold
+or a new label dimension. The Qwen judge's own prompt/rubric/model
+config (`src/eval/llm_judge.py`'s `SYSTEM_PROMPT`/`JudgeConfig`/
+`_JSON_SCHEMA`) was not touched by either the dual-ordinal attempt or
+this revert.
+
+`tests/test_llm_judge_validation.py`'s human-label test classes were
+rewritten back to the binary schema (write/load round trip, atomic
+write, malformed/dual-ordinal-remnant rejection via `SystemExit`, and
+interactive-CLI tests for quit/skip/invalid-input/full-session using the
+single `Faithfulness [supported/unsupported]` prompt).
+`results/phase_2_13_llm_judge_validation.json`'s interim
+`human_label_schema` field now describes the binary schema and notes the
+attempted-then-reverted dual-ordinal design.
+
+Regression: `scripts/dev.py doctor` PASS;
+`scripts/dev.py test --portable` and `scripts/dev.py test` counts
+recorded in the git commit for this revert. Zero human labels exist on
+disk after this change (confirmed before and after). Qwen and human
+schemas are both binary `supported`/`unsupported`. Zero paid API calls.
+Protected SEC TEST unopened, 0/3 official runs used.
+
+Formal human labeling has still **not** been run - only the CLI/agreement
+infrastructure was corrected. Still waiting for the user to run:
+
+    python -u scripts/label_llm_judge_calibration.py --resume
+
+## Task 2.13 methodology change (2026-09-08) — cross-model agreement study replaces human calibration
+
+HUMAN CALIBRATION:
+  NOT PERFORMED
+
+REASON:
+  user elected to replace the manual human calibration step with a
+  cross-model agreement study.
+
+CROSS-MODEL STUDY:
+  qwen3.5:9b vs gpt-oss:20b
+
+IMPORTANT LIMITATION:
+  cross-model agreement is not evidence of human-level correctness and
+  is not equivalent to human validation.
+
+### What happened
+
+Before starting, Stage 1 preflight found one stray human-label file
+(`artifacts/eval/llm_judge_calibration/human_labels/financebench_id_00005-reference.json`,
+`supported`, reviewer_1, timestamped 2026-09-07) - a single manual CLI test,
+never a real 100-case labeling session. Per the task's own rule ("if genuine
+human labels exist, STOP and report; do not delete or silently replace"),
+labeling did not proceed automatically - the user was asked, and chose to
+quarantine it. It now lives at
+`artifacts/eval/llm_judge_calibration/human_labels_archive/` (git-ignored),
+preserved not deleted, excluded from every code path.
+
+By explicit user decision (`prompts/phase_2/task_2.13_cross_model_agreement_study.md`),
+the originally planned 100-case human calibration is superseded by a
+cross-model agreement study: `qwen3.5:9b` (primary, unchanged from the
+original Task 2.13 judge config) vs `gpt-oss:20b` (comparator, a different
+model family - `gptoss` vs `qwen35` - avoiding self-preference bias the same
+way judge-vs-generation-model separation already did). Both run local-only
+via Ollama; zero paid API calls anywhere in this work.
+
+**Historical human-label workflow work is not erased** - `scripts/label_llm_judge_calibration.py`,
+the dual-ordinal-then-reverted design history, and the binary human-labeling
+CLI all remain in the repository exactly as before, documented as
+superseded by this user decision, not deleted or silently repurposed.
+
+### Stage 2 finding: gpt-oss:20b `think` parameter unsupported in combination with structured format
+
+On this machine (RTX 5060, 8151 MiB VRAM; gpt-oss:20b is 14 GB MXFP4,
+partially CPU-offloaded), `think=false` combined with structured `format`
+reproducibly failed twice - once as a `llama-server` CUDA crash
+(stack-buffer overrun, HTTP 500), once as an empty schema-invalid `content`
+field. `think=false` alone and `format=schema` alone each worked cleanly
+and repeatably. Per the task's explicit instruction ("do not invent
+unsupported parameters"), `src/eval/llm_judge.py`'s `JudgeConfig.think` was
+changed from `bool` to `bool | None`; `build_request_payload()` omits the
+`think` key entirely when `None`. gpt-oss:20b's own default `thinking` text
+is still never persisted to any judgment record. This is a genuine
+hardware/install limitation, not a substituted model - documented in the
+result artifact's `gpt_oss_think_param_note`.
+
+### Mid-run fix: repeatability resumability
+
+This sandbox externally killed the long-running `--cross-model --full`
+process roughly every 5-20 minutes for the entire formal run (confirmed via
+an explicit `[killed]` marker in captured output on every occurrence -
+never a traceback, never an Ollama/CUDA error). The main 100-case loop
+already tolerated this via its existing per-case resume cache and finished
+correctly across ~15 restarts with zero duplicate model calls. Stage 6's
+repeatability subset did not originally have this protection - a single
+gpt-oss:20b repeatability pass (60 calls) takes roughly 45 minutes, longer
+than the kill interval, which would have prevented it from ever completing.
+`_run_repeatability_subset()` in `scripts/run_llm_judge_validation.py` was
+corrected mid-run to reuse the same case/config-hash cache-and-verify
+contract as the main run, keyed per `run{N}` subdirectory - each of the 3
+repeatability passes remains genuinely independent (never reused across
+each other), but a case already completed within a given pass on a prior
+invocation is skipped on `--resume`. Verified against the real run:
+repeatability reached 120/120 completed judgments across several further
+external kills after the fix, with zero wasted recomputation.
+
+### New code (additive - existing single-model/human-calibration code untouched)
+
+- `src/eval/llm_judge.py`: `JudgeConfig.think: bool | None`;
+  `cross_model_agreement()`, `disagreement_direction()` (neutral
+  `model_a_more_permissive`/`model_b_more_permissive` wording - never
+  "correct", never `agreement_rate()`'s human-vs-judge `over_crediting`/
+  `under_crediting` framing); `confusion_matrix()` reused unchanged, only
+  its docstring generalized.
+- `scripts/run_llm_judge_validation.py`: `--cross-model` flag;
+  `build_judge_config_generic()`; `compute_cross_model_study_hash()` (Task
+  2.10's `semantic_hash()`, no second hashing implementation);
+  `_run_cross_model_judgments()` (structurally independent per-model calls,
+  per-model resumable); `_run_repeatability_subset()`;
+  `_run_fixture_checks()` (real prompt-injection/adversarial fixtures
+  against both live models); `write_cross_model_result_summary()`;
+  `--status`/`--status --watch` extended for cross-model progress,
+  strictly read-only.
+- `tests/test_cross_model_agreement.py`: 26 new portable tests (no Ollama/
+  GPU/network) - think=None payload omission, distinct-but-identical-rubric
+  config hashes, study-hash determinism/sensitivity, structural
+  no-cross-leakage proof, resume safety (zero new calls on full resume,
+  corrupted-checkpoint rejection), agreement/confusion-matrix/kappa/
+  disagreement-direction correctness, forbidden-terminology scan of the
+  result artifact, `human_validation_performed`/`human_validated_judge`
+  hardcoded-`False` proof, zero-Ollama-calls status proof, mocked
+  prompt-injection fixture.
+- `project_plan/PHASE2_LLM_JUDGE_VALIDATION.md`: new "Methodology change"
+  section with full history, config, and result.
+
+### Formal result
+
+```text
+Cases:                       100 / 100
+Primary:    qwen3.5:9b     digest 6488c96fa5fa...
+Comparator: gpt-oss:20b    digest 17052f91a42e...
+
+Qwen supported/unsupported:     33 / 67
+GPT-OSS supported/unsupported:  37 / 63
+Exact agreement:   88 / 100  (88.0%)
+Cohen's kappa:      0.737
+
+Confusion matrix (rows=Qwen, cols=GPT-OSS):
+                       GPT-OSS
+                 supported  unsupported
+Qwen supported        29          4
+Qwen unsupported       8          59
+
+Qwen more permissive    (Qwen=supported,   GPT-OSS=unsupported): 4  (4.0%)
+GPT-OSS more permissive (Qwen=unsupported, GPT-OSS=supported):  8  (8.0%)
+
+Repeatability (20-case subset, 3 runs each):
+  Qwen:     100.0% exact, 0 flips
+  GPT-OSS:   95.0% exact, 1 flip
+
+Structured-output success: Qwen 100.0%, GPT-OSS 100.0%
+Fixture checks: 3/3 matched expected faithfulness for both models
+
+Human validation performed: NO
+Human-validated judge:      NO
+Paid API calls: 0   Protected TEST opened: NO   Official TEST runs: 0/3
+```
+
+Full detail: `results/phase_2_13_cross_model_agreement.json`.
+
+### What this does NOT establish
+
+No accuracy, precision, recall, F1, sensitivity, or specificity is computed
+or claimed anywhere in this study - there is no trusted ground-truth label.
+`faithfulness.implemented` in the Task 2.5/2.6 metric registry is **not**
+flipped by this result. Per `PROJECT_EXECUTION.md`'s actual Task 2.13
+checklist ("hand-label 100 answers... report agreement... against blinded
+human labels") and Phase 2's exit criterion ("judge agreement against human
+labels is measured and recorded"), this roadmap requirement is honestly
+**unmet as originally written** - it was replaced by explicit user decision,
+not silently reinterpreted as satisfied. This substitution is a recorded
+roadmap amendment, not a retroactive claim that the original criterion
+passed.
+
+### Regression Gates
+
+Task 2.12 FinanceBench source/results, Task 2.11 run-log schema, Task 2.10
+canonical hashing, Task 2.9 chunk schema, Task 2.8 gold-evidence count,
+Task 2.3 pending-review questions: all unchanged (this task only reads
+Task 2.12's existing evidence-aligned calibration pack). Protected SEC TEST:
+unopened, 0/3 official runs used throughout. No paid OpenRouter/OpenAI/
+Anthropic calls anywhere - only network target is `http://localhost:11434`.
+
+### Tests
+
+`scripts/dev.py doctor`: PASS.
+`scripts/dev.py test --portable`: **1227 passed, 29 deselected**.
+`scripts/dev.py test` (full, includes `ollama`-marked integration tests):
+**1256 passed**.
+
+### Phase Status
+
+```text
+Phase 2 — Make the Numbers Trustworthy        — IN PROGRESS
+  2.13 LLM-as-Judge Validation                — CROSS-MODEL AGREEMENT STUDY COMPLETE
+                                                  (human validation NOT performed - see above)
+```
+
+Phase 2 is not marked complete by this task. Its exit criterion "Judge
+agreement against human labels is measured and recorded" remains unmet as
+originally written; the cross-model figure above is the recorded substitute
+per explicit user decision. Phase 3 is not started.
+
+---
+
+## 2026-09-08 — Task 2.13 Phase 2 exit resolution
+
+Closure task, not new engineering: reconciled `project_plan/PROJECT_EXECUTION.md`
+with the completed cross-model agreement study and resolved Phase 2 honestly.
+
+### Stage 1 preflight (repeated verification)
+
+- `results/phase_2_13_cross_model_agreement.json`: 100/100 Qwen judgments,
+  100/100 GPT-OSS judgments (recounted directly from
+  `artifacts/eval/llm_judge/cross_model/<study_hash>/{qwen,gpt_oss}/judgments/`),
+  repeatability `run1`/`run2`/`run3` complete for both models.
+- `human_validation_performed=false`, `human_validated_judge=false`,
+  `protected_test_accessed=false`, `official_test_runs_used=0`,
+  `paid_api_calls=0` — all confirmed unchanged.
+- Did **not** rerun the 100-case study.
+
+### Stage 2-4: full Phase 2 exit audit
+
+Every other Phase 2 exit criterion re-verified directly against its result
+artifact (not from memory): truth contract (`phase_2_1_*`), tag registry
+(`phase_2_2_*`), 2,810-question dataset with 50 `pending_review` narrative
+questions still unpromoted (`phase_2_3_*`), DEV/TEST split (`phase_2_4_*`),
+MS MARCO (`phase_2_7_*`, 6,980 queries), primary evidence alignment
+(`phase_2_8_*`, `gold_evidence_count=0` honestly unchanged), chunk schema
+(`phase_2_9_*`), artifact hashing (`phase_2_10_*`, `legacy_compatibility:
+PASS`), run-log compatibility (`phase_2_11_*`), FinanceBench
+(`phase_2_12_*`: 150 questions, 84 documents, 77 evidence-aligned,
+doc_recall@10=0.9221, evidence_recall@10=0.2641, unchanged). `git diff`
+against HEAD confirms none of the Task 2.1-2.12 result files were touched.
+All pass. Only the human-label criterion is unmet as literally written.
+
+### Stage 3: roadmap amendment
+
+`project_plan/PROJECT_EXECUTION.md` Task 2.13 section and its exit-criteria
+line now carry an explicit, dated, user-approved amendment: the original
+checklist (hand-label 100 answers, agreement against blinded human labels)
+is preserved verbatim and left unchecked; a new amendment note states the
+cross-model study is accepted as the substitute, is not human validation,
+and must not flip `faithfulness.implemented` on its own.
+
+### Stage 5: tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1227 passed, 29 deselected**.
+- `scripts/dev.py test` (full): **1255 passed, 1 skipped** — the 1 skip is
+  `tests/test_llm_judge.py:409` ("Ollama server not reachable at
+  localhost:11434"), an environment condition at run time (Ollama was not
+  up), not a regression from the prior recorded 1256-passed run.
+
+### Phase Status (superseding 2026-09-08 entry above)
+
+```text
+Phase 2 — COMPLETE WITH NOTE
+
+NOTE:
+The original human LLM-judge calibration was not performed.
+By explicit user-approved roadmap amendment, Task 2.13 used a completed
+cross-model agreement study instead:
+qwen3.5:9b vs gpt-oss:20b,
+88.0% exact agreement, Cohen's kappa 0.737.
+This is not human validation.
+```
+
+Protected SEC TEST: still unopened. Official TEST runs: 0/3, unchanged.
+No Phase 3 implementation performed by this task.
+
+**Next roadmap task:** Phase 3, Task 3.1 — Capture the trusted baseline
+(run the Phase 1 architecture through the now-trusted Phase 2 evaluation
+harness and store baseline DEV results as row 0 of the ablation table).

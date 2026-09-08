@@ -44,7 +44,17 @@ CHUNK_SCHEMA_FIELDS: tuple[str, ...] = (
 WINDOW_SIZE_TOKENS = 512
 STRIDE_TOKENS = 512  # window_size - overlap; overlap_tokens = 0 (approved)
 
+# Task 3.2 - the chunking dimensions the controlled ablation is allowed to
+# vary. split_mode="fixed" is the frozen Phase 1/row-0 policy (default);
+# "section_aware" never lets a chunk cross a normalized "## Item ..."
+# heading boundary (see split_body_into_sections() below).
+SPLIT_MODES: tuple[str, ...] = ("fixed", "section_aware")
+DEFAULT_SPLIT_MODE = "fixed"
+
 _DOC_RE = re.compile(r"^---\n(?P<fm>.*?)\n---\n(?P<rest>.*)\Z", re.DOTALL)
+# Matches exactly the headings src.normalize.edgar_markdown.render_body()
+# emits ("## Item {label}") - never a different heading convention.
+_SECTION_HEADING_RE = re.compile(r"^## (Item [0-9A-Za-z]+)$", re.MULTILINE)
 
 
 def parse_normalized_document(markdown_text: str) -> tuple[dict, str]:
@@ -125,6 +135,49 @@ def slice_chunk_text(body_text: str, offsets: list[tuple[int, int]],
     return body_text[char_start:char_end]
 
 
+def section_label_to_id(label: str) -> str:
+    """'Item 7A' -> 'item_7a' - stable, machine-readable, lowercase
+    (matches src.chunk.metadata_schema's section_id convention, e.g.
+    "item_7"). Never fabricated - always derived from a real rendered
+    heading."""
+    return "item_" + label[len("Item "):].lower()
+
+
+def split_body_into_sections(body_text: str) -> list[tuple[str, str, int, int]]:
+    """Splits a Task 1.2 normalized document body into ordered, non-
+    overlapping (section_id, section_title, char_start, char_end) spans,
+    one per "## Item ..." heading actually present (edgar_markdown's
+    render_body() never emits a heading for an empty/null section, so
+    this recovers exactly the sections that are really there - never a
+    fabricated boundary). Each span covers everything from its own
+    heading line up to (but not including) the next heading, or the end
+    of the body for the last section. Raises ValueError if the body is
+    non-empty but contains no heading at all (malformed input - Task 1.2
+    always emits heading-prefixed bodies for non-empty documents) or if
+    two headings share the same section_id (would silently merge
+    distinct spans under one identity)."""
+    if not body_text:
+        return []
+    matches = list(_SECTION_HEADING_RE.finditer(body_text))
+    if not matches:
+        raise ValueError("non-empty body contains no '## Item ...' heading - cannot split into sections")
+    if matches[0].start() != 0:
+        raise ValueError("body has content before its first section heading - not a Task 1.2-rendered body")
+
+    spans: list[tuple[str, str, int, int]] = []
+    seen_ids: set[str] = set()
+    for i, m in enumerate(matches):
+        title = m.group(1)
+        section_id = section_label_to_id(title)
+        if section_id in seen_ids:
+            raise ValueError(f"duplicate section heading {title!r} in one document body")
+        seen_ids.add(section_id)
+        start = m.start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(body_text)
+        spans.append((section_id, title, start, end))
+    return spans
+
+
 def make_chunk_id(document_id: str, ordinal: int) -> str:
     """'{document_id}::chunk{ordinal}', zero-based ordinal. Deterministic,
     globally unique (document_id is already unique per Task 1.1's manifest),
@@ -134,9 +187,32 @@ def make_chunk_id(document_id: str, ordinal: int) -> str:
 
 def build_chunk_config(*, normalizer_version: str, normalization_build_sha256: str,
                         development_manifest_sha256: str, tokenizer_repo: str,
-                        tokenizer_revision: str) -> dict:
+                        tokenizer_revision: str,
+                        window_size_tokens: int = WINDOW_SIZE_TOKENS,
+                        overlap_tokens: int = 0,
+                        split_mode: str = DEFAULT_SPLIT_MODE) -> dict:
     """Every decision that affects chunk identity or text, in one place.
-    No timestamps - this dict is hashed verbatim by chunk_config_hash()."""
+    No timestamps - this dict is hashed verbatim by chunk_config_hash().
+
+    Task 3.2 generalization: window_size_tokens/overlap_tokens/split_mode
+    are now parameters (frozen Phase 1 defaults: 512/0/"fixed", unchanged
+    for any caller that does not pass them - scripts/chunk_development_corpus.py
+    never has, so row 0's own chunk identity is computed independently
+    from the frozen configs/chunk_development_corpus.json on disk, never
+    recomputed through this function - see tests/test_artifact_versioning.py's
+    test_historical_phase1_hash_reproduces_exactly). stride_tokens is
+    always derived, never independently specified - `stride = window_size
+    - overlap` (Task 3.2's one frozen overlap definition)."""
+    if window_size_tokens <= 0:
+        raise ValueError(f"window_size_tokens must be positive, got {window_size_tokens}")
+    if overlap_tokens < 0:
+        raise ValueError(f"overlap_tokens must be >= 0, got {overlap_tokens}")
+    if overlap_tokens >= window_size_tokens:
+        raise ValueError(f"overlap_tokens ({overlap_tokens}) must be < window_size_tokens ({window_size_tokens})")
+    if split_mode not in SPLIT_MODES:
+        raise ValueError(f"split_mode must be one of {SPLIT_MODES}, got {split_mode!r}")
+    stride_tokens = window_size_tokens - overlap_tokens
+
     return {
         "schema_version": "1.0",
         "input_normalizer_version": normalizer_version,
@@ -147,9 +223,10 @@ def build_chunk_config(*, normalizer_version: str, normalization_build_sha256: s
             "revision": tokenizer_revision,
             "local_files_only": True,
         },
-        "window_size_tokens": WINDOW_SIZE_TOKENS,
-        "overlap_tokens": 0,
-        "stride_tokens": STRIDE_TOKENS,
+        "window_size_tokens": window_size_tokens,
+        "overlap_tokens": overlap_tokens,
+        "stride_tokens": stride_tokens,
+        "split_mode": split_mode,
         "special_token_policy": "content_tokens_only (add_special_tokens=False)",
         "partial_window_policy": "keep",
         "frontmatter_body_policy": "body_only_frontmatter_to_metadata",

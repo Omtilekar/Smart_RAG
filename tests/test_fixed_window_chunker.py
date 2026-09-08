@@ -239,3 +239,208 @@ def test_normalization_build_sha256_independent_of_filesystem_iteration_order(tm
     result1 = cdc.normalization_build_sha256(tmp_path)
     result2 = cdc.normalization_build_sha256(tmp_path)
     assert result1 == result2
+
+
+# ============================================================ Task 3.2 generalization
+
+# -------------------------------------------------- generalized build_chunk_config
+
+def _gen_config(**overrides):
+    kwargs = dict(
+        normalizer_version="phase1-minimal-v1",
+        normalization_build_sha256="a" * 64,
+        development_manifest_sha256="b" * 64,
+        tokenizer_repo="BAAI/bge-small-en-v1.5",
+        tokenizer_revision="5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    )
+    kwargs.update(overrides)
+    return fw.build_chunk_config(**kwargs)
+
+
+def test_generalized_config_defaults_match_frozen_phase1_values():
+    config = _gen_config()
+    assert config["window_size_tokens"] == 512
+    assert config["overlap_tokens"] == 0
+    assert config["stride_tokens"] == 512
+    assert config["split_mode"] == "fixed"
+
+
+def test_generalized_config_256_window():
+    config = _gen_config(window_size_tokens=256)
+    assert config["window_size_tokens"] == 256
+    assert config["stride_tokens"] == 256
+
+
+def test_generalized_config_1024_window():
+    config = _gen_config(window_size_tokens=1024)
+    assert config["window_size_tokens"] == 1024
+    assert config["stride_tokens"] == 1024
+
+
+def test_generalized_config_stride_derived_from_overlap():
+    config = _gen_config(window_size_tokens=256, overlap_tokens=32)
+    assert config["stride_tokens"] == 224
+
+
+def test_generalized_config_section_aware_split_mode():
+    config = _gen_config(split_mode="section_aware")
+    assert config["split_mode"] == "section_aware"
+
+
+def test_generalized_config_rejects_unknown_split_mode():
+    with pytest.raises(ValueError):
+        _gen_config(split_mode="semantic")
+
+
+def test_generalized_config_rejects_overlap_ge_window():
+    with pytest.raises(ValueError):
+        _gen_config(window_size_tokens=256, overlap_tokens=256)
+
+
+def test_generalized_config_rejects_negative_overlap():
+    with pytest.raises(ValueError):
+        _gen_config(overlap_tokens=-1)
+
+
+def test_generalized_config_rejects_nonpositive_window():
+    with pytest.raises(ValueError):
+        _gen_config(window_size_tokens=0)
+
+
+def test_hash_changes_with_window_size():
+    a = fw.chunk_config_hash(_gen_config(window_size_tokens=256))
+    b = fw.chunk_config_hash(_gen_config(window_size_tokens=512))
+    assert a != b
+
+
+def test_hash_changes_with_overlap():
+    a = fw.chunk_config_hash(_gen_config(window_size_tokens=256, overlap_tokens=0))
+    b = fw.chunk_config_hash(_gen_config(window_size_tokens=256, overlap_tokens=32))
+    assert a != b
+
+
+def test_hash_changes_with_split_mode():
+    a = fw.chunk_config_hash(_gen_config(split_mode="fixed"))
+    b = fw.chunk_config_hash(_gen_config(split_mode="section_aware"))
+    assert a != b
+
+
+def test_default_call_still_deterministic_and_matches_original_shape():
+    # Baseline 512/0 output compatibility regression (Stage 10 #16): the
+    # generalized function called with no window/overlap/split_mode
+    # arguments reproduces the exact Phase 1 semantic values.
+    config = _gen_config()
+    assert config["window_size_tokens"] == fw.WINDOW_SIZE_TOKENS
+    assert config["overlap_tokens"] == 0
+    assert config["stride_tokens"] == fw.STRIDE_TOKENS
+
+
+# ------------------------------------------------------- overlap/stride window coverage
+
+def test_no_token_gaps_for_overlap_zero():
+    windows = fw.compute_token_windows(2000, window_size=256, stride=256)
+    covered = []
+    for start, end in windows:
+        covered.extend(range(start, end))
+    assert covered == list(range(2000))
+
+
+def test_expected_token_overlap_for_nonzero_overlap():
+    # window=256, overlap=32 => stride=224
+    windows = fw.compute_token_windows(1000, window_size=256, stride=224)
+    for (s0, e0), (s1, e1) in zip(windows, windows[1:]):
+        assert s1 < e0  # consecutive windows overlap
+        assert (e0 - s1) == 32  # exact overlap amount matches config
+
+
+def test_no_duplicate_final_window():
+    windows = fw.compute_token_windows(600, window_size=256, stride=224)
+    assert len(windows) == len(set(windows))
+    # last window's end is exactly num_tokens, and no earlier window repeats it
+    assert windows[-1][1] == 600
+    assert windows.count(windows[-1]) == 1
+
+
+def test_partial_final_window_retained_with_overlap():
+    windows = fw.compute_token_windows(500, window_size=256, stride=224)
+    assert windows[-1][1] == 500
+    assert (windows[-1][1] - windows[-1][0]) < 256
+
+
+# ---------------------------------------------------------- section splitting
+
+def _section_body():
+    return em.render_body({
+        "section_1": "Business overview text.",
+        "section_1A": "Risk factors text.",
+        "section_7": "MD&A discussion text.",
+    })
+
+
+def test_section_label_to_id():
+    assert fw.section_label_to_id("Item 1") == "item_1"
+    assert fw.section_label_to_id("Item 1A") == "item_1a"
+    assert fw.section_label_to_id("Item 7") == "item_7"
+
+
+def test_split_body_into_sections_count_and_order():
+    body = _section_body()
+    spans = fw.split_body_into_sections(body)
+    ids = [s[0] for s in spans]
+    assert ids == ["item_1", "item_1a", "item_7"]
+
+
+def test_split_body_into_sections_titles():
+    body = _section_body()
+    spans = fw.split_body_into_sections(body)
+    titles = [s[1] for s in spans]
+    assert titles == ["Item 1", "Item 1A", "Item 7"]
+
+
+def test_split_body_into_sections_never_crosses_boundary():
+    body = _section_body()
+    spans = fw.split_body_into_sections(body)
+    for section_id, title, start, end in spans:
+        span_text = body[start:end]
+        assert span_text.startswith(f"## {title}")
+        # no other section's heading LINE appears inside this span (exact
+        # line match - "## Item 1" is a substring of "## Item 1A", which
+        # is not a boundary violation)
+        other_heading_lines = {f"## {t}" for (_, t, _, _) in spans if t != title}
+        span_lines = set(span_text.splitlines())
+        assert not (other_heading_lines & span_lines)
+
+
+def test_split_body_into_sections_covers_full_body_no_gaps():
+    body = _section_body()
+    spans = fw.split_body_into_sections(body)
+    reconstructed = "".join(body[start:end] for _, _, start, end in spans)
+    assert reconstructed == body
+
+
+def test_split_body_into_sections_empty_body_yields_no_sections():
+    assert fw.split_body_into_sections("") == []
+
+
+def test_split_body_into_sections_single_section():
+    body = em.render_body({"section_1": "Only one section here."})
+    spans = fw.split_body_into_sections(body)
+    assert len(spans) == 1
+    assert spans[0][0] == "item_1"
+    assert spans[0][2] == 0
+    assert spans[0][3] == len(body)
+
+
+def test_split_body_into_sections_malformed_body_raises():
+    with pytest.raises(ValueError):
+        fw.split_body_into_sections("plain prose with no heading at all")
+
+
+def test_split_body_into_sections_no_source_section_disappears():
+    body = em.render_body({
+        "section_1": "A",
+        "section_2": "B",
+        "section_9A": "C",
+    })
+    spans = fw.split_body_into_sections(body)
+    assert {s[0] for s in spans} == {"item_1", "item_2", "item_9a"}

@@ -1,0 +1,46 @@
+{
+  "run_schema_version": 2,
+  "run_id": "28547fec-af47-43f4-b995-e02af858b20d",
+  "git_sha": "f052b7d506f7cc00cf594e5c2374368382f41543",
+  "git_dirty": false,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+  "embedding_model": {
+    "model_repository": "BAAI/bge-small-en-v1.5",
+    "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "embedding_dimension": 384,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "b39a67c9eb6487fc98f266f23742afd0a30321d98067505802a1e219b27bec84"
+  },
+  "index_identity_hash": "ace70ee67d8e98e019d221f2a0215a5b88498a0fc5dcbe73ac7ef1277630b111",
+  "retrieval_config": {
+    "type": "vector_exact_cosine",
+    "top_k": 50,
+    "distance_metric": "cosine"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-08T19:01:58.603184Z",
+  "metrics": {
+    "doc_recall@10": 0.9213483146067416,
+    "doc_recall@50": 0.9550561797752809,
+    "doc_mrr": 0.805056179775281,
+    "doc_ndcg@10": 0.8332079934913641
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_trusted_baseline",
+  "run_kind": "phase3_trusted_baseline",
+  "notes": "Task 3.1 row 0: unmodified Phase 1 vector-only architecture, evaluated over the frozen DEV/evaluable-subset (89 questions, Option A - see project_plan/PHASE3_TRUSTED_BASELINE.md). Generation disabled.",
+  "record_origin": "live",
+  "run_record_sha256": "7d57ea9a70ca3cb7669b3a31bad27f9e3b6837f0b8518babed854d970cf59037"
+}

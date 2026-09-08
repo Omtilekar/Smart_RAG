@@ -10291,3 +10291,108 @@ No Phase 3 implementation performed by this task.
 **Next roadmap task:** Phase 3, Task 3.1 — Capture the trusted baseline
 (run the Phase 1 architecture through the now-trusted Phase 2 evaluation
 harness and store baseline DEV results as row 0 of the ablation table).
+
+---
+
+## 2026-09-08 — Task 3.1: Phase 3 trusted baseline (ablation row 0)
+
+Baseline-capture task, not optimization: ran the unmodified Phase 1 vector
+retrieval architecture through the trusted Phase 2 evaluation harness and
+froze the result as row 0 of the Phase 3 ablation table. See
+`project_plan/PHASE3_TRUSTED_BASELINE.md` for full detail.
+
+### Stage 2: DEV/index coverage audit — user decision required
+
+The Phase 1 dev corpus (1,500 filings, 1,493 embedded) was built
+independently of Task 2.3's eval set (drawn from the full 10,757-CIK XBRL
+population). Auditing every retrieval-applicable DEV question's gold target
+document(s) against the live Phase 1 index found only **89/1,819 (4.9%)**
+fully covered — 1,875 distinct target documents are missing, more than the
+entire existing dev corpus. Presented the two documented options to the
+user (fixed evaluable subset vs. building an evaluation-only corpus for the
+missing 1,875 documents); user selected **Option A** — freeze
+`DEV ∩ {fully-covered questions}` as an immutable 89-question
+`DEV/evaluable-subset`, since Option B's scope (more new documents than the
+existing corpus) is not "small development scale."
+
+### Bug found and fixed: nDCG double-counting
+
+The first formal run produced `doc_ndcg@10 = 2.28` — impossible (nDCG is
+bounded [0,1]). Root cause: retrieval ranks chunks, so the same gold
+document can supply more than one chunk inside the top-10 window; the
+initial relevance-vector construction credited every occurrence instead of
+only the first. Fixed via `document_relevances_at_k()` (marks only the
+first occurrence, mirroring Task 1.10's "one hit maximum" convention),
+committed as its own commit, then the formal run was repeated from that
+clean commit so its recorded `git_sha` matches the code that actually
+produced the numbers.
+
+### New code
+
+- `src/eval/phase3_baseline.py` — pure DEV-scope/coverage-audit/config-hash/
+  ablation-table logic (no I/O, AST-verified to never import
+  `test_access`/`load_test_set`).
+- `scripts/run_phase3_trusted_baseline.py` — orchestration; reuses Task
+  1.4–1.6 retrieval and Task 1.10/2.6 metrics unmodified; writes a Task 2.11
+  run record, the tracked result JSON, and freezes ablation row 0.
+- `configs/phase_3_1_trusted_baseline.json` — frozen baseline config.
+- `results/phase_3_ablation_table.csv` — row 0 frozen, duplicate/config-drift
+  protected (`upsert_row`).
+- `tests/test_phase3_trusted_baseline.py` — 63 portable tests + 1 gated
+  `local_data`/`gpu`/`model` integration test (confirms the real scope is
+  exactly 89 questions).
+
+### Formal result
+
+```text
+Questions evaluated (DEV/evaluable-subset): 89
+
+doc_recall@10:  0.921348  (82/89)
+doc_recall@50:  0.955056  (85/89, Phase 3 diagnostic)
+doc_mrr:        0.805056
+doc_ndcg@10:    0.833208
+
+chunk_recall@10 / chunk_mrr:  N/A — no internal chunk gold
+precision@5:                  N/A — not yet implemented
+refusal metric:                N/A — generation disabled
+
+retrieval latency p50/p95: 233.3 / 268.6 ms
+
+run_id:              28547fec-af47-43f4-b995-e02af858b20d
+git_sha:             f052b7d506f7cc00cf594e5c2374368382f41543
+phase3_config_hash:  18acae71fab0e7ffa4209da2530f26904cecc9dcb9b2c5e32cd791e5fd4a26e4
+```
+
+92.1% doc_recall@10 is measured over the 89-question evaluable subset, not
+full DEV — it says nothing about the 95.1% of DEV whose target documents
+were never embedded in the Phase 1 corpus.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1290 passed, 30 deselected**.
+- `scripts/dev.py test` (full): **1319 passed, 1 skipped** (same
+  environment-only Ollama-not-running skip as Task 2.13's closure, not a
+  regression).
+
+Verified `git diff` against every tracked Phase 1/2 result file: zero
+changes — all frozen facts (chunk/embedding/index hashes, DEV/TEST split,
+FinanceBench, cross-model agreement) remain exactly as before.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout (this task
+never imports `src.eval.test_access`). No paid API/generation calls — the
+formal run is retrieval-only by design. FinanceBench (Task 2.12) not
+rerun.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+```
+
+**Next roadmap task:** Phase 3, Task 3.2 — Chunking ablation (benchmark
+256/512/1024-token windows and overlap values against row 0, before
+full-corpus processing).

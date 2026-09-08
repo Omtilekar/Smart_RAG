@@ -1,0 +1,52 @@
+{
+  "task": "3.2",
+  "experiment_version": 1,
+  "baseline_row_id": 0,
+  "baseline_run_id": "28547fec-af47-43f4-b995-e02af858b20d",
+  "phase3_scope_hash": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_ids_hash": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+  "eval_set_version": "phase2-v1",
+  "split": "dev",
+  "question_count": 89,
+
+  "normalizer_version": "phase1-minimal-v1",
+  "normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+  "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "embedding_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "embedding_max_sequence_length_tokens": 512,
+  "embedding_normalize_embeddings": true,
+  "query_convention": "prepend:Represent this sentence for searching relevant passages: ",
+  "passage_convention": "raw_text_no_instruction",
+  "vector_dtype": "float32",
+
+  "retrieval_backend": "lancedb_exact_flat",
+  "distance_metric": "cosine",
+  "candidate_k": 50,
+
+  "round_a_candidates": [
+    {
+      "row_id": "A0", "label": "fixed_512_overlap_0", "window_size_tokens": 512,
+      "overlap_tokens": 0, "split_mode": "fixed", "reuse_row_id": "0",
+      "note": "row 0 - reused unmodified, never rebuilt"
+    },
+    {
+      "row_id": "A1", "label": "fixed_256_overlap_0", "window_size_tokens": 256,
+      "overlap_tokens": 0, "split_mode": "fixed"
+    },
+    {
+      "row_id": "A2", "label": "fixed_1024_overlap_0_encoder_truncates_at_512",
+      "window_size_tokens": 1024, "overlap_tokens": 0, "split_mode": "fixed",
+      "note": "BAAI/bge-small-en-v1.5 effective passage-embedding limit is 512 tokens (verified against the cached model config, not assumed) - SentenceTransformer.encode() silently truncates; only the first ~510 content tokens contribute to the vector. Full 1024-token chunk text is preserved in the chunk artifact."
+    }
+  ],
+  "round_b_policy": "After Round A metrics are complete, select the best fixed window via the frozen Stage 8 winner-selection rule (src.eval.phase3_ablation.select_round_winner). Then evaluate B0 (winner window, overlap 0 - reused from Round A, never rebuilt), B1 (winner window, 12.5% overlap), B2 (winner window, 25% overlap). overlap_tokens looked up from the fixed table (never computed by rounding at runtime): 256->32/64, 512->64/128, 1024->128/256 (src.eval.phase3_ablation.OVERLAP_TOKEN_TABLE). stride_tokens = window_size_tokens - overlap_tokens; no other overlap definition is used.",
+  "round_c_policy": "After Round B metrics are complete, select the winner window+overlap via the same frozen rule. Then compare C0 (that fixed-window winner, reused from Round B, never rebuilt) vs C1 (identical window/overlap/tokenizer/partial-window policy, but split_mode=section_aware: chunks never cross a normalized '## Item ...' heading boundary - src.chunk.fixed_window.split_body_into_sections). No LLM, no table reconstruction, no rewritten text, no fabricated section metadata, no duplicated section titles prepended to continuation chunks.",
+
+  "metric_definitions": "doc_recall@10 / doc_recall@50 / doc_mrr / doc_ndcg@10 via src.eval.baseline_metrics (Task 1.10) + src.eval.metrics (Task 2.6) + src.eval.phase3_baseline.document_relevances_at_k (Task 3.1's nDCG double-counting fix) - unmodified from Task 3.1 row 0. chunk_recall@10, chunk_mrr, faithfulness, citation_grounding, and generation metrics remain N/A (no valid chunk-level or generation gold exists) - N/A is never reported as 0.",
+  "winner_selection_policy": "Task 3.2 prompt Stage 8: primary priority order doc_recall@50 > doc_mrr > doc_ndcg@10 > doc_recall@10 (src.eval.phase3_ablation.QUALITY_PRIORITY_KEYS); practical tie iff Recall@50 differs by <=1/89 AND paired MRR delta's 95% CI includes 0 AND paired nDCG@10 delta's 95% CI includes 0 (is_practical_tie); tie-break order: fewer chunks/duplication -> smaller embedding artifact -> smaller index -> lower retrieval p95 -> lower build cost -> simpler policy, fixed before section_aware (apply_tiebreak); a candidate that raises Recall@50 with a credible (95% CI entirely below 0) MRR or nDCG@10 regression is flagged for a user decision rather than auto-selected (select_round_winner's regression-protection branch).",
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "bootstrap_unit": "question_id"
+}

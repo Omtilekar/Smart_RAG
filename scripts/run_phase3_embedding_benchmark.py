@@ -77,7 +77,17 @@ EMBED_PROGRESS_EVERY_BATCHES = 2  # qwen3_embedding's throughput (~15 chunks/s) 
 EVAL_PROGRESS_EVERY = 10
 PILOT_PASSAGE_SAMPLE = 10
 PILOT_QUERY_SAMPLE = 5
-DEFAULT_BATCH_SIZE = 128  # pilot-verified headroom on all 4 candidates (8.5GB VRAM); halved on OOM
+DEFAULT_BATCH_SIZE = 128  # bge_base/nomic_embed measured fast and stable at this batch size
+# qwen3_embedding's pilot (a single 40-text batch) badly overestimated real-corpus throughput -
+# the full build stalled near the 8.5GB VRAM ceiling (7.8GB used, 92%) for minutes with zero
+# progress at batch=128, most likely memory-pressure-induced allocator thrashing rather than a
+# hang (process stayed alive, GPU stayed near 100% util) - a materially smaller batch avoids
+# operating this close to the ceiling.
+BATCH_SIZE_OVERRIDES: dict[str, int] = {"qwen3_embedding": 16}
+
+
+def _batch_size_for(spec: "mr.EmbeddingModelSpec") -> int:
+    return BATCH_SIZE_OVERRIDES.get(spec.candidate_id, DEFAULT_BATCH_SIZE)
 
 
 def git_sha() -> str:
@@ -163,8 +173,9 @@ def pilot_candidate(spec: mr.EmbeddingModelSpec, passage_sample: list[str], quer
 
     torch.cuda.reset_peak_memory_stats()
 
-    p_vecs, batches_p = encode_with_oom_fallback(mr.encode_passages, spec, model, passage_sample, DEFAULT_BATCH_SIZE)
-    q_vecs, batches_q = encode_with_oom_fallback(mr.encode_queries, spec, model, query_sample, DEFAULT_BATCH_SIZE)
+    batch_size = _batch_size_for(spec)
+    p_vecs, batches_p = encode_with_oom_fallback(mr.encode_passages, spec, model, passage_sample, batch_size)
+    q_vecs, batches_q = encode_with_oom_fallback(mr.encode_queries, spec, model, query_sample, batch_size)
 
     mr.validate_vectors(p_vecs, expected_dimension=spec.dimension, expect_normalized=spec.normalize_embeddings)
     mr.validate_vectors(q_vecs, expected_dimension=spec.dimension, expect_normalized=spec.normalize_embeddings)
@@ -191,7 +202,7 @@ def pilot_candidate(spec: mr.EmbeddingModelSpec, passage_sample: list[str], quer
     peak_reserved = torch.cuda.max_memory_reserved()
 
     t1 = time.perf_counter()
-    throughput_bench, _ = encode_with_oom_fallback(mr.encode_passages, spec, model, passage_sample * 4, DEFAULT_BATCH_SIZE)
+    throughput_bench, _ = encode_with_oom_fallback(mr.encode_passages, spec, model, passage_sample * 4, batch_size)
     pilot_seconds = time.perf_counter() - t1
     pilot_throughput = len(passage_sample) * 4 / pilot_seconds if pilot_seconds > 0 else 0.0
 
@@ -235,7 +246,7 @@ def build_embeddings_for_model(spec: mr.EmbeddingModelSpec, storage, model, chun
     t0 = time.perf_counter()
     torch.cuda.reset_peak_memory_stats()
 
-    batch = DEFAULT_BATCH_SIZE
+    batch = _batch_size_for(spec)
     vectors = np.empty((n, spec.dimension), dtype=mr.VECTOR_DTYPE)
     n_batches = (n + batch - 1) // batch
     all_batch_sizes: set[int] = set()

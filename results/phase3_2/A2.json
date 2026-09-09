@@ -1,0 +1,859 @@
+{
+  "row_id": "A2",
+  "round": "A",
+  "label": "fixed_1024_overlap_0_encoder_truncates_at_512",
+  "window_size_tokens": 1024,
+  "overlap_tokens": 0,
+  "stride_tokens": 1024,
+  "split_mode": "fixed",
+  "reuse_row_id": null,
+  "encoder_truncation_note": "BAAI/bge-small-en-v1.5 has a 512-token effective passage-embedding limit (sentence_bert_config.json max_seq_length=512, tokenizer_config.json model_max_length=512, BertModel max_position_embeddings=512 - all verified against the cached model, not assumed). Verified empirically: SentenceTransformer.encode() silently truncates to the first 512 tokens (including [CLS]/[SEP]); the embedding of a chunk longer than that is bit-identical to the embedding of its first ~510-content-token prefix. This 1024-token chunk configuration is therefore NOT a lossless 1024-token embedding experiment - only the truncated prefix contributes to the vector, though the full chunk text is preserved in the chunk artifact for inspection.",
+  "chunk_config_hash": "dc475af263dda5a140ec14eb904ac72fbdeaced3e9c2fdec8517f29b008db764",
+  "chunk_stats": {
+    "chunk_config_hash": "dc475af263dda5a140ec14eb904ac72fbdeaced3e9c2fdec8517f29b008db764",
+    "chunk_count": 81551,
+    "build_seconds": 297.58,
+    "reused": false,
+    "artifact_size_bytes": 188739510
+  },
+  "embed_stats": {
+    "vector_count": 81551,
+    "embed_seconds": 783.65,
+    "reused": false,
+    "artifact_size_bytes": 314659262
+  },
+  "index_stats": {
+    "row_count": 81551,
+    "index_build_seconds": 4.8,
+    "reused": false,
+    "index_size_bytes": 368490661
+  },
+  "build_seconds_total": 1086.03,
+  "question_count": 89,
+  "metrics": {
+    "doc_recall_at_10": 0.8651685393258427,
+    "doc_recall_at_10_hits": 77,
+    "doc_recall_at_50": 0.9325842696629213,
+    "doc_recall_at_50_hits": 83,
+    "doc_mrr": 0.7375601926163724,
+    "doc_ndcg_at_10": 0.7683284675330851
+  },
+  "per_question": {
+    "phase2-eval-000006": {
+      "target_document_id": "23111_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000023": {
+      "target_document_id": "805022_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000057": {
+      "target_document_id": "1262976_2016.htm",
+      "hit10": true,
+      "rank10": 7,
+      "rr10": 0.14285714285714285,
+      "ndcg10": 0.3333333333333333,
+      "hit50": true,
+      "rank50": 7
+    },
+    "phase2-eval-000059": {
+      "target_document_id": "1299130_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000072": {
+      "target_document_id": "1404624_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000083": {
+      "target_document_id": "1489096_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000097": {
+      "target_document_id": "1555995_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000098": {
+      "target_document_id": "1556263_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000101": {
+      "target_document_id": "1574186_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000126": {
+      "target_document_id": "1763329_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000136": {
+      "target_document_id": "52827_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000265": {
+      "target_document_id": "1810019_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000296": {
+      "target_document_id": "879526_2019.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000310": {
+      "target_document_id": "1054102_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000376": {
+      "target_document_id": "1610532_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000391": {
+      "target_document_id": "1718512_2018.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000400": {
+      "target_document_id": "1810019_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000413": {
+      "target_document_id": "39368_2016.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-000478": {
+      "target_document_id": "1237831_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000537": {
+      "target_document_id": "36146_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000658": {
+      "target_document_id": "1710366_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000665": {
+      "target_document_id": "1772921_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000714": {
+      "target_document_id": "928465_2016.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-000729": {
+      "target_document_id": "1156815_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000749": {
+      "target_document_id": "1408710_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000783": {
+      "target_document_id": "1610532_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000784": {
+      "target_document_id": "1617351_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000803": {
+      "target_document_id": "42316_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000809": {
+      "target_document_id": "317540_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000831": {
+      "target_document_id": "850209_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000866": {
+      "target_document_id": "1113481_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-000883": {
+      "target_document_id": "1341439_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000893": {
+      "target_document_id": "1518985_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000897": {
+      "target_document_id": "1540684_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000933": {
+      "target_document_id": "1822791_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000935": {
+      "target_document_id": "36146_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000992": {
+      "target_document_id": "1191359_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001030": {
+      "target_document_id": "1566373_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001045": {
+      "target_document_id": "1649338_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001066": {
+      "target_document_id": "1822791_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001069": {
+      "target_document_id": "39911_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-001089": {
+      "target_document_id": "813762_2016.htm",
+      "hit10": true,
+      "rank10": 3,
+      "rr10": 0.3333333333333333,
+      "ndcg10": 0.5,
+      "hit50": true,
+      "rank50": 3
+    },
+    "phase2-eval-001130": {
+      "target_document_id": "1237831_2016.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001135": {
+      "target_document_id": "1353615_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001165": {
+      "target_document_id": "1518548_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-001186": {
+      "target_document_id": "1635650_2016.htm",
+      "hit10": true,
+      "rank10": 3,
+      "rr10": 0.3333333333333333,
+      "ndcg10": 0.5,
+      "hit50": true,
+      "rank50": 3
+    },
+    "phase2-eval-001193": {
+      "target_document_id": "1687229_2017.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001198": {
+      "target_document_id": "1784970_2019.htm",
+      "hit10": true,
+      "rank10": 5,
+      "rr10": 0.2,
+      "ndcg10": 0.38685280723454163,
+      "hit50": true,
+      "rank50": 5
+    },
+    "phase2-eval-001204": {
+      "target_document_id": "88572_2016.htm",
+      "hit10": true,
+      "rank10": 6,
+      "rr10": 0.16666666666666666,
+      "ndcg10": 0.3562071871080222,
+      "hit50": true,
+      "rank50": 6
+    },
+    "phase2-eval-001218": {
+      "target_document_id": "867038_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001228": {
+      "target_document_id": "933036_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 11
+    },
+    "phase2-eval-001235": {
+      "target_document_id": "1080014_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001243": {
+      "target_document_id": "1267425_2019.htm",
+      "hit10": true,
+      "rank10": 10,
+      "rr10": 0.1,
+      "ndcg10": 0.2890648263178879,
+      "hit50": true,
+      "rank50": 10
+    },
+    "phase2-eval-001249": {
+      "target_document_id": "1338929_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001296": {
+      "target_document_id": "1590715_2017.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 12
+    },
+    "phase2-eval-001333": {
+      "target_document_id": "1822791_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001341": {
+      "target_document_id": "42316_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001370": {
+      "target_document_id": "832101_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-001371": {
+      "target_document_id": "844856_2019.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001380": {
+      "target_document_id": "944075_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001442": {
+      "target_document_id": "1626878_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001445": {
+      "target_document_id": "1632933_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 13
+    },
+    "phase2-eval-001450": {
+      "target_document_id": "1662382_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001472": {
+      "target_document_id": "101295_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-001507": {
+      "target_document_id": "1129260_2016.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001522": {
+      "target_document_id": "1372299_2016.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001539": {
+      "target_document_id": "1458704_2018.htm",
+      "hit10": true,
+      "rank10": 6,
+      "rr10": 0.16666666666666666,
+      "ndcg10": 0.3562071871080222,
+      "hit50": true,
+      "rank50": 6
+    },
+    "phase2-eval-001570": {
+      "target_document_id": "1617351_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001698": {
+      "target_document_id": "1561550_2019.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001701": {
+      "target_document_id": "1575858_2019.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 28
+    },
+    "phase2-eval-001713": {
+      "target_document_id": "1642375_2019.htm",
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001714": {
+      "target_document_id": "1646228_2018.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001745": {
+      "target_document_id": "225628_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001765": {
+      "target_document_id": "936402_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001801": {
+      "target_document_id": "1346655_2020.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001817": {
+      "target_document_id": "1463208_2017.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001874": {
+      "target_document_id": "39368_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001916": {
+      "target_document_id": "1067294_2017.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001920": {
+      "target_document_id": "1128353_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001947": {
+      "target_document_id": "1419554_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001959": {
+      "target_document_id": "1490906_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002560": {
+      "target_document_id": "1129260_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 33
+    },
+    "phase2-eval-002561": {
+      "target_document_id": "1371489_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": false,
+      "rank50": null
+    },
+    "phase2-eval-002562": {
+      "target_document_id": "1389002_2018.htm",
+      "hit10": true,
+      "rank10": 5,
+      "rr10": 0.2,
+      "ndcg10": 0.38685280723454163,
+      "hit50": true,
+      "rank50": 5
+    },
+    "phase2-eval-002577": {
+      "target_document_id": "821002_2017.htm",
+      "hit10": true,
+      "rank10": 6,
+      "rr10": 0.16666666666666666,
+      "ndcg10": 0.3562071871080222,
+      "hit50": true,
+      "rank50": 6
+    },
+    "phase2-eval-002579": {
+      "target_document_id": "1324772_2016.htm",
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 28
+    },
+    "phase2-eval-002591": {
+      "target_document_id": "21535_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002593": {
+      "target_document_id": "101538_2016.htm",
+      "hit10": true,
+      "rank10": 3,
+      "rr10": 0.3333333333333333,
+      "ndcg10": 0.5,
+      "hit50": true,
+      "rank50": 3
+    },
+    "phase2-eval-002623": {
+      "target_document_id": "1438461_2016.htm",
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    }
+  },
+  "latency_ms": {
+    "query_embedding": {
+      "p50": 18.292,
+      "p95": 24.299
+    },
+    "vector_search": {
+      "p50": 113.352,
+      "p95": 129.312
+    },
+    "retrieval_total": {
+      "p50": 131.072,
+      "p95": 149.091
+    }
+  },
+  "run_seconds": 11.815
+}

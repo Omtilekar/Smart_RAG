@@ -1,0 +1,22 @@
+{
+  "rounds": {
+    "A": {
+      "winner_row_id": "A1",
+      "rationale": "A1 is a credible improvement over reference A0 on the frozen priority order with no regression-protection violation.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    },
+    "B": {
+      "winner_row_id": "B0",
+      "rationale": "B1 ranks best by raw metrics but is practically tied with reference B0 (Recall@50 hit delta=1, MRR/nDCG@10 95% CIs include 0); engineering tie-break selected B0 among 3 tied candidates.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    },
+    "C": {
+      "winner_row_id": "C0",
+      "rationale": "C0 ranks best on the frozen priority order (doc_recall_at_50, doc_mrr, doc_ndcg_at_10, doc_recall_at_10); engineering tie-break selected C0 among 2 practically-tied candidates.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    }
+  }
+}

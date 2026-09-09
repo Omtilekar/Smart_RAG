@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "input_normalizer_version": "phase1-minimal-v1",
+  "input_normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+  "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+  "tokenizer": {
+    "repo": "BAAI/bge-small-en-v1.5",
+    "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "local_files_only": true
+  },
+  "window_size_tokens": 1024,
+  "overlap_tokens": 0,
+  "stride_tokens": 1024,
+  "split_mode": "fixed",
+  "special_token_policy": "content_tokens_only (add_special_tokens=False)",
+  "partial_window_policy": "keep",
+  "frontmatter_body_policy": "body_only_frontmatter_to_metadata",
+  "decode_offset_policy": "offset_mapping_slicing",
+  "chunk_schema_version": "1.0",
+  "chunk_id_policy": "document_id + '::chunk{ordinal}', zero-based ordinal"
+}

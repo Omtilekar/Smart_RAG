@@ -121,7 +121,12 @@ SEC-RAG/
 │                         # run_phase3_trusted_baseline.py (Task 3.1, `--run`
 │                         # captures ablation row 0 - the unmodified Phase 1
 │                         # architecture over the frozen 89-question DEV/
-│                         # evaluable-subset; see project_plan/PHASE3_TRUSTED_BASELINE.md)
+│                         # evaluable-subset; see project_plan/PHASE3_TRUSTED_BASELINE.md),
+│                         # run_phase3_chunking_ablation.py (Task 3.2, `--plan`/
+│                         # `--run --resume`/`--status`/`--compare` staged
+│                         # window/overlap/fixed-vs-section-aware chunking
+│                         # ablation against row 0; see
+│                         # project_plan/PHASE3_CHUNKING_ABLATION.md)
 │                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
 ├── results/             # planned: small committed metrics/experiment summaries;
 │                         # results/eval_runs/<run_id>.json — one immutable

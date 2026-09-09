@@ -1,0 +1,1723 @@
+{
+  "task": "3.2",
+  "phase3_2_config_hash": "f199c8817cf60485c3cacc4b26c39ef9d768ce2c632dc91b03134ab90e2ff94a",
+  "phase3_2_config": {
+    "task": "3.2",
+    "experiment_version": 1,
+    "baseline_row_id": 0,
+    "baseline_run_id": "28547fec-af47-43f4-b995-e02af858b20d",
+    "phase3_scope_hash": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+    "question_ids_hash": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+    "eval_set_version": "phase2-v1",
+    "split": "dev",
+    "question_count": 89,
+    "normalizer_version": "phase1-minimal-v1",
+    "normalization_build_sha256": "fd0abad26111412d792033373e02a0a6a3fb1d0d7a47dbad6063e98c2272244b",
+    "development_manifest_sha256": "d470364920c3c0529ecc77d6923742b48db89668b2684726f0edc81b5218ce3b",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "embedding_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "embedding_max_sequence_length_tokens": 512,
+    "embedding_normalize_embeddings": true,
+    "query_convention": "prepend:Represent this sentence for searching relevant passages: ",
+    "passage_convention": "raw_text_no_instruction",
+    "vector_dtype": "float32",
+    "retrieval_backend": "lancedb_exact_flat",
+    "distance_metric": "cosine",
+    "candidate_k": 50,
+    "round_a_candidates": [
+      {
+        "row_id": "A0",
+        "label": "fixed_512_overlap_0",
+        "window_size_tokens": 512,
+        "overlap_tokens": 0,
+        "split_mode": "fixed",
+        "reuse_row_id": "0",
+        "note": "row 0 - reused unmodified, never rebuilt"
+      },
+      {
+        "row_id": "A1",
+        "label": "fixed_256_overlap_0",
+        "window_size_tokens": 256,
+        "overlap_tokens": 0,
+        "split_mode": "fixed"
+      },
+      {
+        "row_id": "A2",
+        "label": "fixed_1024_overlap_0_encoder_truncates_at_512",
+        "window_size_tokens": 1024,
+        "overlap_tokens": 0,
+        "split_mode": "fixed",
+        "note": "BAAI/bge-small-en-v1.5 effective passage-embedding limit is 512 tokens (verified against the cached model config, not assumed) - SentenceTransformer.encode() silently truncates; only the first ~510 content tokens contribute to the vector. Full 1024-token chunk text is preserved in the chunk artifact."
+      }
+    ],
+    "round_b_policy": "After Round A metrics are complete, select the best fixed window via the frozen Stage 8 winner-selection rule (src.eval.phase3_ablation.select_round_winner). Then evaluate B0 (winner window, overlap 0 - reused from Round A, never rebuilt), B1 (winner window, 12.5% overlap), B2 (winner window, 25% overlap). overlap_tokens looked up from the fixed table (never computed by rounding at runtime): 256->32/64, 512->64/128, 1024->128/256 (src.eval.phase3_ablation.OVERLAP_TOKEN_TABLE). stride_tokens = window_size_tokens - overlap_tokens; no other overlap definition is used.",
+    "round_c_policy": "After Round B metrics are complete, select the winner window+overlap via the same frozen rule. Then compare C0 (that fixed-window winner, reused from Round B, never rebuilt) vs C1 (identical window/overlap/tokenizer/partial-window policy, but split_mode=section_aware: chunks never cross a normalized '## Item ...' heading boundary - src.chunk.fixed_window.split_body_into_sections). No LLM, no table reconstruction, no rewritten text, no fabricated section metadata, no duplicated section titles prepended to continuation chunks.",
+    "metric_definitions": "doc_recall@10 / doc_recall@50 / doc_mrr / doc_ndcg@10 via src.eval.baseline_metrics (Task 1.10) + src.eval.metrics (Task 2.6) + src.eval.phase3_baseline.document_relevances_at_k (Task 3.1's nDCG double-counting fix) - unmodified from Task 3.1 row 0. chunk_recall@10, chunk_mrr, faithfulness, citation_grounding, and generation metrics remain N/A (no valid chunk-level or generation gold exists) - N/A is never reported as 0.",
+    "winner_selection_policy": "Task 3.2 prompt Stage 8: primary priority order doc_recall@50 > doc_mrr > doc_ndcg@10 > doc_recall@10 (src.eval.phase3_ablation.QUALITY_PRIORITY_KEYS); practical tie iff Recall@50 differs by <=1/89 AND paired MRR delta's 95% CI includes 0 AND paired nDCG@10 delta's 95% CI includes 0 (is_practical_tie); tie-break order: fewer chunks/duplication -> smaller embedding artifact -> smaller index -> lower retrieval p95 -> lower build cost -> simpler policy, fixed before section_aware (apply_tiebreak); a candidate that raises Recall@50 with a credible (95% CI entirely below 0) MRR or nDCG@10 regression is flagged for a user decision rather than auto-selected (select_round_winner's regression-protection branch).",
+    "bootstrap_seed": 42,
+    "bootstrap_iterations": 10000,
+    "bootstrap_unit": "question_id"
+  },
+  "baseline_row_id": 0,
+  "baseline_run_id": "28547fec-af47-43f4-b995-e02af858b20d",
+  "baseline_metrics": {
+    "doc_recall@10": 0.9213483146067416,
+    "doc_recall@50": 0.9550561797752809,
+    "doc_mrr": 0.805056179775281,
+    "doc_ndcg@10": 0.8332079934913641
+  },
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "candidates": {
+    "A0": {
+      "row_id": "A0",
+      "round": "A",
+      "label": "fixed_512_overlap_0",
+      "window_size_tokens": 512,
+      "overlap_tokens": 0,
+      "stride_tokens": 512,
+      "split_mode": "fixed",
+      "reuse_row_id": "0",
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+      "chunk_count": 162357,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 440703576,
+      "index_size_bytes": 493179047,
+      "build_seconds_total": null,
+      "metrics": {
+        "doc_recall_at_10": 0.9213483146067416,
+        "doc_recall_at_10_hits": 82,
+        "doc_recall_at_50": 0.9550561797752809,
+        "doc_recall_at_50_hits": 85,
+        "doc_mrr": 0.805056179775281,
+        "doc_ndcg_at_10": 0.8332079934913641
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 18.016,
+          "p95": 25.392
+        },
+        "vector_search": {
+          "p50": 177.41,
+          "p95": 205.156
+        },
+        "retrieval_total": {
+          "p50": 196.52,
+          "p95": 224.326
+        }
+      }
+    },
+    "A1": {
+      "row_id": "A1",
+      "round": "A",
+      "label": "fixed_256_overlap_0",
+      "window_size_tokens": 256,
+      "overlap_tokens": 0,
+      "stride_tokens": 256,
+      "split_mode": "fixed",
+      "reuse_row_id": null,
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+      "chunk_count": 323971,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 691062673,
+      "index_size_bytes": 744427913,
+      "build_seconds_total": 1169.38,
+      "metrics": {
+        "doc_recall_at_10": 0.9325842696629213,
+        "doc_recall_at_10_hits": 83,
+        "doc_recall_at_50": 0.9775280898876404,
+        "doc_recall_at_50_hits": 87,
+        "doc_mrr": 0.7984216158373462,
+        "doc_ndcg_at_10": 0.8319952956009014
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 18.309,
+          "p95": 27.914
+        },
+        "vector_search": {
+          "p50": 333.17,
+          "p95": 384.522
+        },
+        "retrieval_total": {
+          "p50": 351.94,
+          "p95": 403.903
+        }
+      }
+    },
+    "A2": {
+      "row_id": "A2",
+      "round": "A",
+      "label": "fixed_1024_overlap_0_encoder_truncates_at_512",
+      "window_size_tokens": 1024,
+      "overlap_tokens": 0,
+      "stride_tokens": 1024,
+      "split_mode": "fixed",
+      "reuse_row_id": null,
+      "encoder_truncation_note": "BAAI/bge-small-en-v1.5 has a 512-token effective passage-embedding limit (sentence_bert_config.json max_seq_length=512, tokenizer_config.json model_max_length=512, BertModel max_position_embeddings=512 - all verified against the cached model, not assumed). Verified empirically: SentenceTransformer.encode() silently truncates to the first 512 tokens (including [CLS]/[SEP]); the embedding of a chunk longer than that is bit-identical to the embedding of its first ~510-content-token prefix. This 1024-token chunk configuration is therefore NOT a lossless 1024-token embedding experiment - only the truncated prefix contributes to the vector, though the full chunk text is preserved in the chunk artifact for inspection.",
+      "chunk_config_hash": "dc475af263dda5a140ec14eb904ac72fbdeaced3e9c2fdec8517f29b008db764",
+      "chunk_count": 81551,
+      "chunk_artifact_size_bytes": 188739510,
+      "embedding_artifact_size_bytes": 314659262,
+      "index_size_bytes": 368490661,
+      "build_seconds_total": 1086.03,
+      "metrics": {
+        "doc_recall_at_10": 0.8651685393258427,
+        "doc_recall_at_10_hits": 77,
+        "doc_recall_at_50": 0.9325842696629213,
+        "doc_recall_at_50_hits": 83,
+        "doc_mrr": 0.7375601926163724,
+        "doc_ndcg_at_10": 0.7683284675330851
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 18.292,
+          "p95": 24.299
+        },
+        "vector_search": {
+          "p50": 113.352,
+          "p95": 129.312
+        },
+        "retrieval_total": {
+          "p50": 131.072,
+          "p95": 149.091
+        }
+      }
+    },
+    "B0": {
+      "row_id": "B0",
+      "round": "B",
+      "label": "fixed_256_overlap_0",
+      "window_size_tokens": 256,
+      "overlap_tokens": 0,
+      "stride_tokens": 256,
+      "split_mode": "fixed",
+      "reuse_row_id": "A1",
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+      "chunk_count": 323971,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 691062673,
+      "index_size_bytes": 744427913,
+      "build_seconds_total": null,
+      "metrics": {
+        "doc_recall_at_10": 0.9325842696629213,
+        "doc_recall_at_10_hits": 83,
+        "doc_recall_at_50": 0.9775280898876404,
+        "doc_recall_at_50_hits": 87,
+        "doc_mrr": 0.7984216158373462,
+        "doc_ndcg_at_10": 0.8319952956009014
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 17.989,
+          "p95": 26.33
+        },
+        "vector_search": {
+          "p50": 329.265,
+          "p95": 369.758
+        },
+        "retrieval_total": {
+          "p50": 346.354,
+          "p95": 388.021
+        }
+      }
+    },
+    "B1": {
+      "row_id": "B1",
+      "round": "B",
+      "label": "fixed_256_overlap_32",
+      "window_size_tokens": 256,
+      "overlap_tokens": 32,
+      "stride_tokens": 224,
+      "split_mode": "fixed",
+      "reuse_row_id": null,
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "aa77aa0866cac33e17efb7b402903348c1fe00ba7b3c61546d21187769b8b4e1",
+      "chunk_count": 369947,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 769889150,
+      "index_size_bytes": 849170125,
+      "build_seconds_total": 164.07,
+      "metrics": {
+        "doc_recall_at_10": 0.9101123595505618,
+        "doc_recall_at_10_hits": 81,
+        "doc_recall_at_50": 0.9887640449438202,
+        "doc_recall_at_50_hits": 88,
+        "doc_mrr": 0.7637640449438203,
+        "doc_ndcg_at_10": 0.7987891490699285
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 18.004,
+          "p95": 25.25
+        },
+        "vector_search": {
+          "p50": 369.467,
+          "p95": 406.179
+        },
+        "retrieval_total": {
+          "p50": 388.93,
+          "p95": 422.591
+        }
+      }
+    },
+    "B2": {
+      "row_id": "B2",
+      "round": "B",
+      "label": "fixed_256_overlap_64",
+      "window_size_tokens": 256,
+      "overlap_tokens": 64,
+      "stride_tokens": 192,
+      "split_mode": "fixed",
+      "reuse_row_id": null,
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "73925e758e5a09ddb730dc3fc419732826b137b255fcc07f998fcc12d35078e4",
+      "chunk_count": 431210,
+      "chunk_artifact_size_bytes": 209977459,
+      "embedding_artifact_size_bytes": 873121206,
+      "index_size_bytes": 991070406,
+      "build_seconds_total": 1902.83,
+      "metrics": {
+        "doc_recall_at_10": 0.898876404494382,
+        "doc_recall_at_10_hits": 80,
+        "doc_recall_at_50": 0.9775280898876404,
+        "doc_recall_at_50_hits": 87,
+        "doc_mrr": 0.7742643124665598,
+        "doc_ndcg_at_10": 0.8043556144604017
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 19.17,
+          "p95": 27.81
+        },
+        "vector_search": {
+          "p50": 418.155,
+          "p95": 454.199
+        },
+        "retrieval_total": {
+          "p50": 438.677,
+          "p95": 473.801
+        }
+      }
+    },
+    "C0": {
+      "row_id": "C0",
+      "round": "C",
+      "label": "fixed_256_overlap_0",
+      "window_size_tokens": 256,
+      "overlap_tokens": 0,
+      "stride_tokens": 256,
+      "split_mode": "fixed",
+      "reuse_row_id": "B0",
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+      "chunk_count": 323971,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 691062673,
+      "index_size_bytes": 744427913,
+      "build_seconds_total": null,
+      "metrics": {
+        "doc_recall_at_10": 0.9325842696629213,
+        "doc_recall_at_10_hits": 83,
+        "doc_recall_at_50": 0.9775280898876404,
+        "doc_recall_at_50_hits": 87,
+        "doc_mrr": 0.7984216158373462,
+        "doc_ndcg_at_10": 0.8319952956009014
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 18.197,
+          "p95": 29.669
+        },
+        "vector_search": {
+          "p50": 347.331,
+          "p95": 383.848
+        },
+        "retrieval_total": {
+          "p50": 367.427,
+          "p95": 403.41
+        }
+      }
+    },
+    "C1": {
+      "row_id": "C1",
+      "round": "C",
+      "label": "section_aware_256_overlap_0",
+      "window_size_tokens": 256,
+      "overlap_tokens": 0,
+      "stride_tokens": 256,
+      "split_mode": "section_aware",
+      "reuse_row_id": null,
+      "encoder_truncation_note": null,
+      "chunk_config_hash": "fabdf09f0d93b2ea6850b363e51a14d1e518d97e1d9c1820f1d54cc26f2b24e4",
+      "chunk_count": 341822,
+      "chunk_artifact_size_bytes": null,
+      "embedding_artifact_size_bytes": 718697633,
+      "index_size_bytes": 771301132,
+      "build_seconds_total": 475.22,
+      "metrics": {
+        "doc_recall_at_10": 0.9325842696629213,
+        "doc_recall_at_10_hits": 83,
+        "doc_recall_at_50": 0.9775280898876404,
+        "doc_recall_at_50_hits": 87,
+        "doc_mrr": 0.778214731585518,
+        "doc_ndcg_at_10": 0.8155028543784841
+      },
+      "latency_ms": {
+        "query_embedding": {
+          "p50": 16.197,
+          "p95": 21.457
+        },
+        "vector_search": {
+          "p50": 223.223,
+          "p95": 292.017
+        },
+        "retrieval_total": {
+          "p50": 237.422,
+          "p95": 309.636
+        }
+      }
+    }
+  },
+  "round_decisions": {
+    "A": {
+      "winner_row_id": "A1",
+      "rationale": "A1 is a credible improvement over reference A0 on the frozen priority order with no regression-protection violation.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    },
+    "B": {
+      "winner_row_id": "B0",
+      "rationale": "B1 ranks best by raw metrics but is practically tied with reference B0 (Recall@50 hit delta=1, MRR/nDCG@10 95% CIs include 0); engineering tie-break selected B0 among 3 tied candidates.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    },
+    "C": {
+      "winner_row_id": "C0",
+      "rationale": "C0 ranks best on the frozen priority order (doc_recall_at_50, doc_mrr, doc_ndcg_at_10, doc_recall_at_10); engineering tie-break selected C0 among 2 practically-tied candidates.",
+      "flagged_for_user_decision": false,
+      "flag_reason": null
+    }
+  },
+  "paired_comparisons_vs_row0": {
+    "A1": {
+      "candidate": "A1",
+      "reference": "A0",
+      "delta_doc_recall_at_10": 0.011235955056179692,
+      "delta_doc_recall_at_50": 0.022471910112359494,
+      "delta_doc_mrr": -0.006634563937934823,
+      "delta_doc_ndcg_at_10": -0.001212697890462744,
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": 1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.006634563937934823,
+          "ci_lo": -0.06535580524344542,
+          "ci_hi": 0.05243445692883886
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.001212697890462744,
+          "ci_lo": -0.05109661042119462,
+          "ci_hi": 0.049693949570932316
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.03370786516853941,
+          "ci_hi": 0.0674157303370786
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit50_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 10,
+          "candidate_rank10": 2,
+          "delta": 8
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 2,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-000059",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000136",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        }
+      ]
+    },
+    "A2": {
+      "candidate": "A2",
+      "reference": "A0",
+      "delta_doc_recall_at_10": -0.0561797752808989,
+      "delta_doc_recall_at_50": -0.022471910112359605,
+      "delta_doc_mrr": -0.06749598715890859,
+      "delta_doc_ndcg_at_10": -0.06487952595827895,
+      "recall50_hit_delta": -2,
+      "recall10_hit_delta": -5,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.06749598715890859,
+          "ci_lo": -0.12509363295880138,
+          "ci_hi": -0.013295880149812644
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.06487952595827895,
+          "ci_lo": -0.11782511303457222,
+          "ci_hi": -0.015294492542002103
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.1235955056179775,
+          "ci_hi": 0.011235955056179692
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001296",
+        "phase2-eval-001445",
+        "phase2-eval-001472",
+        "phase2-eval-001701",
+        "phase2-eval-002560",
+        "phase2-eval-002561",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [],
+      "hit50_lost": [
+        "phase2-eval-001472",
+        "phase2-eval-002561"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-001539",
+          "reference_rank10": 1,
+          "candidate_rank10": 6,
+          "delta": -5
+        },
+        {
+          "question_id": "phase2-eval-002562",
+          "reference_rank10": 1,
+          "candidate_rank10": 5,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 7,
+          "delta": 3
+        },
+        {
+          "question_id": "phase2-eval-001198",
+          "reference_rank10": 2,
+          "candidate_rank10": 5,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001089",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001235",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-000136",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000413",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000714",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        }
+      ]
+    },
+    "B0": {
+      "candidate": "B0",
+      "reference": "A0",
+      "delta_doc_recall_at_10": 0.011235955056179692,
+      "delta_doc_recall_at_50": 0.022471910112359494,
+      "delta_doc_mrr": -0.006634563937934823,
+      "delta_doc_ndcg_at_10": -0.001212697890462744,
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": 1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.006634563937934823,
+          "ci_lo": -0.06535580524344542,
+          "ci_hi": 0.05243445692883886
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.001212697890462744,
+          "ci_lo": -0.05109661042119462,
+          "ci_hi": 0.049693949570932316
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.03370786516853941,
+          "ci_hi": 0.0674157303370786
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit50_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 10,
+          "candidate_rank10": 2,
+          "delta": 8
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 2,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-000059",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000136",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        }
+      ]
+    },
+    "B1": {
+      "candidate": "B1",
+      "reference": "A0",
+      "delta_doc_recall_at_10": -0.011235955056179803,
+      "delta_doc_recall_at_50": 0.0337078651685393,
+      "delta_doc_mrr": -0.04129213483146066,
+      "delta_doc_ndcg_at_10": -0.03441884442143561,
+      "recall50_hit_delta": 3,
+      "recall10_hit_delta": -1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.04129213483146066,
+          "ci_lo": -0.11161048689138586,
+          "ci_hi": 0.031273408239700484
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.03441884442143561,
+          "ci_lo": -0.09134693167810581,
+          "ci_hi": 0.025220203286325238
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0561797752808989,
+          "ci_hi": 0.03370786516853941
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001296",
+        "phase2-eval-001445",
+        "phase2-eval-002560"
+      ],
+      "hit50_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-001165",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-001371",
+          "reference_rank10": 1,
+          "candidate_rank10": 10,
+          "delta": -9
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 1,
+          "candidate_rank10": 8,
+          "delta": -7
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 1,
+          "delta": 5
+        },
+        {
+          "question_id": "phase2-eval-002562",
+          "reference_rank10": 1,
+          "candidate_rank10": 6,
+          "delta": -5
+        },
+        {
+          "question_id": "phase2-eval-001204",
+          "reference_rank10": 5,
+          "candidate_rank10": 8,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001698",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001186",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        }
+      ]
+    },
+    "B2": {
+      "candidate": "B2",
+      "reference": "A0",
+      "delta_doc_recall_at_10": -0.022471910112359605,
+      "delta_doc_recall_at_50": 0.022471910112359494,
+      "delta_doc_mrr": -0.030791867308721188,
+      "delta_doc_ndcg_at_10": -0.028852379030962383,
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": -2,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.030791867308721188,
+          "ci_lo": -0.11507490636704087,
+          "ci_hi": 0.05274210807918689
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.028852379030962383,
+          "ci_lo": -0.10229613175643082,
+          "ci_hi": 0.04346609225104903
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0898876404494382,
+          "ci_hi": 0.0449438202247191
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001204",
+        "phase2-eval-001296",
+        "phase2-eval-001371",
+        "phase2-eval-001445",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "hit50_lost": [
+        "phase2-eval-001228"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 1,
+          "candidate_rank10": 8,
+          "delta": -7
+        },
+        {
+          "question_id": "phase2-eval-001539",
+          "reference_rank10": 1,
+          "candidate_rank10": 8,
+          "delta": -7
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 7,
+          "delta": -6
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 1,
+          "delta": 5
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 1,
+          "candidate_rank10": 6,
+          "delta": -5
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001186",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001235",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        }
+      ]
+    },
+    "C0": {
+      "candidate": "C0",
+      "reference": "A0",
+      "delta_doc_recall_at_10": 0.011235955056179692,
+      "delta_doc_recall_at_50": 0.022471910112359494,
+      "delta_doc_mrr": -0.006634563937934823,
+      "delta_doc_ndcg_at_10": -0.001212697890462744,
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": 1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.006634563937934823,
+          "ci_lo": -0.06535580524344542,
+          "ci_hi": 0.05243445692883886
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.001212697890462744,
+          "ci_lo": -0.05109661042119462,
+          "ci_hi": 0.049693949570932316
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.03370786516853941,
+          "ci_hi": 0.0674157303370786
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit50_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 10,
+          "candidate_rank10": 2,
+          "delta": 8
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 2,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-000059",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000136",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        }
+      ]
+    },
+    "C1": {
+      "candidate": "C1",
+      "reference": "A0",
+      "delta_doc_recall_at_10": 0.011235955056179692,
+      "delta_doc_recall_at_50": 0.022471910112359494,
+      "delta_doc_mrr": -0.026841448189762973,
+      "delta_doc_ndcg_at_10": -0.017705139112879964,
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": 1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.026841448189762973,
+          "ci_lo": -0.10705368289637962,
+          "ci_hi": 0.052247191011236094
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.017705139112879964,
+          "ci_lo": -0.0857561477379406,
+          "ci_hi": 0.04864041628105753
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0449438202247191,
+          "ci_hi": 0.0674157303370787
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001228",
+        "phase2-eval-001243",
+        "phase2-eval-001370",
+        "phase2-eval-002577"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001371",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 10,
+          "candidate_rank10": 1,
+          "delta": 9
+        },
+        {
+          "question_id": "phase2-eval-000126",
+          "reference_rank10": 1,
+          "candidate_rank10": 9,
+          "delta": -8
+        },
+        {
+          "question_id": "phase2-eval-001198",
+          "reference_rank10": 2,
+          "candidate_rank10": 10,
+          "delta": -8
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 1,
+          "candidate_rank10": 6,
+          "delta": -5
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 6,
+          "candidate_rank10": 1,
+          "delta": 5
+        },
+        {
+          "question_id": "phase2-eval-001204",
+          "reference_rank10": 5,
+          "candidate_rank10": 1,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-001296",
+          "reference_rank10": 6,
+          "candidate_rank10": 2,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 1,
+          "candidate_rank10": 5,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-000714",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001507",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        }
+      ]
+    }
+  },
+  "paired_comparisons_vs_round_winner": {
+    "A0": {
+      "candidate": "A0",
+      "reference": "A1",
+      "delta_doc_recall_at_10": -0.011235955056179692,
+      "delta_doc_recall_at_50": -0.022471910112359494,
+      "delta_doc_mrr": 0.006634563937934823,
+      "delta_doc_ndcg_at_10": 0.001212697890462744,
+      "recall50_hit_delta": -2,
+      "recall10_hit_delta": -1,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": 0.006634563937934823,
+          "ci_lo": -0.05243445692883886,
+          "ci_hi": 0.06535580524344542
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": 0.001212697890462744,
+          "ci_lo": -0.049693949570932316,
+          "ci_hi": 0.05109661042119462
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0674157303370786,
+          "ci_hi": 0.03370786516853941
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-002577"
+      ],
+      "hit50_gained": [],
+      "hit50_lost": [
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 1,
+          "candidate_rank10": 10,
+          "delta": -9
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 2,
+          "candidate_rank10": 10,
+          "delta": -8
+        },
+        {
+          "question_id": "phase2-eval-002561",
+          "reference_rank10": 2,
+          "candidate_rank10": 6,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 4,
+          "candidate_rank10": 1,
+          "delta": 3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-000059",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000136",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        }
+      ]
+    },
+    "A2": {
+      "candidate": "A2",
+      "reference": "A1",
+      "delta_doc_recall_at_10": -0.0674157303370786,
+      "delta_doc_recall_at_50": -0.0449438202247191,
+      "delta_doc_mrr": -0.060861423220973765,
+      "delta_doc_ndcg_at_10": -0.0636668280678162,
+      "recall50_hit_delta": -4,
+      "recall10_hit_delta": -6,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.060861423220973765,
+          "ci_lo": -0.12948100588550016,
+          "ci_hi": 0.0055109684323169095
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.0636668280678162,
+          "ci_lo": -0.126254621262058,
+          "ci_hi": -0.004173543216904774
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.1348314606741573,
+          "ci_hi": 0.0
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001165",
+        "phase2-eval-001296",
+        "phase2-eval-001445",
+        "phase2-eval-001472",
+        "phase2-eval-001701",
+        "phase2-eval-002560",
+        "phase2-eval-002561",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [],
+      "hit50_lost": [
+        "phase2-eval-001069",
+        "phase2-eval-001165",
+        "phase2-eval-001472",
+        "phase2-eval-002561"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000057",
+          "reference_rank10": 1,
+          "candidate_rank10": 7,
+          "delta": -6
+        },
+        {
+          "question_id": "phase2-eval-001539",
+          "reference_rank10": 1,
+          "candidate_rank10": 6,
+          "delta": -5
+        },
+        {
+          "question_id": "phase2-eval-002577",
+          "reference_rank10": 2,
+          "candidate_rank10": 6,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-001243",
+          "reference_rank10": 7,
+          "candidate_rank10": 10,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-002562",
+          "reference_rank10": 2,
+          "candidate_rank10": 5,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 4,
+          "candidate_rank10": 1,
+          "delta": 3
+        },
+        {
+          "question_id": "phase2-eval-001089",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        }
+      ]
+    },
+    "B1": {
+      "candidate": "B1",
+      "reference": "B0",
+      "delta_doc_recall_at_10": -0.022471910112359494,
+      "delta_doc_recall_at_50": 0.011235955056179803,
+      "delta_doc_mrr": -0.034657570893525835,
+      "delta_doc_ndcg_at_10": -0.03320614653097287,
+      "recall50_hit_delta": 1,
+      "recall10_hit_delta": -2,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.034657570893525835,
+          "ci_lo": -0.09628143392188337,
+          "ci_hi": 0.028491171749598587
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.03320614653097287,
+          "ci_lo": -0.08945885489721395,
+          "ci_hi": 0.023072230028987395
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0898876404494382,
+          "ci_hi": 0.03370786516853941
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001069",
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001165",
+        "phase2-eval-001243",
+        "phase2-eval-001296",
+        "phase2-eval-001445",
+        "phase2-eval-002560"
+      ],
+      "hit50_gained": [
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-001371",
+          "reference_rank10": 1,
+          "candidate_rank10": 10,
+          "delta": -9
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 2,
+          "candidate_rank10": 8,
+          "delta": -6
+        },
+        {
+          "question_id": "phase2-eval-002562",
+          "reference_rank10": 2,
+          "candidate_rank10": 6,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-001186",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001204",
+          "reference_rank10": 6,
+          "candidate_rank10": 8,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001235",
+          "reference_rank10": 2,
+          "candidate_rank10": 4,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001522",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001698",
+          "reference_rank10": 2,
+          "candidate_rank10": 4,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001714",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        }
+      ]
+    },
+    "B2": {
+      "candidate": "B2",
+      "reference": "B0",
+      "delta_doc_recall_at_10": -0.0337078651685393,
+      "delta_doc_recall_at_50": 0.0,
+      "delta_doc_mrr": -0.024157303370786365,
+      "delta_doc_ndcg_at_10": -0.02763968114049964,
+      "recall50_hit_delta": 0,
+      "recall10_hit_delta": -3,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.024157303370786365,
+          "ci_lo": -0.08841626538255754,
+          "ci_hi": 0.04137239165329032
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.02763968114049964,
+          "ci_lo": -0.08763763542245906,
+          "ci_hi": 0.03379412627503109
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.101123595505618,
+          "ci_hi": 0.0337078651685393
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001198",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001204",
+        "phase2-eval-001296",
+        "phase2-eval-001371",
+        "phase2-eval-001445",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866"
+      ],
+      "hit50_lost": [
+        "phase2-eval-001228"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-001539",
+          "reference_rank10": 1,
+          "candidate_rank10": 8,
+          "delta": -7
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 2,
+          "candidate_rank10": 8,
+          "delta": -6
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 3,
+          "candidate_rank10": 7,
+          "delta": -4
+        },
+        {
+          "question_id": "phase2-eval-001243",
+          "reference_rank10": 7,
+          "candidate_rank10": 10,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-001186",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-001959",
+          "reference_rank10": 3,
+          "candidate_rank10": 1,
+          "delta": 2
+        },
+        {
+          "question_id": "phase2-eval-002591",
+          "reference_rank10": 4,
+          "candidate_rank10": 6,
+          "delta": -2
+        },
+        {
+          "question_id": "phase2-eval-000059",
+          "reference_rank10": 2,
+          "candidate_rank10": 1,
+          "delta": 1
+        },
+        {
+          "question_id": "phase2-eval-000803",
+          "reference_rank10": 1,
+          "candidate_rank10": 2,
+          "delta": -1
+        }
+      ]
+    },
+    "C1": {
+      "candidate": "C1",
+      "reference": "C0",
+      "delta_doc_recall_at_10": 0.0,
+      "delta_doc_recall_at_50": 0.0,
+      "delta_doc_mrr": -0.02020688425182815,
+      "delta_doc_ndcg_at_10": -0.01649244122241722,
+      "recall50_hit_delta": 0,
+      "recall10_hit_delta": 0,
+      "bootstrap": {
+        "mrr_delta_ci": {
+          "point_estimate": -0.02020688425182815,
+          "ci_lo": -0.09307116104868918,
+          "ci_hi": 0.05277331906545368
+        },
+        "ndcg_delta_ci": {
+          "point_estimate": -0.01649244122241722,
+          "ci_lo": -0.0811473876173271,
+          "ci_hi": 0.04755231883864508
+        },
+        "recall10_delta_ci": {
+          "ci_lo": -0.0674157303370786,
+          "ci_hi": 0.0674157303370786
+        },
+        "seed": 42,
+        "iterations": 10000
+      },
+      "hit10_gained": [
+        "phase2-eval-001198",
+        "phase2-eval-001228",
+        "phase2-eval-001370",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001165",
+        "phase2-eval-001371",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [
+        "phase2-eval-001069",
+        "phase2-eval-001165"
+      ],
+      "notable_rank_moves": [
+        {
+          "question_id": "phase2-eval-000126",
+          "reference_rank10": 1,
+          "candidate_rank10": 9,
+          "delta": -8
+        },
+        {
+          "question_id": "phase2-eval-002560",
+          "reference_rank10": 2,
+          "candidate_rank10": 10,
+          "delta": -8
+        },
+        {
+          "question_id": "phase2-eval-001204",
+          "reference_rank10": 6,
+          "candidate_rank10": 1,
+          "delta": 5
+        },
+        {
+          "question_id": "phase2-eval-001243",
+          "reference_rank10": 7,
+          "candidate_rank10": 2,
+          "delta": 5
+        },
+        {
+          "question_id": "phase2-eval-001296",
+          "reference_rank10": 6,
+          "candidate_rank10": 2,
+          "delta": 4
+        },
+        {
+          "question_id": "phase2-eval-000714",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001218",
+          "reference_rank10": 3,
+          "candidate_rank10": 6,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001341",
+          "reference_rank10": 2,
+          "candidate_rank10": 5,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-001507",
+          "reference_rank10": 1,
+          "candidate_rank10": 4,
+          "delta": -3
+        },
+        {
+          "question_id": "phase2-eval-000809",
+          "reference_rank10": 1,
+          "candidate_rank10": 3,
+          "delta": -2
+        }
+      ]
+    }
+  },
+  "final_chain": {
+    "A": "A1",
+    "B": "B0",
+    "C": "C0"
+  },
+  "final_winner": {
+    "row_id": "C0",
+    "window_size_tokens": 256,
+    "overlap_tokens": 0,
+    "split_mode": "fixed",
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "metrics": {
+      "doc_recall_at_10": 0.9325842696629213,
+      "doc_recall_at_10_hits": 83,
+      "doc_recall_at_50": 0.9775280898876404,
+      "doc_recall_at_50_hits": 87,
+      "doc_mrr": 0.7984216158373462,
+      "doc_ndcg_at_10": 0.8319952956009014
+    }
+  },
+  "rationale": "Round A selected A1 (A1 is a credible improvement over reference A0 on the frozen priority order with no regression-protection violation.). Round B selected B0 (B1 ranks best by raw metrics but is practically tied with reference B0 (Recall@50 hit delta=1, MRR/nDCG@10 95% CIs include 0); engineering tie-break selected B0 among 3 tied candidates.). Round C selected C0 (C0 ranks best on the frozen priority order (doc_recall_at_50, doc_mrr, doc_ndcg_at_10, doc_recall_at_10); engineering tie-break selected C0 among 2 practically-tied candidates.). Final frozen Task 3.2 chunking strategy: fixed window=256 tokens, overlap=0 tokens, split_mode=fixed.",
+  "limitations": [
+    "Evaluated only over the frozen Task 3.1 89-question DEV/evaluable-subset (4.9% of full DEV) - not a full-DEV or TEST result.",
+    "N=89 is small; practical-tie handling and bootstrap CIs govern which differences are treated as credible, per the frozen Stage 8 rule - small point-estimate differences (e.g. A1 vs row 0's MRR/nDCG@10) are not claimed as regressions unless their 95% CI excludes 0.",
+    "The 1024-token (A2) candidate is not a lossless 1024-token embedding experiment - BAAI/bge-small-en-v1.5 truncates to ~510 content tokens; only that truncated prefix reaches the vector.",
+    "Section-aware splitting (C1) uses only the already-normalized '## Item ...' headings; it does not reconstruct tables, rewrite text, or inject summaries.",
+    "chunk_recall@10, chunk_mrr, precision@5, faithfulness, citation_grounding, and generation metrics remain N/A throughout - no valid chunk-level or generation gold exists for this scope.",
+    "Comparative-question categories (year-over-year, cross-entity) have zero coverage in this scope (inherited from Task 3.1) and are not represented in any Task 3.2 metric."
+  ]
+}

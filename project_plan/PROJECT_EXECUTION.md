@@ -1520,9 +1520,19 @@ This is not human validation.
 
 See `Progress.md` for the full dated engineering log behind this summary,
 including every Phase 0/1 subtask entry, the Phase 1 Independent Task
-Verification audit, and the Task 2.13 cross-model agreement study
+Verification audit, the Task 2.13 cross-model agreement study, the Task
+3.1 trusted baseline (row 0), and the Task 3.2 chunking ablation
 (2026-09-08).
 
-**Next action:** begin Phase 3 — Make It Good (see Phase 3 section above for
-subtask order; do not start implementation from this document alone without
-re-reading the exact next subtask).
+```text
+Phase 3 — Make It Good                                — IN PROGRESS
+  3.1 Capture the trusted baseline                    — COMPLETE
+  3.2 Chunking ablation                                — COMPLETE
+    winner: fixed 256-token windows, zero overlap, fixed (non-section-
+    aware) splitting - see project_plan/PHASE3_CHUNKING_ABLATION.md
+```
+
+**Next action:** Phase 3, Task 3.3 — Embedding model benchmark, run
+against the frozen 256-token/zero-overlap/fixed chunking strategy
+selected in Task 3.2 (do not start implementation from this document
+alone without re-reading the exact next subtask).

@@ -54,7 +54,7 @@ from src.chunk.fixed_window import (  # noqa: E402
     split_body_into_sections,
 )
 from src.embeddings.bge import (  # noqa: E402
-    MODEL_REPO, MODEL_REVISION, EMBEDDING_DIMENSION, DEFAULT_BATCH_SIZE,
+    MODEL_REPO, MODEL_REVISION, EMBEDDING_DIMENSION, DEFAULT_BATCH_SIZE, VECTOR_DTYPE,
     load_model, encode_queries, encode_passages, validate_vectors,
     embedding_identity as bge_embedding_identity,
 )
@@ -293,6 +293,52 @@ def build_chunks_for_candidate(candidate: p3a.ChunkCandidate, provenance: dict, 
 
 # --------------------------------------------------------------- Stage 5: build embeddings
 
+def _embed_checkpoint_paths(out_dir: Path) -> tuple[Path, Path]:
+    return out_dir / "embeddings.checkpoint.npy", out_dir / "embeddings.checkpoint.json"
+
+
+def _load_embed_checkpoint(out_dir: Path, n: int):
+    """Returns (vectors, done_count) if a valid, shape-matching checkpoint
+    exists on disk, else (None, 0). Guards against a partially-written
+    checkpoint (itself killed mid-save) by requiring the sidecar JSON's
+    recorded `done` count and the .npy array's own row count to agree."""
+    import numpy as np
+    data_path, meta_path = _embed_checkpoint_paths(out_dir)
+    if not (data_path.is_file() and meta_path.is_file()):
+        return None, 0
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        vectors = np.load(data_path)
+    except Exception:
+        return None, 0
+    done = meta.get("done", 0)
+    # The checkpoint stores only the first `done` rows (vectors[:done]), not
+    # the full n-row array - shape is (done, dim), never (n, dim).
+    if (not isinstance(done, int) or done <= 0 or done > n
+            or vectors.shape != (done, EMBEDDING_DIMENSION)):
+        return None, 0
+    return vectors, done
+
+
+def _save_embed_checkpoint(out_dir: Path, vectors, done: int) -> None:
+    """Atomic-ish checkpoint write (temp file + replace) every K batches,
+    so a mid-embedding OOM kill loses at most one checkpoint interval of
+    GPU work instead of the entire candidate's embedding run."""
+    import numpy as np
+    out_dir.mkdir(parents=True, exist_ok=True)
+    data_path, meta_path = _embed_checkpoint_paths(out_dir)
+    tmp_data = out_dir / "embeddings.checkpoint.tmp.npy"  # already ends in .npy - np.save writes it verbatim
+    np.save(tmp_data, vectors[:done])
+    tmp_data.replace(data_path)
+    meta_path.write_text(json.dumps({"done": done}), encoding="utf-8")
+
+
+def _clear_embed_checkpoint(out_dir: Path) -> None:
+    data_path, meta_path = _embed_checkpoint_paths(out_dir)
+    data_path.unlink(missing_ok=True)
+    meta_path.unlink(missing_ok=True)
+
+
 def build_embeddings_for_candidate(chunk_config_hash: str, label: str, storage, model) -> dict:
     chunk_path = storage.chunks_dir(chunk_config_hash) / "chunks.parquet"
     chunk_table = pq.read_table(chunk_path)
@@ -314,23 +360,39 @@ def build_embeddings_for_candidate(chunk_config_hash: str, label: str, storage, 
     texts = chunk_table.column("text").to_pylist()
     t0 = time.perf_counter()
 
+    import numpy as np
     batch = DEFAULT_BATCH_SIZE
-    all_vectors = []
+    # Preallocated, filled in place by batch index - avoids holding every
+    # batch's array live in a Python list AND a second full-size copy at
+    # concatenate() time (peak ~2x), which contributed to an out-of-memory
+    # kill on a 324K-chunk candidate mid-run.
+    vectors = np.empty((n, EMBEDDING_DIMENSION), dtype=VECTOR_DTYPE)
     n_batches = (n + batch - 1) // batch
-    for bi in range(n_batches):
-        chunk_slice = texts[bi * batch:(bi + 1) * batch]
+
+    checkpoint, done_rows = _load_embed_checkpoint(out_dir, n)
+    start_bi = 0
+    if checkpoint is not None:
+        vectors[:done_rows] = checkpoint
+        del checkpoint
+        start_bi = done_rows // batch
+        print(f"[EMBED {label}] resuming from checkpoint: {done_rows}/{n} chunks already embedded")
+
+    for bi in range(start_bi, n_batches):
+        start = bi * batch
+        end = min(start + batch, n)
+        chunk_slice = texts[start:end]
         vecs, _used = edc.encode_with_oom_fallback(model, chunk_slice, batch)
-        all_vectors.append(vecs)
+        vectors[start:end] = vecs
+        del vecs
         if (bi + 1) % EMBED_PROGRESS_EVERY_BATCHES == 0 or (bi + 1) == n_batches:
-            done = min((bi + 1) * batch, n)
+            done = end
             elapsed = time.perf_counter() - t0
-            rate = done / elapsed if elapsed > 0 else 0.0
+            rate = (done - done_rows) / elapsed if elapsed > 0 else 0.0
             eta = (n - done) / rate if rate > 0 else 0.0
             print(f"[EMBED {label}]  {done}/{n} chunks  {100*done/n:5.1f}%  {rate:.1f} chunks/s  "
                   f"ETA {eta:.1f}s", flush=True)
+            _save_embed_checkpoint(out_dir, vectors, done)
 
-    import numpy as np
-    vectors = np.concatenate(all_vectors, axis=0)
     validate_vectors(vectors)
     if vectors.shape[0] != n:
         raise SystemExit(f"FATAL: {vectors.shape[0]} vectors for {n} chunks")
@@ -348,6 +410,7 @@ def build_embeddings_for_candidate(chunk_config_hash: str, label: str, storage, 
     storage.ensure_dir(out_dir)
     pq.write_table(out_table, out_path)
     artifact_size = out_path.stat().st_size
+    _clear_embed_checkpoint(out_dir)
 
     print(f"[EMBED {label}] done: {n} vectors in {embed_seconds:.1f}s ({n/embed_seconds:.1f} chunks/s) -> {out_path}")
     return {"vector_count": n, "embed_seconds": round(embed_seconds, 2), "reused": False,
@@ -830,12 +893,136 @@ def run_full(resume: bool) -> int:
     return 0
 
 
-def cmd_compare() -> int:
+ROUND_MEMBERS: dict[str, list[str]] = {"A": ["A0", "A1", "A2"], "B": ["B0", "B1", "B2"], "C": ["C0", "C1"]}
+
+
+def _comparison_summary(candidate_result: dict, reference_result: dict, question_ids: list[str]) -> dict:
+    bs = bootstrap_vs_reference(candidate_result, reference_result, question_ids)
+    m, r = candidate_result["metrics"], reference_result["metrics"]
+    return {
+        "candidate": candidate_result["row_id"], "reference": reference_result["row_id"],
+        "delta_doc_recall_at_10": m["doc_recall_at_10"] - r["doc_recall_at_10"],
+        "delta_doc_recall_at_50": m["doc_recall_at_50"] - r["doc_recall_at_50"],
+        "delta_doc_mrr": m["doc_mrr"] - r["doc_mrr"],
+        "delta_doc_ndcg_at_10": m["doc_ndcg_at_10"] - r["doc_ndcg_at_10"],
+        "recall50_hit_delta": bs["recall50_hit_delta"], "recall10_hit_delta": bs["recall10_hit_delta"],
+        "bootstrap": {
+            "mrr_delta_ci": {"point_estimate": bs["mrr_point_estimate"], "ci_lo": bs["mrr_ci"][0], "ci_hi": bs["mrr_ci"][1]},
+            "ndcg_delta_ci": {"point_estimate": bs["ndcg_point_estimate"], "ci_lo": bs["ndcg_ci"][0], "ci_hi": bs["ndcg_ci"][1]},
+            "recall10_delta_ci": {"ci_lo": bs["recall10_ci"][0], "ci_hi": bs["recall10_ci"][1]},
+            "seed": p3a.BOOTSTRAP_SEED, "iterations": p3a.BOOTSTRAP_ITERATIONS,
+        },
+        "hit10_gained": bs["hit10_gained"], "hit10_lost": bs["hit10_lost"],
+        "hit50_gained": bs["hit50_gained"], "hit50_lost": bs["hit50_lost"],
+        "notable_rank_moves": bs["notable_rank_moves"],
+    }
+
+
+def assemble_final_report() -> dict:
     decisions = load_decisions()
     if set(decisions.get("rounds", {})) != {"A", "B", "C"}:
-        print("Not all rounds complete yet - run --run --resume first.")
-        return 1
-    print(json.dumps(decisions, indent=2))
+        raise SystemExit("Not all rounds complete yet - run --run --resume first.")
+
+    frozen_scope_ids, baseline = load_frozen_scope()
+    config, config_hash = load_experiment_config()
+
+    candidates = {row_id: load_candidate_result(row_id) for row_id in
+                  ["A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1"]}
+    missing = [rid for rid, r in candidates.items() if r is None]
+    if missing:
+        raise SystemExit(f"Missing candidate result(s): {missing} - run --run --resume first.")
+
+    row0 = candidates["A0"]
+    vs_row0 = {rid: _comparison_summary(r, row0, frozen_scope_ids) for rid, r in candidates.items() if rid != "A0"}
+
+    vs_round_winner: dict[str, dict] = {}
+    for round_letter, member_ids in ROUND_MEMBERS.items():
+        winner_id = decisions["rounds"][round_letter]["winner_row_id"]
+        winner_result = candidates[winner_id]
+        for rid in member_ids:
+            if rid == winner_id:
+                continue
+            vs_round_winner[rid] = _comparison_summary(candidates[rid], winner_result, frozen_scope_ids)
+
+    final_chain = {r: decisions["rounds"][r]["winner_row_id"] for r in ("A", "B", "C")}
+    final_winner_id = final_chain["C"]
+    final_winner = candidates[final_winner_id]
+
+    report = {
+        "task": "3.2",
+        "phase3_2_config_hash": config_hash,
+        "phase3_2_config": config,
+        "baseline_row_id": 0,
+        "baseline_run_id": baseline["run_id"],
+        "baseline_metrics": baseline["metrics"],
+        "eval_split": "dev",
+        "eval_scope_kind": p3.PHASE3_DEV_SCOPE_KIND,
+        "eval_scope_sha256": baseline["phase3_config"]["phase3_dev_scope_sha256"],
+        "question_count": len(frozen_scope_ids),
+        "candidates": {
+            rid: {
+                "row_id": r["row_id"], "round": r["round"], "label": r["label"],
+                "window_size_tokens": r["window_size_tokens"], "overlap_tokens": r["overlap_tokens"],
+                "stride_tokens": r["stride_tokens"], "split_mode": r["split_mode"],
+                "reuse_row_id": r["reuse_row_id"], "encoder_truncation_note": r["encoder_truncation_note"],
+                "chunk_config_hash": r["chunk_config_hash"],
+                "chunk_count": r["chunk_stats"]["chunk_count"],
+                "chunk_artifact_size_bytes": r["chunk_stats"].get("artifact_size_bytes"),
+                "embedding_artifact_size_bytes": r["embed_stats"].get("artifact_size_bytes"),
+                "index_size_bytes": r["index_stats"].get("index_size_bytes"),
+                "build_seconds_total": r.get("build_seconds_total"),
+                "metrics": r["metrics"],
+                "latency_ms": r["latency_ms"],
+            }
+            for rid, r in candidates.items()
+        },
+        "round_decisions": decisions["rounds"],
+        "paired_comparisons_vs_row0": vs_row0,
+        "paired_comparisons_vs_round_winner": vs_round_winner,
+        "final_chain": final_chain,
+        "final_winner": {
+            "row_id": final_winner_id,
+            "window_size_tokens": final_winner["window_size_tokens"],
+            "overlap_tokens": final_winner["overlap_tokens"],
+            "split_mode": final_winner["split_mode"],
+            "chunk_config_hash": final_winner["chunk_config_hash"],
+            "metrics": final_winner["metrics"],
+        },
+        "rationale": (
+            f"Round A selected {final_chain['A']} ({decisions['rounds']['A']['rationale']}). "
+            f"Round B selected {final_chain['B']} ({decisions['rounds']['B']['rationale']}). "
+            f"Round C selected {final_chain['C']} ({decisions['rounds']['C']['rationale']}). "
+            f"Final frozen Task 3.2 chunking strategy: fixed window={final_winner['window_size_tokens']} tokens, "
+            f"overlap={final_winner['overlap_tokens']} tokens, split_mode={final_winner['split_mode']}."
+        ),
+        "limitations": [
+            "Evaluated only over the frozen Task 3.1 89-question DEV/evaluable-subset (4.9% of full DEV) - "
+            "not a full-DEV or TEST result.",
+            "N=89 is small; practical-tie handling and bootstrap CIs govern which differences are treated as "
+            "credible, per the frozen Stage 8 rule - small point-estimate differences (e.g. A1 vs row 0's MRR/"
+            "nDCG@10) are not claimed as regressions unless their 95% CI excludes 0.",
+            "The 1024-token (A2) candidate is not a lossless 1024-token embedding experiment - "
+            "BAAI/bge-small-en-v1.5 truncates to ~510 content tokens; only that truncated prefix reaches the vector.",
+            "Section-aware splitting (C1) uses only the already-normalized '## Item ...' headings; it does not "
+            "reconstruct tables, rewrite text, or inject summaries.",
+            "chunk_recall@10, chunk_mrr, precision@5, faithfulness, citation_grounding, and generation metrics "
+            "remain N/A throughout - no valid chunk-level or generation gold exists for this scope.",
+            "Comparative-question categories (year-over-year, cross-entity) have zero coverage in this scope "
+            "(inherited from Task 3.1) and are not represented in any Task 3.2 metric.",
+        ],
+    }
+    return report
+
+
+def cmd_compare() -> int:
+    report = assemble_final_report()
+    _write_json(FINAL_RESULT_PATH, report)
+    print(f"Final Task 3.2 report written: {FINAL_RESULT_PATH}")
+    print()
+    print(f"Final chain: Round A={report['final_chain']['A']}  Round B={report['final_chain']['B']}  "
+          f"Round C={report['final_chain']['C']}")
+    print(f"Final winner: {report['final_winner']['row_id']} - window={report['final_winner']['window_size_tokens']}, "
+          f"overlap={report['final_winner']['overlap_tokens']}, split_mode={report['final_winner']['split_mode']}")
     return 0
 
 

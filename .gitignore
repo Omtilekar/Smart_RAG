@@ -84,3 +84,9 @@ results/*
 # un-ignore of results/).
 !results/eval_runs/
 !results/eval_runs/*.json
+# Task 3.2 - one small per-candidate result JSON (metrics/build-stats/
+# compact per-question diagnostics, no chunk/embedding/index data) per
+# chunking-ablation candidate. Same "re-include the directory first"
+# mechanism as results/eval_runs/ above.
+!results/phase3_2/
+!results/phase3_2/*.json

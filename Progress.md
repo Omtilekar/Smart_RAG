@@ -10396,3 +10396,134 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.2 — Chunking ablation (benchmark
 256/512/1024-token windows and overlap values against row 0, before
 full-corpus processing).
+
+---
+
+## 2026-09-08 — Task 3.2: controlled Phase 3 chunking ablation
+
+Staged, DEV-only chunking ablation (window size → overlap → fixed-vs-
+section-aware) against Task 3.1's row 0, evaluated over the exact frozen
+89-question `DEV/evaluable-subset` — never recomputed per candidate. See
+`project_plan/PHASE3_CHUNKING_ABLATION.md` for full detail.
+
+### Stage 2: encoder-length audit
+
+`BAAI/bge-small-en-v1.5` has a verified 512-token effective passage-
+embedding limit (`sentence_bert_config.json`, `tokenizer_config.json`,
+BERT `max_position_embeddings` all read 512). Empirically confirmed (not
+assumed): encoding a >512-token passage is bit-identical (cosine 1.0) to
+encoding just its first ~510 content tokens. The 1024-token candidate
+(A2) is labeled `fixed_1024_overlap_0_encoder_truncates_at_512` and is
+not claimed as a lossless 1024-token experiment.
+
+### Generalized chunker
+
+`src/chunk/fixed_window.py`'s `build_chunk_config()` gained window/
+overlap/split_mode parameters (frozen 512/0/fixed defaults unchanged);
+new `split_body_into_sections()` splits on the already-normalized
+`"## Item ..."` headings, verified against all 1,493 real corpus
+documents with zero errors before any section-aware build ran. Row 0's
+frozen `chunk_config_hash` is unaffected — it is verified against the
+on-disk `configs/chunk_development_corpus.json`, never recomputed
+through the generalized function (confirmed via
+`tests/test_artifact_versioning.py`'s existing
+`test_historical_phase1_hash_reproduces_exactly`, unchanged).
+
+New `src/eval/phase3_ablation.py` (portable, no I/O, AST-verified to
+never import `test_access`): the Round A/B/C candidate registry, DEV/
+scope evaluator guards, paired bootstrap (seed 42, 10,000 iterations,
+resamples question indices jointly across both arms), and the frozen
+Stage 8 winner-selection rule (quality priority order → small-N
+practical-tie handling → engineering tie-break → regression-protection
+flagging for a real recall-vs-ranking trade-off).
+
+### Orchestration and a real-world memory-contention fight
+
+`scripts/run_phase3_chunking_ablation.py` builds/embeds/indexes/
+evaluates each new candidate (reusing Task 1.3-1.5 build logic and Task
+1.10/2.6/3.1 metric logic unmodified). A sanity check re-evaluates A0/B0/
+C0 fresh every run and asserts the result matches the frozen/prior value
+exactly — caught nothing wrong, but proved the reused-artifact path
+never silently drifts.
+
+The real build/eval run collided repeatedly (~27 times over several
+hours) with an unrelated, large, concurrently-running local job
+(`python -m scripts.benchmark.run_sensitivity_loyo`, unrelated to this
+project) that drove available system memory low enough for the harness
+to kill the background embedding process mid-run. Diagnosed via
+`Get-CimInstance Win32_Process`/`Get-Counter '\Memory\Available MBytes'`
+- confirmed it was that process (RSS climbing from ~6.6 GB at fold 3 to
+~20+ GB later), not a leak in this task's own code. Two fixes:
+
+1. Preallocated the embedding output array instead of accumulating a
+   Python list of per-batch arrays and `np.concatenate`-ing at the end
+   (halves peak memory - the first two kills happened during exactly
+   this doubling).
+2. Added embedding checkpointing (`embeddings.checkpoint.npy`/`.json`,
+   every 50 batches / ~6,400 chunks, atomic temp-file-then-replace).
+   Verified via a simulated mid-run failure + resume producing vectors
+   bit-identical to an uninterrupted run (max abs diff 0.0) before
+   trusting it on the real 300K+-chunk candidates. After this, each kill
+   lost at most a few minutes instead of the whole candidate - B1's
+   369,947-chunk embedding survived 5 kills and finished via 6 resumed
+   segments (0→192K→262K→275K→288K→300K→326K→done).
+
+### Results
+
+```text
+Row  Configuration                          Chunks   R@10(hits)  R@50(hits)  MRR      nDCG@10
+A0   fixed 512/0        (row 0, reused)     162357   0.9213(82)  0.9551(85)  0.8051   0.8332
+A1   fixed 256/0                            323971   0.9326(83)  0.9775(87)  0.7984   0.8320
+A2   fixed 1024/0 (truncated)                81551   0.8652(77)  0.9326(83)  0.7376   0.7683
+B1   fixed 256/32 (12.5%)                    369947   0.9101(81)  0.9888(88)  0.7638   0.7988
+B2   fixed 256/64 (25%)                      431210   0.8989(80)  0.9775(87)  0.7743   0.8044
+C1   section-aware 256/0                     341822   0.9326(83)  0.9775(87)  0.7782   0.8155
+```
+
+Round A winner **A1** (256/0) - credible Recall@50/@10 improvement over
+row 0, no credible MRR/nDCG@10 regression (both 95% CIs include 0).
+Round B winner **B0** (= A1, overlap 0) - both overlap variants are
+practically tied with B0 per the frozen small-N rule; tie-break picks
+the cheapest (fewest chunks). Round C winner **C0** (= B0, fixed split) -
+section-aware reproduces C0's Recall@10/@50 exactly but is practically
+tied on MRR/nDCG@10 too; tie-break again picks the cheaper/simpler
+option.
+
+**Final frozen Task 3.2 chunking strategy:** fixed 256-token windows,
+zero overlap, fixed (non-section-aware) splitting -
+`chunk_config_hash=ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`.
+A genuine improvement over the Phase 1 512-token baseline, at roughly 2x
+the chunk count/embedding-artifact/index size and ~1.5x retrieval p50
+latency (233ms → 352ms) - an honest, documented cost/quality trade.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1360 passed, 30 deselected**
+  (+70 new: generalized chunker/section-splitting tests, the new
+  `src.eval.phase3_ablation` pure-logic suite, and AST-based static
+  guards over the orchestration script).
+- `scripts/dev.py test` (full): **1390 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout (neither
+`src/eval/phase3_ablation.py` nor `scripts/run_phase3_chunking_ablation.py`
+import `test_access` - AST-verified, portable tests). No paid API/
+generation calls. FinanceBench not rerun. Row 0 unchanged (`git diff`
+confirms `results/phase_3_1_trusted_baseline.json`,
+`results/eval_runs/`, and `configs/phase_3_1_trusted_baseline.json` are
+untouched) and unrebuilt (verified directly against the frozen
+`chunk_config_hash` before every run, not merely assumed).
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+```
+
+**Next roadmap task:** Phase 3, Task 3.3 — Embedding model benchmark, run
+against the frozen 256-token/zero-overlap/fixed chunking strategy
+selected here.

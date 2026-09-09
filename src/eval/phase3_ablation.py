@@ -267,10 +267,16 @@ def _tiebreak_key(candidate: Mapping[str, Any]) -> tuple:
     )
 
 
-def apply_tiebreak(tied_candidates: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
+def apply_tiebreak(
+    tied_candidates: Sequence[Mapping[str, Any]], *, key_fn: "Any" = None,
+) -> Mapping[str, Any]:
+    """`key_fn` defaults to the chunking-ablation tie-break order
+    (`_tiebreak_key`) - Task 3.3's embedding-model tie-break order is a
+    different priority list, passed in by its own caller rather than
+    duplicating this function."""
     if not tied_candidates:
         raise Phase3AblationError("apply_tiebreak requires at least one candidate")
-    return sorted(tied_candidates, key=_tiebreak_key)[0]
+    return sorted(tied_candidates, key=key_fn or _tiebreak_key)[0]
 
 
 # --------------------------------------------------------------- winner selection
@@ -303,6 +309,7 @@ class RoundSelectionResult:
 def select_round_winner(
     *, reference_row_id: str, candidates: Sequence[Mapping[str, Any]],
     bootstrap_vs_reference: Mapping[str, Mapping[str, Any]],
+    tiebreak_key_fn: "Any" = None,
 ) -> RoundSelectionResult:
     """Applies the frozen Stage 8 rule to one round.
 
@@ -336,7 +343,7 @@ def select_round_winner(
 
     if raw_best["row_id"] == reference_row_id:
         tied = _tied_with_reference()
-        winner = apply_tiebreak(tied) if len(tied) > 1 else reference
+        winner = apply_tiebreak(tied, key_fn=tiebreak_key_fn) if len(tied) > 1 else reference
         return RoundSelectionResult(
             winner_row_id=winner["row_id"],
             rationale=(
@@ -352,7 +359,7 @@ def select_round_winner(
     tie = is_practical_tie(recall50_hit_delta=bs["recall50_hit_delta"], mrr_ci=bs["mrr_ci"], ndcg_ci=bs["ndcg_ci"])
     if tie:
         tied = _tied_with_reference()
-        winner = apply_tiebreak(tied)
+        winner = apply_tiebreak(tied, key_fn=tiebreak_key_fn)
         return RoundSelectionResult(
             winner_row_id=winner["row_id"],
             rationale=(

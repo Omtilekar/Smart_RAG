@@ -71,9 +71,9 @@ EXPECTED_CHUNK_COUNT = 323971
 CANDIDATE_K = 50
 DOC_RECALL_K = 10
 
-EMBED_PROGRESS_EVERY_BATCHES = 10  # finer-grained than Task 3.2's 50 - frequent external memory
-# contention on this machine keeps killing the process well inside a 50-batch interval; checkpoint
-# more often so each kill loses ~10-15s of GPU work instead of ~60s
+EMBED_PROGRESS_EVERY_BATCHES = 2  # qwen3_embedding's throughput (~15 chunks/s) means even a 10-batch
+# (1280-chunk, ~85s) interval was never reached before the next memory-contention kill - checkpoint
+# every 2 batches (~256 chunks, ~17s) instead so slow candidates still bank real progress
 EVAL_PROGRESS_EVERY = 10
 PILOT_PASSAGE_SAMPLE = 10
 PILOT_QUERY_SAMPLE = 5

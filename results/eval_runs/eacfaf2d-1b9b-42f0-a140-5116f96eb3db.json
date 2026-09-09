@@ -1,0 +1,48 @@
+{
+  "run_schema_version": 2,
+  "run_id": "eacfaf2d-1b9b-42f0-a140-5116f96eb3db",
+  "git_sha": "9bcd92e33a0b0e596a39da698d49988efd2d5e11",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "nomic-ai/nomic-embed-text-v1.5",
+    "model_revision": "e9b6763023c676ca8431644204f50c2b100d9aab",
+    "embedding_dimension": 768,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "f849e326bfef7bbcf1cee256e3fb2d31dae999e6b7a13075d80820d3abc7ce3e"
+  },
+  "index_identity_hash": "aaa23ad911a6e6ad9205132ecca6d7fe3e1839384b3d328db5503a4b7a545244",
+  "retrieval_config": {
+    "type": "vector_exact_cosine",
+    "top_k": 50,
+    "distance_metric": "cosine"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-09T04:53:35.703650Z",
+  "metrics": {
+    "doc_recall_at_10": 0.9662921348314607,
+    "doc_recall_at_10_hits": 86,
+    "doc_recall_at_50": 0.9887640449438202,
+    "doc_recall_at_50_hits": 88,
+    "doc_mrr": 0.887952559300874,
+    "doc_ndcg_at_10": 0.9076308380034721
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_3_embedding_benchmark",
+  "run_kind": "phase3_3_embedding_benchmark",
+  "notes": "Task 3.3 candidate nomic_embed (nomic-ai/nomic-embed-text-v1.5@e9b6763023c6) over frozen 256/0/fixed chunks (ba99e2f7861c...).",
+  "record_origin": "live",
+  "run_record_sha256": "230101204d7034ae661a5f9eb3dda4ded523b47902fcc886f89c6404bc958351"
+}

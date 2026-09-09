@@ -1,0 +1,48 @@
+{
+  "run_schema_version": 2,
+  "run_id": "4c944980-fe8a-4f98-a1e1-eafcaa43e1fe",
+  "git_sha": "9bcd92e33a0b0e596a39da698d49988efd2d5e11",
+  "git_dirty": false,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "BAAI/bge-base-en-v1.5",
+    "model_revision": "a5beb1e3e68b9ab74eb54cfd186867f64f240e1a",
+    "embedding_dimension": 768,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "5cce1109bb0962f21891023c63ab4c0e471cc73a57f9e0f172b9ab616a2c8182"
+  },
+  "index_identity_hash": "c92e7bc0c1b139bc35e59feb98ddfb5aa55f3eae1d1727c7da517e9ea6fae48d",
+  "retrieval_config": {
+    "type": "vector_exact_cosine",
+    "top_k": 50,
+    "distance_metric": "cosine"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-09T03:36:44.539135Z",
+  "metrics": {
+    "doc_recall_at_10": 0.9438202247191011,
+    "doc_recall_at_10_hits": 84,
+    "doc_recall_at_50": 0.9887640449438202,
+    "doc_recall_at_50_hits": 88,
+    "doc_mrr": 0.8702247191011236,
+    "doc_ndcg_at_10": 0.888798965019513
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_3_embedding_benchmark",
+  "run_kind": "phase3_3_embedding_benchmark",
+  "notes": "Task 3.3 candidate bge_base (BAAI/bge-base-en-v1.5@a5beb1e3e68b) over frozen 256/0/fixed chunks (ba99e2f7861c...).",
+  "record_origin": "live",
+  "run_record_sha256": "640a82722d8348c33295951c1f1df71314dc25d0253fcd836595124c254ba484"
+}

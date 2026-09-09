@@ -10527,3 +10527,105 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.3 — Embedding model benchmark, run
 against the frozen 256-token/zero-overlap/fixed chunking strategy
 selected here.
+
+---
+
+## 2026-09-09 — Task 3.3: embedding model benchmark (survived an unexpected Windows restart)
+
+Controlled, DEV-only embedding-model benchmark against the frozen Task
+3.2 chunking winner (256/0/fixed,
+`chunk_config_hash=ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`),
+evaluated over the exact frozen 89-question `DEV/evaluable-subset`. See
+`project_plan/PHASE3_EMBEDDING_MODEL_BENCHMARK.md` for full detail.
+
+### Interruption and recovery
+
+Mid-run, an unexpected Windows restart interrupted `qwen3_embedding`'s
+embedding build at 40,416/323,971 chunks. A read-only recovery audit
+(same date, prior session turn) confirmed: `bge_small`/`bge_base`/
+`nomic_embed` fully built/indexed/evaluated with untracked-but-valid
+result files; `qwen3_embedding`'s `embeddings.checkpoint.npy`/`.json`
+pair valid and internally consistent (40,416 rows, dimension/finiteness
+verified); protected TEST unopened, 0/3 official runs; frozen chunk
+config unchanged. Classified **C. PARTIALLY COMPLETE — RESUMABLE** and
+none of that was rebuilt, deleted, or reused incorrectly during resume.
+
+Resuming `qwen3_embedding` (`--run --resume` — the harness never rebuilds
+a candidate whose `results/phase3_3/{id}.json` already exists, so the
+other three candidates' `--resume` path always short-circuited to
+"existing result found - reusing") hit the same unrelated, large,
+concurrently-running local job pattern documented in Task 3.2
+(`python -m scripts.benchmark.run_shap_primary`, unrelated to this
+project) - the OS killed the build twice more for low system memory, and
+once the Claude Code background-task wrapper itself was reported killed
+while its orphaned Python child kept running and banking checkpoint
+progress independently (verified via `Get-CimInstance Win32_Process`
+process-tree inspection before deciding not to launch a second,
+conflicting instance). Checkpoint integrity (row count vs. `done`
+counter, dimension, finiteness) was re-verified after every interruption
+before any resume. One resume also hit a transient Windows subprocess
+failure - `git rev-parse HEAD` returned exit code `3221225794`
+(`STATUS_DLL_INIT_FAILED`, the same memory-pressure root cause) - *after*
+embeddings/index/eval had already completed and persisted to disk; the
+next invocation reused the persisted embeddings/index in seconds and
+only re-ran the fast evaluation + save step. No checkpoint, embedding
+artifact, or index was ever rebuilt from scratch.
+
+### Results
+
+```text
+Candidate        Dim   R@10 (hits)   R@50 (hits)   MRR      nDCG@10
+bge_small        384   0.9326 (83)   0.9775 (87)   0.7984   0.8320   (control)
+bge_base         768   0.9438 (84)   0.9888 (88)   0.8702   0.8888
+nomic_embed      768   0.9663 (86)   0.9888 (88)   0.8880   0.9076
+qwen3_embedding 1024   0.9888 (88)   1.0000 (89)   0.9251   0.9407   (winner)
+```
+
+`qwen3_embedding` is the only candidate whose MRR and nDCG@10 95%
+bootstrap CIs (seed 42, 10,000 iterations, paired by question) both
+exclude 0 versus the `bge_small` control - a credible ranking-quality
+improvement, not a small-N artifact. It gained 6 questions at Recall@10
+and lost only 1 relative to control, and gained 2 at Recall@50 with zero
+losses. No candidate raised Recall@50 at the cost of a credible MRR/
+nDCG@10 regression, so no result required a user decision.
+
+**Winner: `Qwen/Qwen3-Embedding-0.6B`** (revision
+`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`, dimension 1024) - a credible
+improvement over the reference on the frozen priority order
+(Recall@50 → MRR → nDCG@10 → Recall@10), decisive enough that the
+engineering tie-break (which would otherwise favor the smaller/faster
+`bge_small`/`nomic_embed`) never applies.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1411 passed, 30 deselected**.
+- `scripts/dev.py test` (full): **1441 passed**, 0 skipped.
+- `tests/test_embedding_benchmark_oom.py` (the real torch 2.13
+  `AcceleratorError` OOM-detection regression test): **5 passed**,
+  reverified independently before and after the resume.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout (re-
+verified via `eval.duckdb`'s `test_access_log` before resuming and again
+after closing the task; `scripts/run_phase3_embedding_benchmark.py` never
+imports `test_access`). No paid API/generation calls. FinanceBench not
+rerun. Frozen Task 3.2 chunk config
+(`split_mode=fixed`/`window_size_tokens=256`/`overlap_tokens=0`/
+`chunk_config_hash=ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`)
+verified unchanged before resuming and reproduced exactly by
+`bge_small`'s fresh evaluation.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+```
+
+**Next roadmap task:** Phase 3, Task 3.4 — Add LanceDB-native BM25/FTS as
+the initial sparse retrieval baseline, run against the frozen 256/0/fixed
+chunking strategy and the `qwen3_embedding` dense model selected here.

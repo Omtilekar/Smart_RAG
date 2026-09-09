@@ -1,0 +1,114 @@
+{
+  "winner_candidate_id": "qwen3_embedding",
+  "rationale": "qwen3_embedding is a credible improvement over reference bge_small on the frozen priority order with no regression-protection violation.",
+  "bootstrap": {
+    "bge_base": {
+      "recall50_hit_delta": 1,
+      "recall10_hit_delta": 1,
+      "mrr_ci": [
+        -0.0014981273408238849,
+        0.14510433386837873
+      ],
+      "mrr_point_estimate": 0.07180310326377748,
+      "ndcg_ci": [
+        -0.007715598377247224,
+        0.1224703467236492
+      ],
+      "ndcg_point_estimate": 0.0568036694186117,
+      "recall10_ci": [
+        -0.0449438202247191,
+        0.0674157303370787
+      ],
+      "hit10_gained": [
+        "phase2-eval-001198",
+        "phase2-eval-001228",
+        "phase2-eval-001370",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001296",
+        "phase2-eval-001539",
+        "phase2-eval-001570"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [
+        "phase2-eval-001539"
+      ]
+    },
+    "nomic_embed": {
+      "recall50_hit_delta": 1,
+      "recall10_hit_delta": 3,
+      "mrr_ci": [
+        0.022650258605314888,
+        0.16037988228999456
+      ],
+      "mrr_point_estimate": 0.08953094346352786,
+      "ndcg_ci": [
+        0.01332562785144542,
+        0.13986176523610028
+      ],
+      "ndcg_point_estimate": 0.07563554240257075,
+      "recall10_ci": [
+        -0.0337078651685393,
+        0.101123595505618
+      ],
+      "hit10_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001069",
+        "phase2-eval-001198",
+        "phase2-eval-001228",
+        "phase2-eval-001370",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001341",
+        "phase2-eval-002561",
+        "phase2-eval-002562"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": [
+        "phase2-eval-002561"
+      ]
+    },
+    "qwen3_embedding": {
+      "recall50_hit_delta": 2,
+      "recall10_hit_delta": 5,
+      "mrr_ci": [
+        0.0478419832352418,
+        0.2096486534688783
+      ],
+      "mrr_point_estimate": 0.1267166042446941,
+      "ndcg_ci": [
+        0.04081951525760308,
+        0.18028769019821056
+      ],
+      "ndcg_point_estimate": 0.10867536344323359,
+      "recall10_ci": [
+        0.0,
+        0.1123595505617978
+      ],
+      "hit10_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001069",
+        "phase2-eval-001198",
+        "phase2-eval-001228",
+        "phase2-eval-001370",
+        "phase2-eval-002593"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001539"
+      ],
+      "hit50_gained": [
+        "phase2-eval-000866",
+        "phase2-eval-001370"
+      ],
+      "hit50_lost": []
+    }
+  }
+}

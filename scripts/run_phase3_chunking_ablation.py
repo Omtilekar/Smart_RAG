@@ -297,11 +297,19 @@ def _embed_checkpoint_paths(out_dir: Path) -> tuple[Path, Path]:
     return out_dir / "embeddings.checkpoint.npy", out_dir / "embeddings.checkpoint.json"
 
 
-def _load_embed_checkpoint(out_dir: Path, n: int):
+def _load_embed_checkpoint(out_dir: Path, n: int, dimension: int = EMBEDDING_DIMENSION):
     """Returns (vectors, done_count) if a valid, shape-matching checkpoint
     exists on disk, else (None, 0). Guards against a partially-written
     checkpoint (itself killed mid-save) by requiring the sidecar JSON's
-    recorded `done` count and the .npy array's own row count to agree."""
+    recorded `done` count and the .npy array's own row count to agree.
+
+    `dimension` defaults to this module's own frozen 384 (BGE-small) -
+    callers embedding a different-dimension model (e.g.
+    scripts/run_phase3_embedding_benchmark.py) MUST pass their own
+    spec.dimension explicitly, or a real checkpoint gets silently
+    rejected as "invalid" and the whole candidate restarts from scratch
+    (verified: this exact bug discarded 32,000 already-embedded chunks
+    for a 768-dim candidate before the parameter was added)."""
     import numpy as np
     data_path, meta_path = _embed_checkpoint_paths(out_dir)
     if not (data_path.is_file() and meta_path.is_file()):
@@ -315,7 +323,7 @@ def _load_embed_checkpoint(out_dir: Path, n: int):
     # The checkpoint stores only the first `done` rows (vectors[:done]), not
     # the full n-row array - shape is (done, dim), never (n, dim).
     if (not isinstance(done, int) or done <= 0 or done > n
-            or vectors.shape != (done, EMBEDDING_DIMENSION)):
+            or vectors.shape != (done, dimension)):
         return None, 0
     return vectors, done
 

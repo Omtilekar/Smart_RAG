@@ -237,3 +237,35 @@ def test_encode_output_dtype_is_float32():
     model = _FakeModel(mr.BGE_SMALL.dimension)
     out = mr.encode_passages(mr.BGE_SMALL, model, ["hello"], batch_size=1)
     assert out.dtype == np.float32
+
+
+# --------------------------------------------------------------- load_model forces fp32
+
+def test_load_model_forces_float32_weights(monkeypatch):
+    """Qwen3-Embedding-0.6B's own config defaults to bfloat16 under
+    sentence-transformers; load_model() must force float32 explicitly for
+    every candidate rather than silently inheriting a model's own default
+    precision (verified empirically: bf16 broke the unit-norm check)."""
+    import torch
+    captured = {}
+
+    class _FakeParam:
+        dtype = torch.float32
+        device = torch.device("cuda:0")
+
+    class _FakeST:
+        def __init__(self, repo, revision, trust_remote_code, device, model_kwargs):
+            captured["model_kwargs"] = model_kwargs
+            captured["revision"] = revision
+
+        def parameters(self):
+            return iter([_FakeParam()])
+
+        def get_embedding_dimension(self):
+            return mr.QWEN3_EMBEDDING.dimension
+
+    import sentence_transformers
+    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", _FakeST)
+    mr.load_model(mr.QWEN3_EMBEDDING, device="cuda")
+    assert captured["model_kwargs"] == {"torch_dtype": torch.float32}
+    assert captured["revision"] == mr.QWEN3_EMBEDDING.revision

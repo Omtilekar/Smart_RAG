@@ -90,3 +90,7 @@ results/*
 # mechanism as results/eval_runs/ above.
 !results/phase3_2/
 !results/phase3_2/*.json
+# Task 3.3 - same mechanism, one small per-candidate result JSON per
+# embedding-model benchmark candidate.
+!results/phase3_3/
+!results/phase3_3/*.json

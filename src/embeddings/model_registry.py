@@ -129,15 +129,29 @@ def load_model(spec: EmbeddingModelSpec, device: str = "cuda"):
     Unlike Task 1.4's offline-only src.embeddings.bge.load_model(), this
     may download from the Hub (Task 3.3 candidates are not pre-cached) -
     huggingface_hub's own cache makes a second load a no-op download.
-    Never uses `revision="main"` - always the frozen pinned commit SHA."""
+    Never uses `revision="main"` - always the frozen pinned commit SHA.
+
+    Explicitly forces float32 weights (`model_kwargs={"torch_dtype":
+    torch.float32}`) - Qwen/Qwen3-Embedding-0.6B's own config declares
+    bfloat16 and sentence-transformers honors that by default, which
+    silently degraded normalized-vector precision enough to fail the
+    frozen normalization check (measured: unit-norm deviation ~0.3% in
+    bf16 vs exact 1.0 in fp32). Every candidate is forced to the same
+    fp32 policy explicitly rather than three of four happening to already
+    default there."""
+    import torch
     from sentence_transformers import SentenceTransformer
 
     model = SentenceTransformer(
         spec.repository, revision=spec.revision, trust_remote_code=spec.trust_remote_code, device=device,
+        model_kwargs={"torch_dtype": torch.float32},
     )
     actual_device = str(next(model.parameters()).device)
     if device == "cuda" and "cuda" not in actual_device:
         raise RuntimeError(f"requested cuda but model resolved to device {actual_device!r}")
+    actual_dtype = next(model.parameters()).dtype
+    if actual_dtype != torch.float32:
+        raise RuntimeError(f"{spec.candidate_id}: expected float32 weights, model loaded as {actual_dtype}")
 
     dim = model.get_embedding_dimension() if hasattr(model, "get_embedding_dimension") \
         else model.get_sentence_embedding_dimension()

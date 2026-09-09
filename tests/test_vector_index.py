@@ -146,6 +146,28 @@ def test_validate_query_vector_never_truncates_or_pads():
         idx.validate_query_vector(list(range(400)))
 
 
+def test_validate_query_vector_default_dimension_still_384():
+    # Task 3.3 regression guard: the default must stay 384 (BGE-small) so
+    # every existing frozen caller (Task 1.6/3.1/3.2) is unaffected.
+    v = idx.validate_query_vector(_unit_vector(0))
+    assert v.shape == (384,)
+
+
+def test_validate_query_vector_accepts_explicit_non_bge_small_dimension():
+    # Task 3.3 bug: a legitimate 768-dim query vector must not be rejected
+    # as "malformed" when the caller passes its real dimension.
+    vec = np.zeros(768, dtype=np.float32)
+    vec[0] = 1.0
+    v = idx.validate_query_vector(vec, expected_dimension=768)
+    assert v.shape == (768,)
+
+
+def test_validate_query_vector_rejects_mismatched_explicit_dimension():
+    vec = np.zeros(768, dtype=np.float32)
+    with pytest.raises(idx.VectorIndexError, match="1024"):
+        idx.validate_query_vector(vec, expected_dimension=1024)
+
+
 # ------------------------------------------------------- exact_cosine_search
 
 def test_exact_cosine_search_self_match_ranks_first(tmp_path):
@@ -161,6 +183,17 @@ def test_exact_cosine_search_self_match_ranks_first(tmp_path):
     assert ids[0] == "doc0.htm::chunk0"
     assert dists[0] == pytest.approx(0.0, abs=1e-5)
     assert dists == sorted(dists)  # ascending distance = descending similarity
+
+
+def test_exact_cosine_search_expected_dimension_threads_through_to_validation(tmp_path):
+    # Task 3.3 bug: exact_cosine_search's own expected_dimension parameter
+    # must reach validate_query_vector, not silently stay at the 384 default.
+    db = idx.open_database(tmp_path / "db")
+    data = _sample_table(3)
+    table = idx.create_chunk_table(db, data)
+    wrong_dim_query = np.zeros(768, dtype=np.float32)
+    with pytest.raises(idx.VectorIndexError, match="1024"):
+        idx.exact_cosine_search(table, wrong_dim_query, limit=3, expected_dimension=1024)
 
 
 def test_exact_cosine_search_orthogonal_ranks_worse_than_identical(tmp_path):

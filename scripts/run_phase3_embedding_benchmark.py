@@ -345,7 +345,7 @@ def evaluate_model(spec: mr.EmbeddingModelSpec, storage, model, scoped_questions
         s0 = time.perf_counter()
         qvec = mr.encode_queries(spec, model, [q["question"]], batch_size=1)[0]
         s1 = time.perf_counter()
-        arrow = exact_cosine_search(table, qvec, limit=CANDIDATE_K)
+        arrow = exact_cosine_search(table, qvec, limit=CANDIDATE_K, expected_dimension=spec.dimension)
         s2 = time.perf_counter()
         results = _to_results(arrow)
         s3 = time.perf_counter()

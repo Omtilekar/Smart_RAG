@@ -118,12 +118,19 @@ def validate_chunk_table(table, expected_row_count: int) -> None:
         raise VectorIndexError(f"expected 0 ANN indexes, found {len(indices)}: {indices}")
 
 
-def validate_query_vector(vector) -> np.ndarray:
+def validate_query_vector(vector, expected_dimension: int = EMBEDDING_DIMENSION) -> np.ndarray:
     """Rejects (never truncates/pads) a malformed query vector. Returns a
-    validated (384,) float32 numpy array."""
+    validated (expected_dimension,) float32 numpy array.
+
+    `expected_dimension` defaults to this module's own frozen 384 (BGE-
+    small) - Task 3.3 callers benchmarking a different-dimension model
+    MUST pass their own spec.dimension explicitly, or a legitimate
+    768/1024-dim query vector is rejected as "malformed" (verified: this
+    exact bug raised VectorIndexError for bge_base's 768-dim queries mid-
+    run)."""
     arr = np.asarray(vector, dtype=np.float32)
-    if arr.ndim != 1 or arr.shape[0] != EMBEDDING_DIMENSION:
-        raise VectorIndexError(f"expected a 1D vector of length {EMBEDDING_DIMENSION}, got shape {arr.shape}")
+    if arr.ndim != 1 or arr.shape[0] != expected_dimension:
+        raise VectorIndexError(f"expected a 1D vector of length {expected_dimension}, got shape {arr.shape}")
     if arr.size == 0:
         raise VectorIndexError("query vector is empty")
     if not np.isfinite(arr).all():
@@ -142,16 +149,19 @@ def get_chunk_by_id(table, chunk_id: str) -> pa.Table:
     return table.search().where(f"chunk_id = '{escaped}'").to_arrow()
 
 
-def exact_cosine_search(table, query_vector, limit: int) -> pa.Table:
+def exact_cosine_search(table, query_vector, limit: int, expected_dimension: int = EMBEDDING_DIMENSION) -> pa.Table:
     """Validates `query_vector` (raises VectorIndexError if malformed),
     then performs an exact (no ANN index exists) cosine-distance search.
     Returns a PyArrow table with all persisted columns plus `_distance`
     (lower = more similar). Accepts only a numeric vector - never a
     natural-language question (that is Task 1.6's job, via
-    src.embeddings.bge.encode_queries -> this function)."""
+    src.embeddings.bge.encode_queries -> this function).
+
+    `expected_dimension` defaults to 384 (BGE-small) - pass the real
+    model dimension explicitly for any non-BGE-small candidate."""
     if limit <= 0:
         raise VectorIndexError(f"limit must be positive, got {limit}")
-    validated = validate_query_vector(query_vector)
+    validated = validate_query_vector(query_vector, expected_dimension=expected_dimension)
     return (
         table.search(validated)
         .distance_type(DISTANCE_METRIC)

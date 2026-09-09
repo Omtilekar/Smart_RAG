@@ -146,6 +146,22 @@ def verify_frozen_chunks(storage) -> "pq.Table":
 
 # --------------------------------------------------------------- generic OOM-fallback encode
 
+def _is_oom_error(exc: BaseException) -> bool:
+    """torch 2.13 raises real CUDA OOM through `torch.AcceleratorError`
+    for some code paths - a RuntimeError subclass that is a SIBLING of
+    `torch.cuda.OutOfMemoryError` (both derive directly from RuntimeError,
+    neither is a subclass of the other) - so catching only
+    torch.cuda.OutOfMemoryError never triggers for this path, and a real
+    OOM crashes the whole run (verified: this exact bug killed a live
+    qwen3_embedding build with an uncaught traceback). Detect by checking
+    both exception types explicitly, falling back to message text so this
+    keeps working if the class hierarchy changes again."""
+    accelerator_error = getattr(torch, "AcceleratorError", ())
+    if isinstance(exc, (torch.cuda.OutOfMemoryError, accelerator_error) if accelerator_error else torch.cuda.OutOfMemoryError):
+        return True
+    return "out of memory" in str(exc).lower()
+
+
 def encode_with_oom_fallback(encode_fn, spec, model, texts: list[str], initial_batch_size: int):
     batch_sizes_used: list[int] = []
     batch_size = initial_batch_size
@@ -155,7 +171,9 @@ def encode_with_oom_fallback(encode_fn, spec, model, texts: list[str], initial_b
             vectors = encode_fn(spec, model, texts, batch_size)
             batch_sizes_used.append(batch_size)
             return vectors, batch_sizes_used
-        except torch.cuda.OutOfMemoryError:
+        except RuntimeError as exc:
+            if not _is_oom_error(exc):
+                raise
             torch.cuda.empty_cache()
             if batch_size <= 1:
                 raise

@@ -1611,8 +1611,8 @@ Phase 3 — Make It Good                                — IN PROGRESS
     "Phase 3 Re-check" section
 ```
 
-**Next action:** Phase 3 exit audit — every numbered Phase 3
-implementation task (3.1-3.14) is now complete; per
-`prompts/phase_3/task_3.99_phase3_autonomous_execution_loop.md`, do not
-declare Phase 3 complete without first running the dedicated exit audit
-against this document's own exit criteria.
+**Phase 3 exit audit: PASSED** (see `project_plan/PHASE3_EXIT_AUDIT.md`
+for the full audit table) — all 9 exit criteria and all 10 controller
+invariants pass. Phase 3 is COMPLETE. Phase 4 has NOT been started and
+is not authorized by this audit; starting it requires an explicit human
+decision.

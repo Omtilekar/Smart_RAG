@@ -1,0 +1,66 @@
+{
+  "task": "3.14",
+  "git_sha": "73c8c0c3fb8f78bbd51d77d9e519a3b907c50ee3",
+  "selected_stack": {
+    "chunking": "fixed/256/0 (Task 3.2 winner)",
+    "embedding": {
+      "repository": "Qwen/Qwen3-Embedding-0.6B",
+      "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+      "dimension": 1024
+    },
+    "retrieval": "dense_only (Task 3.5 RRF hybrid = negative result, dense-only selected)",
+    "reranker": "none (Task 3.6 cross-encoder reranking = negative result, no_rerank selected)",
+    "candidate_k": 50
+  },
+  "measurement_methodology": {
+    "cpu_threads": 2,
+    "warmup_queries": 10,
+    "measured_queries": 79,
+    "note": "Same CPU_THREADS=2 small-instance constraint and warm-up convention as the Task 0.10 spike (project_plan/SERVING_FEASIBILITY.md) - directly comparable to its frozen decision thresholds. Task 3.1/3.3/3.9's own recorded retrieval_latency_* ablation-table columns were measured with the model on device='cuda' (GPU), NOT CPU - not valid inputs for this CPU-only serving check, hence this new measurement."
+  },
+  "component_timing_ms": {
+    "query_embedding_cpu": {
+      "p50": 505.002,
+      "p95": 594.682
+    },
+    "vector_retrieval_flat": {
+      "p50": 554.718,
+      "p95": 589.329
+    }
+  },
+  "path_timing_ms": {
+    "p50": 1065.183,
+    "p95": 1163.048
+  },
+  "model_load_seconds": 5.759,
+  "memory_mb": {
+    "rss_before_model_load": 589.3,
+    "rss_after_model_load": 3173.8,
+    "rss_peak_during_warm_benchmark": 3275.0
+  },
+  "artifact_sizes": {
+    "lancedb_index_bytes": 1572353043,
+    "lancedb_index_gib": 1.464,
+    "quantization_applied": false,
+    "quantization_note": "No quantization scheme was ever selected or applied in Phase 3 (flat/exact search throughout, src.index.lancedb_index.exact_cosine_search) - an honest gap against this task's 'after the selected quantization' wording, not a fabricated selection. The Task 0.10 spike's own IVF_PQ comparison (100k chunks, 384-dim) is not directly comparable to this 323,971-chunk, 1024-dim index."
+  },
+  "decision_thresholds": {
+    "source": "project_plan/SERVING_FEASIBILITY.md, applied without modification",
+    "thresholds_ms": {
+      "proceed_serverless": "<500",
+      "proceed_constrained": "500-2000",
+      "warm_compute": ">2000"
+    }
+  },
+  "decision": {
+    "action": "proceed_but_constrain_reranker_and_candidate_pool",
+    "warm_p95_ms": 1163.048,
+    "phase0_warm_p95_vector_plus_rerank_ms": 4014.161
+  },
+  "limitations": [
+    "No cold-start measurement was repeated for this re-check (Task 0.10's own process-cold proxy already established process-cold >> 10s is dominated by import/model-load cost, not the retrieval path itself, and Qwen3-Embedding-0.6B's larger model size makes cold start strictly worse, not better, than the spike's bge-small baseline - so the Task 0.10 serverless disqualification on cold-start grounds alone still stands without needing to re-measure it).",
+    "No quantized index was built for this re-check - Phase 3 never selected or built one; the frozen production index is flat/exact (unquantized).",
+    "No memory-tier repetition (distinct Lambda-shaped memory allocations) was performed, matching the Task 0.10 spike's own documented Docker-unavailable gap.",
+    "This is a single-machine, single-session CPU measurement (CPU_THREADS=2 constrained but otherwise this development laptop, not an actual Lambda/Fargate CPU) - same caveat the Task 0.10 spike itself documented for its own numbers."
+  ]
+}

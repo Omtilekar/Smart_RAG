@@ -11650,3 +11650,103 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.14 — Re-check against the Phase
 0 serving budget (per `project_plan/PROJECT_EXECUTION.md`'s exact
 numbered contract).
+
+---
+
+## 2026-09-12 — Task 3.14: re-check against the Phase 0 serving budget
+
+Continued under the Task 3.99 controlled-execution-loop after Task
+3.13. Phase 0's spike (`project_plan/SERVING_FEASIBILITY.md`) measured
+a materially different stack than what Phase 3 actually selected:
+`bge-small-en-v1.5` (384-dim) + reranker, vs. the real winners
+`Qwen/Qwen3-Embedding-0.6B` (1024-dim, Task 3.3) dense-only (Task 3.5's
+RRF hybrid was a negative result) with no reranker at all (Task 3.6's
+cross-encoder reranking was a negative result). Re-measured CPU-only
+warm latency for the real stack, using the spike's own
+`CPU_THREADS=2`/warm-up convention for a directly comparable number.
+See `project_plan/SERVING_FEASIBILITY.md`'s "Phase 3 Re-check" section
+for full detail.
+
+### A discovery worth flagging
+
+Every one of Task 3.1/3.3/3.9's own recorded `retrieval_latency_*`
+ablation-table columns was measured with the embedding model on
+`device="cuda"` (GPU) - none of them are valid CPU serving-latency
+numbers, despite this being a CPU-serving feasibility question. This
+task's new measurement was necessary; the existing ablation table
+columns could not be reused for it.
+
+### Results (CPU-only, 2 threads, 79 measured queries + 10 warm-up)
+
+```text
+query embedding (CPU, Qwen3-Embedding-0.6B):  p50=505.0ms  p95=594.7ms
+vector retrieval (flat, 323,971 rows, 1024d): p50=554.7ms  p95=589.3ms
+end-to-end (dense-only, no rerank):           p50=1065.2ms p95=1163.0ms
+```
+
+Frozen production index: 1.464 GiB (up from the spike's 287.6 MB - more
+chunks, higher dimensionality, and **no quantization was ever applied
+in Phase 3** - flat/exact search throughout, an honest gap against this
+task's own wording, not a fabricated selection).
+
+### Re-checked decision
+
+Warm p95 (1163.0ms) falls in the 500ms-2s "proceed but constrain
+reranker/candidate pool" band - an improvement over Task 0.10's
+original >2s verdict, entirely because removing the reranker (Task
+3.6's negative result) also removed the spike's single largest latency
+cost. This does **not** overturn Fargate-as-preferred, though: Task
+0.10's other independent disqualifying leg (process-cold p95=18.65s,
+>10s) was not re-measured here, but is reasoned to still hold since
+Qwen3-Embedding-0.6B's on-disk weights (~1.19GB) are ~9x bge-small's
+size - cold start can only get worse, not better. Fargate/warm-compute
+remains the recommended Phase 4 default, now for the narrower reason of
+cold-start cost alone.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1867 passed, 30 deselected**
+  (+13 new: `apply_decision_thresholds()` hand-calculation tests against
+  the frozen threshold table, and AST-based static guards over the new
+  script - including a regression test for a real bug caught during
+  development: `exact_cosine_search()`'s default `expected_dimension`
+  is bge-small's 384, not qwen3's 1024, so every call site must pass
+  `expected_dimension=spec.dimension` explicitly or every query raises
+  `VectorIndexError` at runtime).
+- `scripts/dev.py test` (full): **1897 passed**, 0 skipped.
+
+### Regression gates
+
+No ablation-table row appended (matching Task 0.10's own precedent - a
+serving-latency spike/recheck is not a DEV retrieval-quality experiment
+and gets no Task 2.11 run record or ablation row). Protected SEC TEST:
+unopened, 0/3 official runs used throughout - never imported by
+`scripts/run_phase3_serving_recheck.py`. No paid API/generation calls.
+Row 0 and every Task 3.2-3.13 ablation-table row unchanged (this task
+never touches the ablation table at all).
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+  3.10 Structured XBRL SQL path               — COMPLETE (routing_coverage=80.60%, sql_exact_match_rate=99.91%, trap_leak_rate=0.00%)
+  3.11 Deterministic derived calculations     — COMPLETE (difference: coverage=79.51%/exact=100%; greater_than: coverage=82.86%/exact=100%)
+  3.12 Simple tree/section navigation         — COMPLETE (filing_resolution_rate=99.90%, section_found_rate=99.88%, scope_leak_rate=0.00%)
+  3.13 Maintain the ablation table            — COMPLETE (verification-only; 19/19 rows reproducible from config+git SHA)
+  3.14 Re-check against Phase 0 serving budget — COMPLETE (warm p95=1163.0ms, "constrain reranker/pool" band; Fargate remains preferred on cold-start grounds)
+```
+
+**Next roadmap task:** Phase 3 exit audit — every numbered Phase 3
+implementation task is complete; run the dedicated exit audit per
+`prompts/phase_3/task_3.99_phase3_autonomous_execution_loop.md` before
+declaring Phase 3 complete.

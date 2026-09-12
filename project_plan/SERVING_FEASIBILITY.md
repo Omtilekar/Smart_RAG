@@ -244,10 +244,76 @@ Phase 4 still owns actual deployment (Step 33).
 
 ## Phase 3 Re-check
 
-The selected production-like retrieval stack must be re-benchmarked against
-this Phase 0 feasibility budget after chunking, embeddings, reranking, and
-retrieval configuration have been scientifically selected in Phase 3. Task
-0.10 does not permanently freeze performance or the serving decision — a
-smaller/faster reranker, a smaller candidate pool, or a different
-quantization scheme chosen in Phase 3 could change the calculus, and the
-decision above must be re-checked at that point rather than assumed.
+Task 3.14 (`scripts/run_phase3_serving_recheck.py`,
+`results/phase_3_14_serving_recheck.json`). Re-measured CPU-only warm
+latency for the ACTUAL Phase 3 selected stack, using this spike's own
+`CPU_THREADS=2`/warm-up/measurement convention so the numbers are
+directly comparable to the decision thresholds above.
+
+### What actually got selected (materially different from this spike's placeholders)
+
+| Component | This spike (Task 0.10) | Phase 3 selection |
+|---|---|---|
+| Embedding | `bge-small-en-v1.5` (384-dim, small) | `Qwen/Qwen3-Embedding-0.6B` (1024-dim, ~1.19 GB model — Task 3.3 winner) |
+| Retrieval | vector-only / vector+rerank | dense-only (Task 3.5's RRF hybrid was a **negative result**) |
+| Reranker | MiniLM ONNX INT8 (dominant cost, 2.8s p50) | **none** — Task 3.6's cross-encoder reranking was a **negative result**, `no_rerank` selected |
+| Corpus | 100,000 chunks | 323,971 chunks (full frozen Task 3.2 corpus) |
+| Quantization | flat vs. `IVF_PQ` compared | **none applied** — flat/exact search throughout Phase 3 (`src.index.lancedb_index.exact_cosine_search`); this is an honest gap, not a fabricated selection |
+
+### Results (CPU-only, `CPU_THREADS=2`, 79 measured queries + 10 warm-up, frozen 89-question DEV scope)
+
+| Stage | p50 (ms) | p95 (ms) |
+|---|---:|---:|
+| Query embedding (CPU, Qwen3-Embedding-0.6B) | 505.0 | 594.7 |
+| Vector retrieval (flat, 323,971 rows, 1024-dim) | 554.7 | 589.3 |
+| **End-to-end (dense-only, no rerank)** | **1065.2** | **1163.0** |
+
+Frozen production index size: 1.464 GiB (1,572,353,043 bytes) — up from
+this spike's 287.6 MB, driven by ~3.2x more chunks and ~2.7x the vector
+dimensionality, with no quantization applied to offset it.
+
+### Re-checked decision
+
+Applying this document's own frozen thresholds to the new warm p95
+(1163.0 ms): **500 ms – 2 s → "proceed, but constrain reranker size and
+candidate pool."** This is an improvement over Task 0.10's original
+verdict (warm p95 was 4014.2 ms, `> 2 s`) — entirely because the
+dominant cost driver identified in Task 0.10 (CPU-bound cross-encoder
+reranking) is **absent from the real selected pipeline**: Task 3.6
+found reranking credibly regressed quality on this corpus, so
+`no_rerank` was selected, which incidentally also removes the single
+largest latency cost the original spike measured. The "constrain
+reranker size" instruction is therefore already trivially satisfied
+(reranker size = zero).
+
+However, this does **not** overturn the overall Fargate-preferred
+recommendation. Task 0.10's serverless disqualification had two
+independent legs — warm p95 `> 2 s` **and** process-cold p95 (18.65 s)
+`> 10 s` — and only the first is resolved here. Cold start was not
+re-measured (a new cold-start benchmark was out of scope for this
+re-check), but Qwen3-Embedding-0.6B's on-disk weights (~1.19 GB) are
+roughly 9x larger than bge-small's, so process-cold latency can only be
+expected to be worse, not better, than the spike's already-disqualifying
+18.65 s figure. **Fargate / continuously warm service remains the
+recommended Phase 4 default serving target**, now for the narrower and
+more clearly-scoped reason of cold-start cost alone rather than warm
+reranking cost.
+
+### Limitations of this re-check
+
+- Cold start was not re-measured (reasoned about via model-size
+  comparison instead, see above).
+- No quantized index exists to re-measure — Phase 3 never explored
+  quantization; this is a documented gap against Task 3.14's "after the
+  selected quantization" wording, not something to fabricate a
+  selection for.
+- No cloud memory-tier repetition, matching Task 0.10's own
+  Docker-unavailable gap.
+- Single-machine, single-session CPU measurement (2-thread-constrained,
+  but still a development laptop, not real Lambda/Fargate CPU) — same
+  caveat as Task 0.10's own numbers.
+
+Task 0.10 does not permanently freeze performance or the serving decision
+— Phase 4 should re-verify cold-start behavior directly on the actual
+target compute once real deployment work begins, rather than relying on
+this re-check's size-based reasoning indefinitely.

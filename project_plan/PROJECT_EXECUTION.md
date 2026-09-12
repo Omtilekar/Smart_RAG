@@ -1595,8 +1595,24 @@ Phase 3 — Make It Good                                — IN PROGRESS
     re-derives exactly from its checked-in configs/phase_3_*.json via
     Task 2.10's semantic_hash() - see
     project_plan/PHASE3_ABLATION_TABLE_MAINTENANCE.md
+  3.14 Re-check against the Phase 0 serving budget       — COMPLETE
+    real selected stack (Qwen3-Embedding-0.6B dense-only, no reranker -
+    both Task 3.5 hybrid and Task 3.6 reranking were negative results)
+    re-measured on CPU (2-thread constraint, matching the Task 0.10
+    spike's own methodology): warm p50=1065.2ms, p95=1163.0ms - falls
+    in the 500ms-2s "proceed but constrain reranker/candidate pool"
+    band (reranker constraint already trivially satisfied: none
+    selected). Does not overturn the Fargate-preferred recommendation -
+    Task 0.10's other disqualifying leg (process-cold p95=18.65s >10s)
+    was not re-measured but reasoned to still hold (Qwen3-Embedding-0.6B
+    is ~9x bge-small's model size). No quantization was ever applied in
+    Phase 3 (flat/exact search throughout) - a documented gap, not a
+    fabricated selection - see project_plan/SERVING_FEASIBILITY.md's
+    "Phase 3 Re-check" section
 ```
 
-**Next action:** Phase 3, Task 3.14 — Re-check against the Phase 0
-serving budget (do not start implementation from this document alone
-without re-reading the exact next subtask).
+**Next action:** Phase 3 exit audit — every numbered Phase 3
+implementation task (3.1-3.14) is now complete; per
+`prompts/phase_3/task_3.99_phase3_autonomous_execution_loop.md`, do not
+declare Phase 3 complete without first running the dedicated exit audit
+against this document's own exit criteria.

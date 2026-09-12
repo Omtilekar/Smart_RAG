@@ -1,0 +1,43 @@
+{
+  "run_schema_version": 2,
+  "run_id": "fda24c27-2ff5-454c-a6af-1129dc05d354",
+  "git_sha": "ea2450feece4ddef060b1fd5ee24bbc26efbee91",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe"
+  },
+  "index_identity_hash": null,
+  "retrieval_config": {
+    "type": "deterministic_derived_calculations",
+    "downstream_of": "xbrl_sql_path"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-12T04:45:28.178538Z",
+  "metrics": {
+    "difference_exact_match_rate": 1.0,
+    "greater_than_exact_match_rate": 1.0
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_11_derived_calculations",
+  "run_kind": "phase3_derived_calculations",
+  "notes": "Task 3.11 deterministic derived calculations over 244 difference + 105 greater_than DEV questions.",
+  "record_origin": "live",
+  "run_record_sha256": "6b71709d23fd122c369e7a3fd287c8f8188033a5e8251db350b786fec6324a27"
+}

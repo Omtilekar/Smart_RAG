@@ -11399,3 +11399,90 @@ Phase 3 — Make It Good                        — IN PROGRESS
 calculations (growth, percentage of revenue, year-over-year difference,
 cross-company comparison), built on top of Task 3.10's structured fact
 lookup.
+
+---
+
+## 2026-09-12 — Task 3.11: deterministic derived calculations
+
+Continued under the Task 3.99 controlled-execution-loop after Task
+3.10. DEV corpus has real ground truth for exactly two `operation`
+values: `difference` (244 questions) and `greater_than` (105
+questions) - zero growth-rate/percentage-of-revenue examples anywhere.
+Scoped to the two operations with real ground truth, following the
+same documented-scope pattern already used and user-approved at Task
+3.8 (no new user decision needed here). See
+`project_plan/PHASE3_DERIVED_CALCULATIONS.md` for full detail.
+
+### Pipeline
+
+`question -> Task 3.8 classify_intent() -> two operands, each fetched
+via Task 3.10's XbrlFactIndex.lookup() -> deterministic arithmetic ->
+exact-match score`. No retrieval, no embedding call, no generation, no
+second fact-eligibility rule - every operand goes through Task 3.10's
+frozen `XbrlFactIndex`. cik/fiscal_year extracted from question TEXT
+ONLY (never hidden ground-truth fields).
+
+### New modules
+
+`src/sql/derived.py` (`compute_difference()` - `value(year_b) -
+value(year_a)`, b=later/"to", a=earlier/"from", preserving question
+text order via Task 3.8's `extract_fiscal_years`; `compute_greater_than()`
+- order-independent, ties reported as their own outcome) and
+`src/eval/phase3_derived.py` (rate aggregation reusing Task 2.6's
+`aggregate_rate` unmodified, and the derived-calculations ablation
+row).
+
+### Results
+
+```text
+difference:    routing_coverage=79.51% (194/244)  exact_match=100% (194/194)
+greater_than:  routing_coverage=82.86% (87/105)    exact_match=100% (87/87)
+```
+
+Same root cause as Tasks 3.8/3.10: routing coverage gated by router
+extraction accuracy (needs 2 distinct years, or 2 distinct companies,
+correctly resolved from text). Once attempted, the deterministic
+calculation layer is perfect for both operations - 100% exact match on
+every computed result.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1813 passed, 30 deselected**
+  (new: synthetic-fact-index derived-calculation tests, phase3_derived
+  pure-logic tests, and AST-based static guards over the new
+  orchestration script including a check that oracle ground-truth
+  cik/fiscal_year/operands are never used for routing; also fixed six
+  pre-existing tests across Tasks 3.4-3.9 that over-strictly required
+  every ablation row dict to contain every currently-defined column,
+  including columns this task added).
+- `scripts/dev.py test` (full): **1843 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_derived.py`, `src/sql/derived.py`, or
+`src/eval/phase3_derived.py` (AST-verified, portable test). No paid
+API/generation calls. FinanceBench not rerun. Row 0 and every Task
+3.2-3.10 ablation-table row confirmed byte-for-byte unchanged in their
+pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+  3.10 Structured XBRL SQL path               — COMPLETE (routing_coverage=80.60%, sql_exact_match_rate=99.91%, trap_leak_rate=0.00%)
+  3.11 Deterministic derived calculations     — COMPLETE (difference: coverage=79.51%/exact=100%; greater_than: coverage=82.86%/exact=100%)
+```
+
+**Next roadmap task:** Phase 3, Task 3.12 — per
+`project_plan/PROJECT_EXECUTION.md`'s exact numbered contract.

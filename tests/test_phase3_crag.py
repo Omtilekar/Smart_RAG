@@ -88,7 +88,7 @@ def test_build_crag_ablation_row_shape_and_flags():
     # correctly absent here - `_row_to_csv_dict()` defaults them to NA.
     later_task_columns = (
         set(p3.ABLATION_TABLE_ROUTER_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_FILTER_EXTRA_COLUMNS)
-        | set(p3.ABLATION_TABLE_SQL_EXTRA_COLUMNS)
+        | set(p3.ABLATION_TABLE_SQL_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_DERIVED_EXTRA_COLUMNS)
     )
     for col in set(p3.ABLATION_TABLE_COLUMNS) - later_task_columns:
         assert col in row, f"missing ablation-table column {col!r} in CRAG row"

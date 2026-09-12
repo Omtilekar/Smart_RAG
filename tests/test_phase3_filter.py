@@ -88,7 +88,8 @@ def test_build_filter_ablation_row_shape_and_flags():
     assert row["selected"] == "metadata_prefilter"
     # Later columns added additively by Task 3.10 (SQL-path-only fields)
     # are correctly absent here - `_row_to_csv_dict()` defaults them to NA.
-    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_SQL_EXTRA_COLUMNS):
+    later_task_columns = set(p3.ABLATION_TABLE_SQL_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_DERIVED_EXTRA_COLUMNS)
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - later_task_columns:
         assert col in row, f"missing ablation-table column {col!r} in filter row"
 
 

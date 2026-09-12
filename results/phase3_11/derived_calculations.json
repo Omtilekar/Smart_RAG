@@ -1,0 +1,1791 @@
+{
+  "row_id": "derived_calculations",
+  "config_hash": "b61e95bc7c6eccfda0830d6f411fc61d312488a93485a791043e7c2a73363d08",
+  "run_id": "fda24c27-2ff5-454c-a6af-1129dc05d354",
+  "git_sha": "ea2450feece4ddef060b1fd5ee24bbc26efbee91",
+  "difference_question_count": 244,
+  "greater_than_question_count": 105,
+  "difference_rates": {
+    "routing_coverage": {
+      "value": 0.7950819672131147,
+      "numerator": 194,
+      "denominator": 244
+    },
+    "computed_rate": {
+      "value": 1.0,
+      "numerator": 194,
+      "denominator": 194
+    },
+    "exact_match_rate": {
+      "value": 1.0,
+      "numerator": 194,
+      "denominator": 194
+    }
+  },
+  "greater_than_rates": {
+    "routing_coverage": {
+      "value": 0.8285714285714286,
+      "numerator": 87,
+      "denominator": 105
+    },
+    "computed_rate": {
+      "value": 1.0,
+      "numerator": 87,
+      "denominator": 87
+    },
+    "exact_match_rate": {
+      "value": 1.0,
+      "numerator": 87,
+      "denominator": 87
+    }
+  },
+  "difference_per_question": {
+    "phase2-eval-002151": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002152": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002154": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002155": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002157": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002158": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002160": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002161": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002163": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002164": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002165": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002166": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002167": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002168": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002169": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002170": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002171": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002172": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002173": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002175": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002177": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002179": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002180": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002182": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002187": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002188": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002189": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002190": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002191": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002193": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002194": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002196": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002197": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002199": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002200": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002202": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002203": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002205": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002207": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002208": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002209": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002210": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002211": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002212": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002213": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002214": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002215": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002216": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002218": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002219": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002220": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002221": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002222": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002223": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002226": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002227": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002228": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002229": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002230": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002232": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002233": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002234": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002237": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002238": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002239": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002240": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002243": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002244": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002245": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002247": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002248": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002249": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002251": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002252": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002254": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002255": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002256": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002257": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002258": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002259": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002260": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002262": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002263": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002265": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002266": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002267": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002268": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002269": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002270": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002271": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002272": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002274": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002275": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002278": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002280": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002281": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002282": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002283": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002284": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002285": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002287": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002288": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002289": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002291": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002293": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002294": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002299": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002300": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002301": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002302": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002304": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002305": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002306": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002308": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002310": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002312": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002313": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002314": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002315": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002317": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002318": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002319": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002320": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002321": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002322": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002323": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002324": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002326": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002328": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002331": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002332": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002333": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002335": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002338": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002339": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002340": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002342": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002343": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002344": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002346": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002348": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002350": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002351": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002353": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002356": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002357": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002358": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002359": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002360": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002361": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002362": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002363": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002364": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002365": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002366": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002367": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002369": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002370": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002371": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002372": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002373": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002375": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002376": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002377": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002380": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002381": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002384": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002386": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002389": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002390": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002391": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002392": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002395": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002396": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002397": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002400": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002401": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002402": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002404": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002405": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002406": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002408": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002411": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002412": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002413": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002414": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002418": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002419": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002420": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002421": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002422": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002423": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002424": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002425": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002426": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002427": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002432": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002433": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002434": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002436": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002437": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002438": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002439": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002440": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002441": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002442": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002443": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002445": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002447": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002448": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002450": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002451": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002453": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002454": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002456": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002457": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002458": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002460": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002462": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002463": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002464": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002466": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002467": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002468": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002469": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002474": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002476": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002478": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002479": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002480": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002481": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002482": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002483": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002486": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002487": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002488": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002491": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002493": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002495": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002496": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002497": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002498": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002499": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002500": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    }
+  },
+  "greater_than_per_question": {
+    "phase2-eval-002001": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002003": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002004": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002005": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002007": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002009": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002011": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002012": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002013": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002015": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002019": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002020": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002021": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002022": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002023": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002024": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002025": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002026": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002027": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002028": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002029": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002030": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002031": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002032": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002033": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002034": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002035": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002036": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002037": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002038": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002041": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002043": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002044": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002048": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002049": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002050": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002053": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002054": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002058": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002059": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002061": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002062": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002063": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002066": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002070": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002071": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002072": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002074": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002075": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002076": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002077": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002078": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002079": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002080": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002081": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002084": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002085": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002086": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002087": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002088": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002089": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002090": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002092": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002093": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002094": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002095": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002097": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002098": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002099": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002100": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002101": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002103": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002105": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002106": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002107": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002109": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002110": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002111": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002112": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002113": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002114": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002115": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002116": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002117": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002118": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002119": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002123": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002128": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002129": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002130": {
+      "attempted": false,
+      "computed": false,
+      "exact_match": false
+    },
+    "phase2-eval-002132": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002133": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002134": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002135": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002136": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002137": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002138": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002139": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002141": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002142": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002143": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002145": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002146": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002147": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    },
+    "phase2-eval-002150": {
+      "attempted": true,
+      "computed": true,
+      "exact_match": true
+    }
+  }
+}

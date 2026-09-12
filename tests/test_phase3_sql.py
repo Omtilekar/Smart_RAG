@@ -82,7 +82,10 @@ def test_build_sql_ablation_row_shape_and_flags():
     assert row["trap_question_count"] == 139
     assert row["trap_leak_rate"] == 0.0
     assert row["doc_recall_at_10"] == p3.NA
-    for col in p3.ABLATION_TABLE_COLUMNS:
+    # Later columns added additively by Task 3.11 (derived-calculation-only
+    # fields) are correctly absent here - `_row_to_csv_dict()` defaults
+    # them to NA.
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_DERIVED_EXTRA_COLUMNS):
         assert col in row, f"missing ablation-table column {col!r} in SQL row"
 
 

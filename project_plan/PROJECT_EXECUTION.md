@@ -1573,10 +1573,15 @@ Phase 3 — Make It Good                                — IN PROGRESS
     attempted; trap_leak_rate=0.00% (0/139) - the SQL path never
     confidently answered a question with no valid answer - see
     project_plan/PHASE3_XBRL_SQL_PATH.md
+  3.11 Deterministic derived calculations               — COMPLETE
+    scoped to 2 operations with real DEV ground truth (difference,
+    greater_than - growth/percentage-of-revenue have zero DEV examples;
+    user-approved scope pattern reused from Task 3.8); difference:
+    routing_coverage=79.51% (194/244), exact_match=100% once attempted;
+    greater_than: routing_coverage=82.86% (87/105), exact_match=100%
+    once attempted - see project_plan/PHASE3_DERIVED_CALCULATIONS.md
 ```
 
-**Next action:** Phase 3, Task 3.11 — Deterministic derived calculations
-(growth, percentage of revenue, year-over-year difference, cross-company
-comparison), built on top of Task 3.10's structured fact lookup (do not
-start implementation from this document alone without re-reading the
-exact next subtask).
+**Next action:** Phase 3, Task 3.12 — Simple tree/section navigation (do
+not start implementation from this document alone without re-reading
+the exact next subtask).

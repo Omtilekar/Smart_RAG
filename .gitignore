@@ -115,3 +115,6 @@ results/*
 # Task 3.10 - same mechanism, one small XBRL SQL path result JSON.
 !results/phase3_10/
 !results/phase3_10/*.json
+# Task 3.11 - same mechanism, one small derived-calculations result JSON.
+!results/phase3_11/
+!results/phase3_11/*.json

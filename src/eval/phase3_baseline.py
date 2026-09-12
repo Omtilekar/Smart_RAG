@@ -417,10 +417,17 @@ ABLATION_TABLE_SQL_EXTRA_COLUMNS: tuple[str, ...] = (
     "routing_coverage", "sql_found_rate", "sql_exact_match_rate", "trap_leak_rate",
 )
 
+# Task 3.11 - additive deterministic-derived-calculation columns, same mechanism.
+ABLATION_TABLE_DERIVED_EXTRA_COLUMNS: tuple[str, ...] = (
+    "difference_question_count", "greater_than_question_count",
+    "difference_routing_coverage", "difference_exact_match_rate",
+    "greater_than_routing_coverage", "greater_than_exact_match_rate",
+)
+
 ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
     + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS + ABLATION_TABLE_ROUTER_EXTRA_COLUMNS
-    + ABLATION_TABLE_FILTER_EXTRA_COLUMNS + ABLATION_TABLE_SQL_EXTRA_COLUMNS
+    + ABLATION_TABLE_FILTER_EXTRA_COLUMNS + ABLATION_TABLE_SQL_EXTRA_COLUMNS + ABLATION_TABLE_DERIVED_EXTRA_COLUMNS
 )
 
 
@@ -561,7 +568,7 @@ __all__ = [
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
     "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
     "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS", "ABLATION_TABLE_ROUTER_EXTRA_COLUMNS",
-    "ABLATION_TABLE_FILTER_EXTRA_COLUMNS", "ABLATION_TABLE_SQL_EXTRA_COLUMNS",
+    "ABLATION_TABLE_FILTER_EXTRA_COLUMNS", "ABLATION_TABLE_SQL_EXTRA_COLUMNS", "ABLATION_TABLE_DERIVED_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

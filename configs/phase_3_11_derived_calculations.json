@@ -1,0 +1,31 @@
+{
+  "task": "3.11",
+  "experiment_version": 1,
+
+  "principle": "PROJECT_EXECUTION.md Task 3.11: 'Retrieve facts with models/rules; calculate facts with deterministic code.' Every operand is fetched via Task 3.10's src.sql.xbrl_lookup.XbrlFactIndex (itself built on Task 2.1/2.2's frozen truth contract) - this task performs arithmetic on already-eligible facts only, never a second fact-eligibility rule.",
+
+  "scope_decision": "PROJECT_EXECUTION.md's Task 3.11 examples list growth, percentage of revenue, difference between years, and cross-company comparisons - but the entire 1,932-question DEV corpus has exactly two 'operation' values (difference: 244 questions, greater_than: 105 questions) and zero examples of a growth-rate or percentage-of-revenue calculation anywhere. Implemented: difference (year-over-year) and greater_than (cross-company comparison) - the two operations with real DEV ground truth, following the same documented scope pattern already established (and user-approved) for Task 3.8's router intents. Growth/percentage-of-revenue are designed-but-unevaluated pending new eval data.",
+
+  "operations": {
+    "difference": {
+      "question_shape": "comparative/year_over_year_difference (intent_label=numeric_derived)",
+      "formula": "value(fiscal_year_b) - value(fiscal_year_a), where fiscal_year_a is the earlier ('from') year and fiscal_year_b the later ('to') year as they appear in the question's own text (src.router.rules.extract_fiscal_years preserves text order) - verified against real DEV ground truth (FLOWSERVE CORP Assets 2019->2020: expected_numeric_answer = value_2020 - value_2019).",
+      "extraction": "cik: exactly one resolved company. fiscal_year: exactly two distinct years resolved from text, in the order they appear. tag: the router's resolved XBRL concept."
+    },
+    "greater_than": {
+      "question_shape": "comparative/cross_entity_comparison (intent_label=cross_entity)",
+      "formula": "the company (of the two named) with the larger value for the same tag+fiscal_year wins - operand order does not affect correctness.",
+      "extraction": "cik: exactly two distinct companies resolved from text. fiscal_year: exactly one year (same for both companies). tag: the router's resolved XBRL concept."
+    }
+  },
+
+  "extraction_source": "src.router.rules.classify_intent() (Task 3.8, frozen, unmodified) applied to each question's raw TEXT ONLY - never the question record's own hidden cik/fiscal_year/tag/operand ground-truth fields (test leakage). Scoring against expected_numeric_answer/expected_answer happens only AFTER the derived calculation, exactly like every other Phase 3 task's DEV-only scoring discipline.",
+  "fact_selector": "src.sql.xbrl_lookup.XbrlFactIndex (Task 3.10, frozen, unmodified) for every operand fetch.",
+  "scoring": {
+    "difference": "src.eval.metrics.numeric_exact_match() (Task 2.3, frozen, unmodified) comparing the computed difference against expected_numeric_answer/expected_unit.",
+    "greater_than": "exact match of the computed winner's CIK against the operand whose company name equals the question's own expected_answer field - never a fuzzy/case-insensitive string comparison of company names."
+  },
+
+  "generation_enabled": false,
+  "metric_schema_version": 1
+}

@@ -411,10 +411,16 @@ ABLATION_TABLE_FILTER_EXTRA_COLUMNS: tuple[str, ...] = (
     "filtered_question_count", "fallback_question_count",
 )
 
+# Task 3.10 - additive structured-XBRL-SQL-path columns, same mechanism.
+ABLATION_TABLE_SQL_EXTRA_COLUMNS: tuple[str, ...] = (
+    "xbrl_fact_question_count", "trap_question_count",
+    "routing_coverage", "sql_found_rate", "sql_exact_match_rate", "trap_leak_rate",
+)
+
 ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
     + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS + ABLATION_TABLE_ROUTER_EXTRA_COLUMNS
-    + ABLATION_TABLE_FILTER_EXTRA_COLUMNS
+    + ABLATION_TABLE_FILTER_EXTRA_COLUMNS + ABLATION_TABLE_SQL_EXTRA_COLUMNS
 )
 
 
@@ -555,7 +561,7 @@ __all__ = [
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
     "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
     "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS", "ABLATION_TABLE_ROUTER_EXTRA_COLUMNS",
-    "ABLATION_TABLE_FILTER_EXTRA_COLUMNS",
+    "ABLATION_TABLE_FILTER_EXTRA_COLUMNS", "ABLATION_TABLE_SQL_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

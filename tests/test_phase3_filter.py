@@ -86,7 +86,9 @@ def test_build_filter_ablation_row_shape_and_flags():
     assert row["filtered_question_count"] == 80
     assert row["fallback_question_count"] == 9
     assert row["selected"] == "metadata_prefilter"
-    for col in p3.ABLATION_TABLE_COLUMNS:
+    # Later columns added additively by Task 3.10 (SQL-path-only fields)
+    # are correctly absent here - `_row_to_csv_dict()` defaults them to NA.
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_SQL_EXTRA_COLUMNS):
         assert col in row, f"missing ablation-table column {col!r} in filter row"
 
 

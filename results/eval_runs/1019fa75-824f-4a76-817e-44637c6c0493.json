@@ -1,0 +1,45 @@
+{
+  "run_schema_version": 2,
+  "run_id": "1019fa75-824f-4a76-817e-44637c6c0493",
+  "git_sha": "bfb893c1364e452a421fd197327ce1a9c40a3d69",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe"
+  },
+  "index_identity_hash": null,
+  "retrieval_config": {
+    "type": "structured_xbrl_sql_path",
+    "downstream_of": "rules_first_router"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-12T04:32:30.735304Z",
+  "metrics": {
+    "routing_coverage": 0.8059914407988588,
+    "sql_found_rate": 0.9991150442477876,
+    "sql_exact_match_rate": 0.9991150442477876,
+    "trap_leak_rate": 0.0
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_10_xbrl_sql_path",
+  "run_kind": "phase3_xbrl_sql_path",
+  "notes": "Task 3.10 structured XBRL SQL path over 1402 xbrl_fact + 139 trap DEV questions.",
+  "record_origin": "live",
+  "run_record_sha256": "44644f85331226b53a22b3732e68f04bfaacd4524c799c03f818b32958345020"
+}

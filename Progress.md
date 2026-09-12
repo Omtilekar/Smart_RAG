@@ -11306,3 +11306,96 @@ Phase 3 — Make It Good                        — IN PROGRESS
 supported numeric questions, using the Task 3.8 router's `xbrl_fact`
 intent classification to decide when to route to it instead of
 retrieval.
+
+---
+
+## 2026-09-12 — Task 3.10: structured XBRL SQL path
+
+Continued under the Task 3.99 controlled-execution-loop after Task 3.9.
+Verified Task 3.10's contract had no material ambiguity (unlike Tasks
+3.6/3.8) before proceeding - it names an explicit fact selector (the
+frozen Task 2.1/2.2 truth contract) and a clear routing precondition
+(only `xbrl_fact`-routed questions, never unsupported concepts). See
+`project_plan/PHASE3_XBRL_SQL_PATH.md` for full detail.
+
+### Pipeline
+
+`question -> Task 3.8 classify_intent() -> (cik, fiscal_year, tag) ->
+Task 2.1/2.2 eligible_facts() -> value + unit + filing provenance`. No
+retrieval, no embedding call, no generation anywhere in this path.
+cik/fiscal_year/tag are extracted from question TEXT ONLY - never the
+question record's own hidden ground-truth fields (those are used only
+afterward, to score the SQL output - no test leakage).
+
+### New modules
+
+`src/sql/xbrl_lookup.py` (`XbrlFactIndex` - eagerly builds a
+`(tag,cik,fiscal_year) -> facts` index from `eligible_facts()`, one
+query per tag [15 total] not one per question; `.lookup()` returns
+`found`/`not_found`/`ambiguous` [multiple eligible filings disagree - a
+genuine cross-filing value revision, never silently resolved]/
+`unsupported_tag`) and `src/eval/phase3_sql.py` (rate aggregation
+reusing Task 2.6's `aggregate_rate` unmodified, and the SQL-path
+ablation row).
+
+### Results
+
+```text
+routing_coverage:     80.60% (1130/1402)
+sql_found_rate:       99.91% (1129/1130)
+sql_exact_match_rate: 99.91% (1129/1130)
+trap_leak_rate:        0.00% (0/139)
+```
+
+`routing_coverage` lands almost exactly on Task 3.8's own already-
+diagnosed `xbrl_fact` recall (80.60%) - same root cause (concept-
+matching recall limits), not a new problem. Once attempted, the SQL
+path is essentially perfect (99.91% found and exact). Most importantly:
+**trap_leak_rate is exactly 0.00%** across all 139 questions
+specifically constructed to have no valid answer (unsupported-tag /
+year-outside-window) - the SQL path never once confidently returned a
+wrong answer for a question it must refuse.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1781 passed, 30 deselected**
+  (+50 new: synthetic in-memory-DuckDB XbrlFactIndex tests mirroring
+  the real xbrl.duckdb schema [same convention as
+  tests/test_truth_contract.py], phase3_sql pure-logic tests, and
+  AST-based static guards over the new orchestration script including a
+  check that oracle ground-truth cik/fiscal_year are never used for
+  routing; also fixed five pre-existing tests across Tasks 3.4-3.9 that
+  over-strictly required every ablation row dict to contain every
+  currently-defined column, including columns this task added).
+- `scripts/dev.py test` (full): **1811 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_sql.py`, `src/sql/xbrl_lookup.py`, or
+`src/eval/phase3_sql.py` (AST-verified, portable test). No paid API/
+generation calls. FinanceBench not rerun. Row 0 and every Task 3.2-3.9
+ablation-table row confirmed byte-for-byte unchanged in their
+pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+  3.10 Structured XBRL SQL path               — COMPLETE (routing_coverage=80.60%, sql_exact_match_rate=99.91%, trap_leak_rate=0.00%)
+```
+
+**Next roadmap task:** Phase 3, Task 3.11 — Deterministic derived
+calculations (growth, percentage of revenue, year-over-year difference,
+cross-company comparison), built on top of Task 3.10's structured fact
+lookup.

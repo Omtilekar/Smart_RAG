@@ -1,0 +1,27 @@
+{
+  "task": "3.10",
+  "experiment_version": 1,
+
+  "pipeline": "question -> src.router.rules.classify_intent() (Task 3.8, frozen, unmodified) -> if intent == 'xbrl_fact' and exactly one cik + exactly one fiscal_year + a resolved concept -> src.sql.xbrl_lookup.XbrlFactIndex.lookup(cik, fiscal_year, tag) -> value + unit + filing provenance (adsh). No retrieval, no generation, no embedding call anywhere in this path.",
+
+  "fact_selector": "src.eval.truth_contract.eligible_facts() (Task 2.1/2.2, frozen, unmodified) - the ONLY production fact selector. A tag outside configs/eval_tags.yaml's frozen registry always resolves to outcome='unsupported_tag', never silently answered - this is PROJECT_EXECUTION.md's own 'do not route unsupported numeric narrative questions to SQL' requirement, enforced at the fact-selector layer as defense in depth even though the router's own fiscal-year-window and concept-matching rules should already prevent most such questions from reaching this path.",
+
+  "tags_indexed": ["Assets", "Liabilities", "StockholdersEquity", "CashAndCashEquivalentsAtCarryingValue",
+                   "Revenues", "ResearchAndDevelopmentExpense", "NetIncomeLoss", "OperatingIncomeLoss",
+                   "CostOfRevenue", "GrossProfit", "RevenueFromContractWithCustomerExcludingAssessedTax",
+                   "OperatingExpenses", "EarningsPerShareBasic", "EarningsPerShareDiluted", "IncomeTaxExpenseBenefit"],
+  "tags_source": "src.eval.tag_registry.get_registry().supported_tags() (Task 2.2, frozen) - verified live at run time, never a second hardcoded copy that could drift from the registry.",
+
+  "ambiguity_policy": "If more than one eligible filing disagrees on the same (cik, fiscal_year, tag) fact (a genuine cross-filing value revision), the lookup returns outcome='ambiguous' and never silently picks one value - consistent with truth_contract.py's own 'never silently choose' policy for same-accession duplicates.",
+
+  "eval_population": {
+    "xbrl_fact_target": "the 1,402 DEV questions with intent_label == 'xbrl_fact' (Task 2.3's own frozen ground truth) - routing_coverage/sql_found_rate/sql_exact_match_rate are computed over this population.",
+    "trap_population": "the 139 DEV questions with subtype in ('unsupported_tag', 'year_outside_window') - constructed specifically to have NO valid SQL answer. trap_leak_rate measures how often the SQL path ever confidently returns outcome='found' for one of these (the hard safety invariant this task must not violate)."
+  },
+
+  "extraction_source": "cik/fiscal_year/tag are extracted from each question's raw TEXT ONLY via Task 3.8's classify_intent() - never the question record's own hidden cik/fiscal_year/tag ground-truth fields (test leakage). Scoring against the hidden expected_value/expected_unit fields happens only AFTER the SQL lookup, exactly like every other Phase 3 task's DEV-only scoring discipline.",
+  "scoring": "src.eval.metrics.numeric_exact_match() (Task 2.3, frozen, unmodified) comparing the SQL lookup's value+unit against the question's own expected_value/expected_unit.",
+
+  "generation_enabled": false,
+  "metric_schema_version": 1
+}

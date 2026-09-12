@@ -1567,10 +1567,16 @@ Phase 3 — Make It Good                                — IN PROGRESS
     result - R@10 88->89/89, MRR 0.9251->1.0, nDCG@10 0.9407->1.0,
     metadata_prefilter selected via the unmodified Task 3.2/3.3
     selection rule - see project_plan/PHASE3_METADATA_PREFILTERING.md
+  3.10 Structured XBRL SQL path                         — COMPLETE
+    routing_coverage=80.60% (1130/1402, matches Task 3.8's own already-
+    diagnosed xbrl_fact recall); sql_exact_match_rate=99.91% once
+    attempted; trap_leak_rate=0.00% (0/139) - the SQL path never
+    confidently answered a question with no valid answer - see
+    project_plan/PHASE3_XBRL_SQL_PATH.md
 ```
 
-**Next action:** Phase 3, Task 3.10 — Structured XBRL SQL path for
-supported numeric questions, using the Task 3.8 router's `xbrl_fact`
-intent classification to decide when to route to it instead of
-retrieval (do not start implementation from this document alone without
-re-reading the exact next subtask).
+**Next action:** Phase 3, Task 3.11 — Deterministic derived calculations
+(growth, percentage of revenue, year-over-year difference, cross-company
+comparison), built on top of Task 3.10's structured fact lookup (do not
+start implementation from this document alone without re-reading the
+exact next subtask).

@@ -112,3 +112,6 @@ results/*
 # Task 3.9 - same mechanism, one small metadata-prefiltering result JSON.
 !results/phase3_9/
 !results/phase3_9/*.json
+# Task 3.10 - same mechanism, one small XBRL SQL path result JSON.
+!results/phase3_10/
+!results/phase3_10/*.json

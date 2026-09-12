@@ -391,9 +391,19 @@ ABLATION_TABLE_RERANK_EXTRA_COLUMNS: tuple[str, ...] = (
     "reranker_latency_p50_ms", "reranker_latency_p95_ms",
 )
 
+# Task 3.7 - additive CRAG confidence-grading columns, same mechanism.
+# `refusal_metric` (base V1 column, always N/A through Tasks 3.1-3.6) is
+# finally populated here with `missed_failure_rate` - the roadmap's own
+# placeholder name for exactly this concept, never a competing column.
+ABLATION_TABLE_CRAG_EXTRA_COLUMNS: tuple[str, ...] = (
+    "crag_feature", "crag_threshold", "crag_calibration_method",
+    "should_answer_count", "should_refuse_count",
+    "true_refusal_rate", "false_refusal_rate", "missed_failure_rate", "crag_youden_j",
+)
+
 ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
-    + ABLATION_TABLE_RERANK_EXTRA_COLUMNS
+    + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS
 )
 
 
@@ -533,7 +543,7 @@ __all__ = [
     "select_phase3_dev_scope", "compute_phase3_dev_scope_sha256", "compute_question_ids_sha256",
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
     "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
-    "ABLATION_TABLE_RERANK_EXTRA_COLUMNS",
+    "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

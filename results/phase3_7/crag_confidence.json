@@ -1,0 +1,1249 @@
+{
+  "row_id": "crag_confidence",
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "config_hash": "3e389380020f6cceb25227466f6875699f5927959e677009a63255e419453929",
+  "run_id": "45cd62d8-8ab9-49a7-8e35-435ab7c6af55",
+  "git_sha": "11de7971390d708c9a4fb3205fbfe738f0fcf021",
+  "should_answer_count": 89,
+  "should_refuse_count": 113,
+  "threshold": 0.5530984401702881,
+  "youden_j": 0.7644426767425674,
+  "calibration_candidates_evaluated": 202,
+  "rates": {
+    "false_refusal_rate": {
+      "value": 0.06741573033707865,
+      "numerator": 6,
+      "denominator": 89
+    },
+    "true_refusal_rate": {
+      "value": 0.831858407079646,
+      "numerator": 94,
+      "denominator": 113
+    },
+    "missed_failure_rate": {
+      "value": 0.168141592920354,
+      "numerator": 19,
+      "denominator": 113
+    }
+  },
+  "should_answer_features": {
+    "phase2-eval-000006": {
+      "top1_score": 0.6129642724990845,
+      "top3_mean_score": 0.5968394676844279,
+      "top1_top5_gap": 0.07314783334732056,
+      "candidate_count": 50
+    },
+    "phase2-eval-000023": {
+      "top1_score": 0.6906740665435791,
+      "top3_mean_score": 0.62938525279363,
+      "top1_top5_gap": 0.13690918684005737,
+      "candidate_count": 50
+    },
+    "phase2-eval-000057": {
+      "top1_score": 0.5980188250541687,
+      "top3_mean_score": 0.5690012772878011,
+      "top1_top5_gap": 0.09258002042770386,
+      "candidate_count": 50
+    },
+    "phase2-eval-000059": {
+      "top1_score": 0.6157118082046509,
+      "top3_mean_score": 0.6109815438588461,
+      "top1_top5_gap": 0.022577404975891113,
+      "candidate_count": 50
+    },
+    "phase2-eval-000072": {
+      "top1_score": 0.6286917924880981,
+      "top3_mean_score": 0.6096510489781698,
+      "top1_top5_gap": 0.06471651792526245,
+      "candidate_count": 50
+    },
+    "phase2-eval-000083": {
+      "top1_score": 0.6297842264175415,
+      "top3_mean_score": 0.588619073232015,
+      "top1_top5_gap": 0.13311880826950073,
+      "candidate_count": 50
+    },
+    "phase2-eval-000097": {
+      "top1_score": 0.6367654204368591,
+      "top3_mean_score": 0.6013436118761698,
+      "top1_top5_gap": 0.12126678228378296,
+      "candidate_count": 50
+    },
+    "phase2-eval-000098": {
+      "top1_score": 0.7364717721939087,
+      "top3_mean_score": 0.6500832637151083,
+      "top1_top5_gap": 0.2226986289024353,
+      "candidate_count": 50
+    },
+    "phase2-eval-000101": {
+      "top1_score": 0.7197305560112,
+      "top3_mean_score": 0.6566701730092367,
+      "top1_top5_gap": 0.1365705132484436,
+      "candidate_count": 50
+    },
+    "phase2-eval-000126": {
+      "top1_score": 0.6208601593971252,
+      "top3_mean_score": 0.5894264777501425,
+      "top1_top5_gap": 0.10905414819717407,
+      "candidate_count": 50
+    },
+    "phase2-eval-000136": {
+      "top1_score": 0.6022689342498779,
+      "top3_mean_score": 0.5925729076067606,
+      "top1_top5_gap": 0.022976934909820557,
+      "candidate_count": 50
+    },
+    "phase2-eval-000265": {
+      "top1_score": 0.6840969324111938,
+      "top3_mean_score": 0.620136559009552,
+      "top1_top5_gap": 0.10887002944946289,
+      "candidate_count": 50
+    },
+    "phase2-eval-000296": {
+      "top1_score": 0.5480341911315918,
+      "top3_mean_score": 0.5470144550005595,
+      "top1_top5_gap": 0.0398673415184021,
+      "candidate_count": 50
+    },
+    "phase2-eval-000310": {
+      "top1_score": 0.6736708283424377,
+      "top3_mean_score": 0.6479642788569132,
+      "top1_top5_gap": 0.06906235218048096,
+      "candidate_count": 50
+    },
+    "phase2-eval-000376": {
+      "top1_score": 0.5241787433624268,
+      "top3_mean_score": 0.514983336130778,
+      "top1_top5_gap": 0.029985547065734863,
+      "candidate_count": 50
+    },
+    "phase2-eval-000391": {
+      "top1_score": 0.5785897970199585,
+      "top3_mean_score": 0.5554279685020447,
+      "top1_top5_gap": 0.05336397886276245,
+      "candidate_count": 50
+    },
+    "phase2-eval-000400": {
+      "top1_score": 0.6373409628868103,
+      "top3_mean_score": 0.6122045516967773,
+      "top1_top5_gap": 0.08957058191299438,
+      "candidate_count": 50
+    },
+    "phase2-eval-000413": {
+      "top1_score": 0.6817835569381714,
+      "top3_mean_score": 0.6141443252563477,
+      "top1_top5_gap": 0.1287248730659485,
+      "candidate_count": 50
+    },
+    "phase2-eval-000478": {
+      "top1_score": 0.6219882965087891,
+      "top3_mean_score": 0.6024469534556071,
+      "top1_top5_gap": 0.06039661169052124,
+      "candidate_count": 50
+    },
+    "phase2-eval-000537": {
+      "top1_score": 0.6981070637702942,
+      "top3_mean_score": 0.6673838496208191,
+      "top1_top5_gap": 0.08639377355575562,
+      "candidate_count": 50
+    },
+    "phase2-eval-000658": {
+      "top1_score": 0.6502910852432251,
+      "top3_mean_score": 0.6471325556437174,
+      "top1_top5_gap": 0.0261572003364563,
+      "candidate_count": 50
+    },
+    "phase2-eval-000665": {
+      "top1_score": 0.5361905097961426,
+      "top3_mean_score": 0.5278253753980001,
+      "top1_top5_gap": 0.028151631355285645,
+      "candidate_count": 50
+    },
+    "phase2-eval-000714": {
+      "top1_score": 0.6457530856132507,
+      "top3_mean_score": 0.6090196172396342,
+      "top1_top5_gap": 0.10599547624588013,
+      "candidate_count": 50
+    },
+    "phase2-eval-000729": {
+      "top1_score": 0.649612545967102,
+      "top3_mean_score": 0.6389742096265157,
+      "top1_top5_gap": 0.09148073196411133,
+      "candidate_count": 50
+    },
+    "phase2-eval-000749": {
+      "top1_score": 0.5804404616355896,
+      "top3_mean_score": 0.5527464548746744,
+      "top1_top5_gap": 0.06474965810775757,
+      "candidate_count": 50
+    },
+    "phase2-eval-000783": {
+      "top1_score": 0.5441784262657166,
+      "top3_mean_score": 0.5150660475095113,
+      "top1_top5_gap": 0.048051416873931885,
+      "candidate_count": 50
+    },
+    "phase2-eval-000784": {
+      "top1_score": 0.682910680770874,
+      "top3_mean_score": 0.6219558119773865,
+      "top1_top5_gap": 0.15990781784057617,
+      "candidate_count": 50
+    },
+    "phase2-eval-000803": {
+      "top1_score": 0.5935500264167786,
+      "top3_mean_score": 0.5592163801193237,
+      "top1_top5_gap": 0.0883367657661438,
+      "candidate_count": 50
+    },
+    "phase2-eval-000809": {
+      "top1_score": 0.5585832595825195,
+      "top3_mean_score": 0.5515290101369222,
+      "top1_top5_gap": 0.0270957350730896,
+      "candidate_count": 50
+    },
+    "phase2-eval-000831": {
+      "top1_score": 0.5857287049293518,
+      "top3_mean_score": 0.5740396976470947,
+      "top1_top5_gap": 0.05956202745437622,
+      "candidate_count": 50
+    },
+    "phase2-eval-000866": {
+      "top1_score": 0.5613859295845032,
+      "top3_mean_score": 0.5490908622741699,
+      "top1_top5_gap": 0.029261231422424316,
+      "candidate_count": 50
+    },
+    "phase2-eval-000883": {
+      "top1_score": 0.5762332677841187,
+      "top3_mean_score": 0.5749247868855795,
+      "top1_top5_gap": 0.008865594863891602,
+      "candidate_count": 50
+    },
+    "phase2-eval-000893": {
+      "top1_score": 0.661056399345398,
+      "top3_mean_score": 0.644028902053833,
+      "top1_top5_gap": 0.0653848648071289,
+      "candidate_count": 50
+    },
+    "phase2-eval-000897": {
+      "top1_score": 0.7628092765808105,
+      "top3_mean_score": 0.6937198042869568,
+      "top1_top5_gap": 0.17207080125808716,
+      "candidate_count": 50
+    },
+    "phase2-eval-000933": {
+      "top1_score": 0.5757880210876465,
+      "top3_mean_score": 0.5687022010485331,
+      "top1_top5_gap": 0.0678364634513855,
+      "candidate_count": 50
+    },
+    "phase2-eval-000935": {
+      "top1_score": 0.6477646231651306,
+      "top3_mean_score": 0.62230916817983,
+      "top1_top5_gap": 0.054183781147003174,
+      "candidate_count": 50
+    },
+    "phase2-eval-000992": {
+      "top1_score": 0.6241573691368103,
+      "top3_mean_score": 0.6016954382260641,
+      "top1_top5_gap": 0.0863499641418457,
+      "candidate_count": 50
+    },
+    "phase2-eval-001030": {
+      "top1_score": 0.6283929347991943,
+      "top3_mean_score": 0.6166937351226807,
+      "top1_top5_gap": 0.05039173364639282,
+      "candidate_count": 50
+    },
+    "phase2-eval-001045": {
+      "top1_score": 0.6263611912727356,
+      "top3_mean_score": 0.6197189490000407,
+      "top1_top5_gap": 0.04076963663101196,
+      "candidate_count": 50
+    },
+    "phase2-eval-001066": {
+      "top1_score": 0.5682913661003113,
+      "top3_mean_score": 0.5548899372418722,
+      "top1_top5_gap": 0.029114484786987305,
+      "candidate_count": 50
+    },
+    "phase2-eval-001069": {
+      "top1_score": 0.5218122005462646,
+      "top3_mean_score": 0.5141805410385132,
+      "top1_top5_gap": 0.01814258098602295,
+      "candidate_count": 50
+    },
+    "phase2-eval-001089": {
+      "top1_score": 0.6479047536849976,
+      "top3_mean_score": 0.6234688560167948,
+      "top1_top5_gap": 0.05683279037475586,
+      "candidate_count": 50
+    },
+    "phase2-eval-001130": {
+      "top1_score": 0.6044976115226746,
+      "top3_mean_score": 0.6004742383956909,
+      "top1_top5_gap": 0.049850404262542725,
+      "candidate_count": 50
+    },
+    "phase2-eval-001135": {
+      "top1_score": 0.7339902520179749,
+      "top3_mean_score": 0.6984695394833883,
+      "top1_top5_gap": 0.07968336343765259,
+      "candidate_count": 50
+    },
+    "phase2-eval-001165": {
+      "top1_score": 0.5546846389770508,
+      "top3_mean_score": 0.5302769740422567,
+      "top1_top5_gap": 0.09022778272628784,
+      "candidate_count": 50
+    },
+    "phase2-eval-001186": {
+      "top1_score": 0.6640800833702087,
+      "top3_mean_score": 0.6536635756492615,
+      "top1_top5_gap": 0.042941272258758545,
+      "candidate_count": 50
+    },
+    "phase2-eval-001193": {
+      "top1_score": 0.6799755096435547,
+      "top3_mean_score": 0.6766769886016846,
+      "top1_top5_gap": 0.012701570987701416,
+      "candidate_count": 50
+    },
+    "phase2-eval-001198": {
+      "top1_score": 0.5842387080192566,
+      "top3_mean_score": 0.5384139021237692,
+      "top1_top5_gap": 0.10249084234237671,
+      "candidate_count": 50
+    },
+    "phase2-eval-001204": {
+      "top1_score": 0.6559861898422241,
+      "top3_mean_score": 0.5916691621144613,
+      "top1_top5_gap": 0.1421228051185608,
+      "candidate_count": 50
+    },
+    "phase2-eval-001218": {
+      "top1_score": 0.6293594837188721,
+      "top3_mean_score": 0.620312492052714,
+      "top1_top5_gap": 0.058778226375579834,
+      "candidate_count": 50
+    },
+    "phase2-eval-001228": {
+      "top1_score": 0.6005183458328247,
+      "top3_mean_score": 0.5805958906809489,
+      "top1_top5_gap": 0.04379945993423462,
+      "candidate_count": 50
+    },
+    "phase2-eval-001235": {
+      "top1_score": 0.5538543462753296,
+      "top3_mean_score": 0.5503940383593241,
+      "top1_top5_gap": 0.01150059700012207,
+      "candidate_count": 50
+    },
+    "phase2-eval-001243": {
+      "top1_score": 0.5669044256210327,
+      "top3_mean_score": 0.5641360680262247,
+      "top1_top5_gap": 0.02026301622390747,
+      "candidate_count": 50
+    },
+    "phase2-eval-001249": {
+      "top1_score": 0.6613335013389587,
+      "top3_mean_score": 0.6387319564819336,
+      "top1_top5_gap": 0.11911886930465698,
+      "candidate_count": 50
+    },
+    "phase2-eval-001296": {
+      "top1_score": 0.6154965162277222,
+      "top3_mean_score": 0.5975923339525858,
+      "top1_top5_gap": 0.08007335662841797,
+      "candidate_count": 50
+    },
+    "phase2-eval-001333": {
+      "top1_score": 0.5715982913970947,
+      "top3_mean_score": 0.5504410862922668,
+      "top1_top5_gap": 0.04745042324066162,
+      "candidate_count": 50
+    },
+    "phase2-eval-001341": {
+      "top1_score": 0.6061599254608154,
+      "top3_mean_score": 0.5693777203559875,
+      "top1_top5_gap": 0.09084606170654297,
+      "candidate_count": 50
+    },
+    "phase2-eval-001370": {
+      "top1_score": 0.6176072359085083,
+      "top3_mean_score": 0.6101587613423666,
+      "top1_top5_gap": 0.09532928466796875,
+      "candidate_count": 50
+    },
+    "phase2-eval-001371": {
+      "top1_score": 0.6671186685562134,
+      "top3_mean_score": 0.5589988231658936,
+      "top1_top5_gap": 0.1929602026939392,
+      "candidate_count": 50
+    },
+    "phase2-eval-001380": {
+      "top1_score": 0.6082140803337097,
+      "top3_mean_score": 0.5920200347900391,
+      "top1_top5_gap": 0.05669504404067993,
+      "candidate_count": 50
+    },
+    "phase2-eval-001442": {
+      "top1_score": 0.6168720126152039,
+      "top3_mean_score": 0.5802023609479269,
+      "top1_top5_gap": 0.0852997899055481,
+      "candidate_count": 50
+    },
+    "phase2-eval-001445": {
+      "top1_score": 0.7016552090644836,
+      "top3_mean_score": 0.6767377853393555,
+      "top1_top5_gap": 0.06221646070480347,
+      "candidate_count": 50
+    },
+    "phase2-eval-001450": {
+      "top1_score": 0.7526581287384033,
+      "top3_mean_score": 0.6682004928588867,
+      "top1_top5_gap": 0.16016149520874023,
+      "candidate_count": 50
+    },
+    "phase2-eval-001472": {
+      "top1_score": 0.6485353112220764,
+      "top3_mean_score": 0.6078891356786092,
+      "top1_top5_gap": 0.14932197332382202,
+      "candidate_count": 50
+    },
+    "phase2-eval-001507": {
+      "top1_score": 0.615018904209137,
+      "top3_mean_score": 0.5934697786966959,
+      "top1_top5_gap": 0.0659366250038147,
+      "candidate_count": 50
+    },
+    "phase2-eval-001522": {
+      "top1_score": 0.5588134527206421,
+      "top3_mean_score": 0.5451663136482239,
+      "top1_top5_gap": 0.03683680295944214,
+      "candidate_count": 50
+    },
+    "phase2-eval-001539": {
+      "top1_score": 0.5215215086936951,
+      "top3_mean_score": 0.5063840945561727,
+      "top1_top5_gap": 0.03036487102508545,
+      "candidate_count": 50
+    },
+    "phase2-eval-001570": {
+      "top1_score": 0.6543013453483582,
+      "top3_mean_score": 0.6054877241452535,
+      "top1_top5_gap": 0.13781601190567017,
+      "candidate_count": 50
+    },
+    "phase2-eval-001698": {
+      "top1_score": 0.6205779314041138,
+      "top3_mean_score": 0.5929259459177653,
+      "top1_top5_gap": 0.09203660488128662,
+      "candidate_count": 50
+    },
+    "phase2-eval-001701": {
+      "top1_score": 0.6231734752655029,
+      "top3_mean_score": 0.6115423639615377,
+      "top1_top5_gap": 0.060864150524139404,
+      "candidate_count": 50
+    },
+    "phase2-eval-001713": {
+      "top1_score": 0.6171256303787231,
+      "top3_mean_score": 0.6058449149131775,
+      "top1_top5_gap": 0.035346150398254395,
+      "candidate_count": 50
+    },
+    "phase2-eval-001714": {
+      "top1_score": 0.5942674875259399,
+      "top3_mean_score": 0.5898318886756897,
+      "top1_top5_gap": 0.025750339031219482,
+      "candidate_count": 50
+    },
+    "phase2-eval-001745": {
+      "top1_score": 0.668497622013092,
+      "top3_mean_score": 0.639932115872701,
+      "top1_top5_gap": 0.07211285829544067,
+      "candidate_count": 50
+    },
+    "phase2-eval-001765": {
+      "top1_score": 0.6675175428390503,
+      "top3_mean_score": 0.6139715512593588,
+      "top1_top5_gap": 0.092765212059021,
+      "candidate_count": 50
+    },
+    "phase2-eval-001801": {
+      "top1_score": 0.5530984401702881,
+      "top3_mean_score": 0.5507779518763224,
+      "top1_top5_gap": 0.030951738357543945,
+      "candidate_count": 50
+    },
+    "phase2-eval-001817": {
+      "top1_score": 0.5923504829406738,
+      "top3_mean_score": 0.5579407811164856,
+      "top1_top5_gap": 0.0864298939704895,
+      "candidate_count": 50
+    },
+    "phase2-eval-001874": {
+      "top1_score": 0.6309189796447754,
+      "top3_mean_score": 0.6047283013661703,
+      "top1_top5_gap": 0.07843071222305298,
+      "candidate_count": 50
+    },
+    "phase2-eval-001916": {
+      "top1_score": 0.6881858110427856,
+      "top3_mean_score": 0.6536704103151957,
+      "top1_top5_gap": 0.08596312999725342,
+      "candidate_count": 50
+    },
+    "phase2-eval-001920": {
+      "top1_score": 0.585416316986084,
+      "top3_mean_score": 0.5621625383694967,
+      "top1_top5_gap": 0.058312058448791504,
+      "candidate_count": 50
+    },
+    "phase2-eval-001947": {
+      "top1_score": 0.5892723202705383,
+      "top3_mean_score": 0.5766244928042094,
+      "top1_top5_gap": 0.03539621829986572,
+      "candidate_count": 50
+    },
+    "phase2-eval-001959": {
+      "top1_score": 0.6612480878829956,
+      "top3_mean_score": 0.6200326482454935,
+      "top1_top5_gap": 0.11017411947250366,
+      "candidate_count": 50
+    },
+    "phase2-eval-002560": {
+      "top1_score": 0.624666690826416,
+      "top3_mean_score": 0.5805495381355286,
+      "top1_top5_gap": 0.09241455793380737,
+      "candidate_count": 50
+    },
+    "phase2-eval-002561": {
+      "top1_score": 0.6152757406234741,
+      "top3_mean_score": 0.6027211546897888,
+      "top1_top5_gap": 0.0876196026802063,
+      "candidate_count": 50
+    },
+    "phase2-eval-002562": {
+      "top1_score": 0.582827627658844,
+      "top3_mean_score": 0.558789074420929,
+      "top1_top5_gap": 0.06529456377029419,
+      "candidate_count": 50
+    },
+    "phase2-eval-002577": {
+      "top1_score": 0.6914742588996887,
+      "top3_mean_score": 0.6678151686986288,
+      "top1_top5_gap": 0.10815215110778809,
+      "candidate_count": 50
+    },
+    "phase2-eval-002579": {
+      "top1_score": 0.561698317527771,
+      "top3_mean_score": 0.5342706839243571,
+      "top1_top5_gap": 0.06353318691253662,
+      "candidate_count": 50
+    },
+    "phase2-eval-002591": {
+      "top1_score": 0.6635361909866333,
+      "top3_mean_score": 0.6596242189407349,
+      "top1_top5_gap": 0.049928247928619385,
+      "candidate_count": 50
+    },
+    "phase2-eval-002593": {
+      "top1_score": 0.55853271484375,
+      "top3_mean_score": 0.5294710795084635,
+      "top1_top5_gap": 0.05178886651992798,
+      "candidate_count": 50
+    },
+    "phase2-eval-002623": {
+      "top1_score": 0.6682635545730591,
+      "top3_mean_score": 0.5990108450253805,
+      "top1_top5_gap": 0.15591835975646973,
+      "candidate_count": 50
+    }
+  },
+  "should_refuse_features": {
+    "phase2-eval-002651": {
+      "top1_score": 0.5520955324172974,
+      "top3_mean_score": 0.4976775050163269,
+      "top1_top5_gap": 0.08969289064407349,
+      "candidate_count": 50
+    },
+    "phase2-eval-002652": {
+      "top1_score": 0.47430622577667236,
+      "top3_mean_score": 0.4652252197265625,
+      "top1_top5_gap": 0.026845157146453857,
+      "candidate_count": 50
+    },
+    "phase2-eval-002653": {
+      "top1_score": 0.5016464591026306,
+      "top3_mean_score": 0.48902903000513714,
+      "top1_top5_gap": 0.044708430767059326,
+      "candidate_count": 50
+    },
+    "phase2-eval-002654": {
+      "top1_score": 0.45191270112991333,
+      "top3_mean_score": 0.45034172137578327,
+      "top1_top5_gap": 0.013040602207183838,
+      "candidate_count": 50
+    },
+    "phase2-eval-002655": {
+      "top1_score": 0.44978439807891846,
+      "top3_mean_score": 0.44789665937423706,
+      "top1_top5_gap": 0.005882561206817627,
+      "candidate_count": 50
+    },
+    "phase2-eval-002657": {
+      "top1_score": 0.467451810836792,
+      "top3_mean_score": 0.4562762975692749,
+      "top1_top5_gap": 0.021020054817199707,
+      "candidate_count": 50
+    },
+    "phase2-eval-002658": {
+      "top1_score": 0.46557432413101196,
+      "top3_mean_score": 0.4624131719271342,
+      "top1_top5_gap": 0.02410203218460083,
+      "candidate_count": 50
+    },
+    "phase2-eval-002660": {
+      "top1_score": 0.4561578631401062,
+      "top3_mean_score": 0.4459962646166484,
+      "top1_top5_gap": 0.025665581226348877,
+      "candidate_count": 50
+    },
+    "phase2-eval-002661": {
+      "top1_score": 0.4992269277572632,
+      "top3_mean_score": 0.487473984559377,
+      "top1_top5_gap": 0.046563923358917236,
+      "candidate_count": 50
+    },
+    "phase2-eval-002662": {
+      "top1_score": 0.5807294845581055,
+      "top3_mean_score": 0.5427785913149515,
+      "top1_top5_gap": 0.11429893970489502,
+      "candidate_count": 50
+    },
+    "phase2-eval-002664": {
+      "top1_score": 0.5153871774673462,
+      "top3_mean_score": 0.5056665142377218,
+      "top1_top5_gap": 0.029568731784820557,
+      "candidate_count": 50
+    },
+    "phase2-eval-002665": {
+      "top1_score": 0.47501152753829956,
+      "top3_mean_score": 0.4736671845118205,
+      "top1_top5_gap": 0.006374716758728027,
+      "candidate_count": 50
+    },
+    "phase2-eval-002667": {
+      "top1_score": 0.5824235677719116,
+      "top3_mean_score": 0.548228124777476,
+      "top1_top5_gap": 0.0745440125465393,
+      "candidate_count": 50
+    },
+    "phase2-eval-002670": {
+      "top1_score": 0.7217854261398315,
+      "top3_mean_score": 0.7032286723454794,
+      "top1_top5_gap": 0.06159985065460205,
+      "candidate_count": 50
+    },
+    "phase2-eval-002672": {
+      "top1_score": 0.569414496421814,
+      "top3_mean_score": 0.5532020727793375,
+      "top1_top5_gap": 0.03655904531478882,
+      "candidate_count": 50
+    },
+    "phase2-eval-002674": {
+      "top1_score": 0.4875614047050476,
+      "top3_mean_score": 0.48510799805323285,
+      "top1_top5_gap": 0.00992971658706665,
+      "candidate_count": 50
+    },
+    "phase2-eval-002676": {
+      "top1_score": 0.4655003547668457,
+      "top3_mean_score": 0.4587236245473226,
+      "top1_top5_gap": 0.022513866424560547,
+      "candidate_count": 50
+    },
+    "phase2-eval-002677": {
+      "top1_score": 0.5667160749435425,
+      "top3_mean_score": 0.5547889868418375,
+      "top1_top5_gap": 0.058603882789611816,
+      "candidate_count": 50
+    },
+    "phase2-eval-002678": {
+      "top1_score": 0.47002410888671875,
+      "top3_mean_score": 0.4653892715771993,
+      "top1_top5_gap": 0.022656142711639404,
+      "candidate_count": 50
+    },
+    "phase2-eval-002681": {
+      "top1_score": 0.5554832220077515,
+      "top3_mean_score": 0.5248932838439941,
+      "top1_top5_gap": 0.05305933952331543,
+      "candidate_count": 50
+    },
+    "phase2-eval-002682": {
+      "top1_score": 0.6430529356002808,
+      "top3_mean_score": 0.6102701822916666,
+      "top1_top5_gap": 0.10901689529418945,
+      "candidate_count": 50
+    },
+    "phase2-eval-002684": {
+      "top1_score": 0.45952242612838745,
+      "top3_mean_score": 0.44192494948705036,
+      "top1_top5_gap": 0.03989523649215698,
+      "candidate_count": 50
+    },
+    "phase2-eval-002685": {
+      "top1_score": 0.5586757659912109,
+      "top3_mean_score": 0.538139820098877,
+      "top1_top5_gap": 0.04176676273345947,
+      "candidate_count": 50
+    },
+    "phase2-eval-002686": {
+      "top1_score": 0.4443039894104004,
+      "top3_mean_score": 0.4425934354464213,
+      "top1_top5_gap": 0.006658673286437988,
+      "candidate_count": 50
+    },
+    "phase2-eval-002687": {
+      "top1_score": 0.4670231342315674,
+      "top3_mean_score": 0.4624604384104411,
+      "top1_top5_gap": 0.017421424388885498,
+      "candidate_count": 50
+    },
+    "phase2-eval-002689": {
+      "top1_score": 0.47781169414520264,
+      "top3_mean_score": 0.47652848561604816,
+      "top1_top5_gap": 0.006940484046936035,
+      "candidate_count": 50
+    },
+    "phase2-eval-002690": {
+      "top1_score": 0.5072648525238037,
+      "top3_mean_score": 0.47477440039316815,
+      "top1_top5_gap": 0.060134947299957275,
+      "candidate_count": 50
+    },
+    "phase2-eval-002693": {
+      "top1_score": 0.652459442615509,
+      "top3_mean_score": 0.6359712282816569,
+      "top1_top5_gap": 0.10541349649429321,
+      "candidate_count": 50
+    },
+    "phase2-eval-002694": {
+      "top1_score": 0.475277304649353,
+      "top3_mean_score": 0.47161348660786945,
+      "top1_top5_gap": 0.025458574295043945,
+      "candidate_count": 50
+    },
+    "phase2-eval-002695": {
+      "top1_score": 0.4502260088920593,
+      "top3_mean_score": 0.44472988446553546,
+      "top1_top5_gap": 0.027481496334075928,
+      "candidate_count": 50
+    },
+    "phase2-eval-002697": {
+      "top1_score": 0.48343801498413086,
+      "top3_mean_score": 0.48034095764160156,
+      "top1_top5_gap": 0.006901979446411133,
+      "candidate_count": 50
+    },
+    "phase2-eval-002698": {
+      "top1_score": 0.4868201017379761,
+      "top3_mean_score": 0.4781140685081482,
+      "top1_top5_gap": 0.027162551879882812,
+      "candidate_count": 50
+    },
+    "phase2-eval-002699": {
+      "top1_score": 0.4720342755317688,
+      "top3_mean_score": 0.46916627883911133,
+      "top1_top5_gap": 0.0072133541107177734,
+      "candidate_count": 50
+    },
+    "phase2-eval-002700": {
+      "top1_score": 0.46302497386932373,
+      "top3_mean_score": 0.4614681601524353,
+      "top1_top5_gap": 0.006754457950592041,
+      "candidate_count": 50
+    },
+    "phase2-eval-002701": {
+      "top1_score": 0.5045762658119202,
+      "top3_mean_score": 0.48796115318934125,
+      "top1_top5_gap": 0.02809619903564453,
+      "candidate_count": 50
+    },
+    "phase2-eval-002703": {
+      "top1_score": 0.50569087266922,
+      "top3_mean_score": 0.48092879851659137,
+      "top1_top5_gap": 0.04442954063415527,
+      "candidate_count": 50
+    },
+    "phase2-eval-002705": {
+      "top1_score": 0.4745209217071533,
+      "top3_mean_score": 0.46578715244929,
+      "top1_top5_gap": 0.031966567039489746,
+      "candidate_count": 50
+    },
+    "phase2-eval-002706": {
+      "top1_score": 0.4954632520675659,
+      "top3_mean_score": 0.49105475346247357,
+      "top1_top5_gap": 0.015915274620056152,
+      "candidate_count": 50
+    },
+    "phase2-eval-002707": {
+      "top1_score": 0.4739278554916382,
+      "top3_mean_score": 0.46367156505584717,
+      "top1_top5_gap": 0.030329883098602295,
+      "candidate_count": 50
+    },
+    "phase2-eval-002708": {
+      "top1_score": 0.4787611961364746,
+      "top3_mean_score": 0.47359726826349896,
+      "top1_top5_gap": 0.023191094398498535,
+      "candidate_count": 50
+    },
+    "phase2-eval-002709": {
+      "top1_score": 0.43723487854003906,
+      "top3_mean_score": 0.4283644159634908,
+      "top1_top5_gap": 0.023643076419830322,
+      "candidate_count": 50
+    },
+    "phase2-eval-002710": {
+      "top1_score": 0.5040258765220642,
+      "top3_mean_score": 0.5001147389411926,
+      "top1_top5_gap": 0.02428656816482544,
+      "candidate_count": 50
+    },
+    "phase2-eval-002713": {
+      "top1_score": 0.474229633808136,
+      "top3_mean_score": 0.45862648884455365,
+      "top1_top5_gap": 0.029994308948516846,
+      "candidate_count": 50
+    },
+    "phase2-eval-002714": {
+      "top1_score": 0.47906291484832764,
+      "top3_mean_score": 0.4731134573618571,
+      "top1_top5_gap": 0.015431523323059082,
+      "candidate_count": 50
+    },
+    "phase2-eval-002715": {
+      "top1_score": 0.48995745182037354,
+      "top3_mean_score": 0.4720546007156372,
+      "top1_top5_gap": 0.04118627309799194,
+      "candidate_count": 50
+    },
+    "phase2-eval-002716": {
+      "top1_score": 0.5191442370414734,
+      "top3_mean_score": 0.5145318905512491,
+      "top1_top5_gap": 0.01619797945022583,
+      "candidate_count": 50
+    },
+    "phase2-eval-002717": {
+      "top1_score": 0.4625173807144165,
+      "top3_mean_score": 0.4496181607246399,
+      "top1_top5_gap": 0.03047478199005127,
+      "candidate_count": 50
+    },
+    "phase2-eval-002718": {
+      "top1_score": 0.45356011390686035,
+      "top3_mean_score": 0.4489685495694478,
+      "top1_top5_gap": 0.012536048889160156,
+      "candidate_count": 50
+    },
+    "phase2-eval-002719": {
+      "top1_score": 0.5755805969238281,
+      "top3_mean_score": 0.5400834282239279,
+      "top1_top5_gap": 0.08093786239624023,
+      "candidate_count": 50
+    },
+    "phase2-eval-002720": {
+      "top1_score": 0.5977920293807983,
+      "top3_mean_score": 0.5695594946543375,
+      "top1_top5_gap": 0.07480579614639282,
+      "candidate_count": 50
+    },
+    "phase2-eval-002721": {
+      "top1_score": 0.5671871900558472,
+      "top3_mean_score": 0.5536953806877136,
+      "top1_top5_gap": 0.04855704307556152,
+      "candidate_count": 50
+    },
+    "phase2-eval-002722": {
+      "top1_score": 0.46008336544036865,
+      "top3_mean_score": 0.44924843311309814,
+      "top1_top5_gap": 0.02857261896133423,
+      "candidate_count": 50
+    },
+    "phase2-eval-002723": {
+      "top1_score": 0.6038669943809509,
+      "top3_mean_score": 0.5159345666567484,
+      "top1_top5_gap": 0.18278825283050537,
+      "candidate_count": 50
+    },
+    "phase2-eval-002724": {
+      "top1_score": 0.6136254072189331,
+      "top3_mean_score": 0.56512979666392,
+      "top1_top5_gap": 0.10224318504333496,
+      "candidate_count": 50
+    },
+    "phase2-eval-002725": {
+      "top1_score": 0.5624369382858276,
+      "top3_mean_score": 0.5400573412577311,
+      "top1_top5_gap": 0.04120075702667236,
+      "candidate_count": 50
+    },
+    "phase2-eval-002726": {
+      "top1_score": 0.4866001605987549,
+      "top3_mean_score": 0.47893404960632324,
+      "top1_top5_gap": 0.019024252891540527,
+      "candidate_count": 50
+    },
+    "phase2-eval-002729": {
+      "top1_score": 0.5483570098876953,
+      "top3_mean_score": 0.5285287102063497,
+      "top1_top5_gap": 0.03782016038894653,
+      "candidate_count": 50
+    },
+    "phase2-eval-002731": {
+      "top1_score": 0.5852218866348267,
+      "top3_mean_score": 0.5442572832107544,
+      "top1_top5_gap": 0.10345339775085449,
+      "candidate_count": 50
+    },
+    "phase2-eval-002732": {
+      "top1_score": 0.5428212285041809,
+      "top3_mean_score": 0.5356568495432535,
+      "top1_top5_gap": 0.04670614004135132,
+      "candidate_count": 50
+    },
+    "phase2-eval-002733": {
+      "top1_score": 0.51938796043396,
+      "top3_mean_score": 0.4979888399442037,
+      "top1_top5_gap": 0.033153653144836426,
+      "candidate_count": 50
+    },
+    "phase2-eval-002736": {
+      "top1_score": 0.48306822776794434,
+      "top3_mean_score": 0.4668133656183879,
+      "top1_top5_gap": 0.033892810344696045,
+      "candidate_count": 50
+    },
+    "phase2-eval-002737": {
+      "top1_score": 0.44221460819244385,
+      "top3_mean_score": 0.42629164457321167,
+      "top1_top5_gap": 0.035630762577056885,
+      "candidate_count": 50
+    },
+    "phase2-eval-002738": {
+      "top1_score": 0.45442867279052734,
+      "top3_mean_score": 0.4361382524172465,
+      "top1_top5_gap": 0.04861009120941162,
+      "candidate_count": 50
+    },
+    "phase2-eval-002739": {
+      "top1_score": 0.507279634475708,
+      "top3_mean_score": 0.5041103561719259,
+      "top1_top5_gap": 0.013363838195800781,
+      "candidate_count": 50
+    },
+    "phase2-eval-002740": {
+      "top1_score": 0.6143373847007751,
+      "top3_mean_score": 0.5615208943684896,
+      "top1_top5_gap": 0.15392053127288818,
+      "candidate_count": 50
+    },
+    "phase2-eval-002743": {
+      "top1_score": 0.4600955843925476,
+      "top3_mean_score": 0.4513551990191142,
+      "top1_top5_gap": 0.020556151866912842,
+      "candidate_count": 50
+    },
+    "phase2-eval-002746": {
+      "top1_score": 0.48739945888519287,
+      "top3_mean_score": 0.4819391965866089,
+      "top1_top5_gap": 0.02093040943145752,
+      "candidate_count": 50
+    },
+    "phase2-eval-002747": {
+      "top1_score": 0.4577144384384155,
+      "top3_mean_score": 0.45443572600682575,
+      "top1_top5_gap": 0.026898562908172607,
+      "candidate_count": 50
+    },
+    "phase2-eval-002748": {
+      "top1_score": 0.5076058506965637,
+      "top3_mean_score": 0.501358151435852,
+      "top1_top5_gap": 0.024601757526397705,
+      "candidate_count": 50
+    },
+    "phase2-eval-002749": {
+      "top1_score": 0.5398550033569336,
+      "top3_mean_score": 0.5187860727310181,
+      "top1_top5_gap": 0.04646432399749756,
+      "candidate_count": 50
+    },
+    "phase2-eval-002750": {
+      "top1_score": 0.5793874263763428,
+      "top3_mean_score": 0.5682201186815897,
+      "top1_top5_gap": 0.027070283889770508,
+      "candidate_count": 50
+    },
+    "phase2-eval-002752": {
+      "top1_score": 0.4524592161178589,
+      "top3_mean_score": 0.44840898116429645,
+      "top1_top5_gap": 0.01734626293182373,
+      "candidate_count": 50
+    },
+    "phase2-eval-002753": {
+      "top1_score": 0.5408390760421753,
+      "top3_mean_score": 0.5262085398038229,
+      "top1_top5_gap": 0.03887176513671875,
+      "candidate_count": 50
+    },
+    "phase2-eval-002755": {
+      "top1_score": 0.4475327134132385,
+      "top3_mean_score": 0.44114335378011066,
+      "top1_top5_gap": 0.019291579723358154,
+      "candidate_count": 50
+    },
+    "phase2-eval-002757": {
+      "top1_score": 0.4745345115661621,
+      "top3_mean_score": 0.46010923385620117,
+      "top1_top5_gap": 0.02902752161026001,
+      "candidate_count": 50
+    },
+    "phase2-eval-002758": {
+      "top1_score": 0.6700859069824219,
+      "top3_mean_score": 0.623665432135264,
+      "top1_top5_gap": 0.11260730028152466,
+      "candidate_count": 50
+    },
+    "phase2-eval-002760": {
+      "top1_score": 0.5153355002403259,
+      "top3_mean_score": 0.505145529905955,
+      "top1_top5_gap": 0.03766953945159912,
+      "candidate_count": 50
+    },
+    "phase2-eval-002761": {
+      "top1_score": 0.5346903800964355,
+      "top3_mean_score": 0.5240752895673116,
+      "top1_top5_gap": 0.03405654430389404,
+      "candidate_count": 50
+    },
+    "phase2-eval-002764": {
+      "top1_score": 0.504426121711731,
+      "top3_mean_score": 0.49416691064834595,
+      "top1_top5_gap": 0.03580880165100098,
+      "candidate_count": 50
+    },
+    "phase2-eval-002765": {
+      "top1_score": 0.49168646335601807,
+      "top3_mean_score": 0.4886591633160909,
+      "top1_top5_gap": 0.013396084308624268,
+      "candidate_count": 50
+    },
+    "phase2-eval-002766": {
+      "top1_score": 0.5120351314544678,
+      "top3_mean_score": 0.5090340177218119,
+      "top1_top5_gap": 0.01324385404586792,
+      "candidate_count": 50
+    },
+    "phase2-eval-002768": {
+      "top1_score": 0.4808885455131531,
+      "top3_mean_score": 0.4750584562619527,
+      "top1_top5_gap": 0.01929938793182373,
+      "candidate_count": 50
+    },
+    "phase2-eval-002769": {
+      "top1_score": 0.46669650077819824,
+      "top3_mean_score": 0.46269474426905316,
+      "top1_top5_gap": 0.01760709285736084,
+      "candidate_count": 50
+    },
+    "phase2-eval-002770": {
+      "top1_score": 0.4802708029747009,
+      "top3_mean_score": 0.46569347381591797,
+      "top1_top5_gap": 0.03620755672454834,
+      "candidate_count": 50
+    },
+    "phase2-eval-002771": {
+      "top1_score": 0.4163675308227539,
+      "top3_mean_score": 0.38380350669225055,
+      "top1_top5_gap": 0.06398028135299683,
+      "candidate_count": 50
+    },
+    "phase2-eval-002773": {
+      "top1_score": 0.3238736391067505,
+      "top3_mean_score": 0.31914830207824707,
+      "top1_top5_gap": 0.023031115531921387,
+      "candidate_count": 50
+    },
+    "phase2-eval-002774": {
+      "top1_score": 0.3449815511703491,
+      "top3_mean_score": 0.34105875094731647,
+      "top1_top5_gap": 0.023971199989318848,
+      "candidate_count": 50
+    },
+    "phase2-eval-002775": {
+      "top1_score": 0.38790130615234375,
+      "top3_mean_score": 0.3825915853182475,
+      "top1_top5_gap": 0.05787843465805054,
+      "candidate_count": 50
+    },
+    "phase2-eval-002777": {
+      "top1_score": 0.41725122928619385,
+      "top3_mean_score": 0.4072748025258382,
+      "top1_top5_gap": 0.039075493812561035,
+      "candidate_count": 50
+    },
+    "phase2-eval-002778": {
+      "top1_score": 0.4071239233016968,
+      "top3_mean_score": 0.3630802035331726,
+      "top1_top5_gap": 0.07701659202575684,
+      "candidate_count": 50
+    },
+    "phase2-eval-002780": {
+      "top1_score": 0.4598506689071655,
+      "top3_mean_score": 0.43610064188639325,
+      "top1_top5_gap": 0.0764039158821106,
+      "candidate_count": 50
+    },
+    "phase2-eval-002782": {
+      "top1_score": 0.43830370903015137,
+      "top3_mean_score": 0.43591225147247314,
+      "top1_top5_gap": 0.016400516033172607,
+      "candidate_count": 50
+    },
+    "phase2-eval-002783": {
+      "top1_score": 0.36664313077926636,
+      "top3_mean_score": 0.34657857815424603,
+      "top1_top5_gap": 0.0461612343788147,
+      "candidate_count": 50
+    },
+    "phase2-eval-002784": {
+      "top1_score": 0.3989979028701782,
+      "top3_mean_score": 0.3833305239677429,
+      "top1_top5_gap": 0.03302830457687378,
+      "candidate_count": 50
+    },
+    "phase2-eval-002785": {
+      "top1_score": 0.30190372467041016,
+      "top3_mean_score": 0.2930491367975871,
+      "top1_top5_gap": 0.02655315399169922,
+      "candidate_count": 50
+    },
+    "phase2-eval-002787": {
+      "top1_score": 0.44592732191085815,
+      "top3_mean_score": 0.4305211504300435,
+      "top1_top5_gap": 0.06742459535598755,
+      "candidate_count": 50
+    },
+    "phase2-eval-002789": {
+      "top1_score": 0.430633008480072,
+      "top3_mean_score": 0.4224935571352641,
+      "top1_top5_gap": 0.053431689739227295,
+      "candidate_count": 50
+    },
+    "phase2-eval-002791": {
+      "top1_score": 0.4374489188194275,
+      "top3_mean_score": 0.4178304473559062,
+      "top1_top5_gap": 0.04801446199417114,
+      "candidate_count": 50
+    },
+    "phase2-eval-002792": {
+      "top1_score": 0.4781287908554077,
+      "top3_mean_score": 0.4682408968607585,
+      "top1_top5_gap": 0.04094994068145752,
+      "candidate_count": 50
+    },
+    "phase2-eval-002793": {
+      "top1_score": 0.3929958939552307,
+      "top3_mean_score": 0.3889304002126058,
+      "top1_top5_gap": 0.044844090938568115,
+      "candidate_count": 50
+    },
+    "phase2-eval-002794": {
+      "top1_score": 0.37634575366973877,
+      "top3_mean_score": 0.3721725145975749,
+      "top1_top5_gap": 0.06300204992294312,
+      "candidate_count": 50
+    },
+    "phase2-eval-002795": {
+      "top1_score": 0.4040553569793701,
+      "top3_mean_score": 0.3946524461110433,
+      "top1_top5_gap": 0.022722482681274414,
+      "candidate_count": 50
+    },
+    "phase2-eval-002796": {
+      "top1_score": 0.4665836691856384,
+      "top3_mean_score": 0.43672237793604535,
+      "top1_top5_gap": 0.04936140775680542,
+      "candidate_count": 50
+    },
+    "phase2-eval-002799": {
+      "top1_score": 0.3603898286819458,
+      "top3_mean_score": 0.36029982566833496,
+      "top1_top5_gap": 0.0072591304779052734,
+      "candidate_count": 50
+    },
+    "phase2-eval-002802": {
+      "top1_score": 0.5499983429908752,
+      "top3_mean_score": 0.5237738291422526,
+      "top1_top5_gap": 0.055595576763153076,
+      "candidate_count": 50
+    },
+    "phase2-eval-002803": {
+      "top1_score": 0.4381483197212219,
+      "top3_mean_score": 0.40213119983673096,
+      "top1_top5_gap": 0.08301979303359985,
+      "candidate_count": 50
+    },
+    "phase2-eval-002804": {
+      "top1_score": 0.41628456115722656,
+      "top3_mean_score": 0.4053882559140523,
+      "top1_top5_gap": 0.027638256549835205,
+      "candidate_count": 50
+    },
+    "phase2-eval-002805": {
+      "top1_score": 0.5286368727684021,
+      "top3_mean_score": 0.5094446539878845,
+      "top1_top5_gap": 0.047674715518951416,
+      "candidate_count": 50
+    },
+    "phase2-eval-002806": {
+      "top1_score": 0.3749657869338989,
+      "top3_mean_score": 0.3650612433751424,
+      "top1_top5_gap": 0.026363611221313477,
+      "candidate_count": 50
+    },
+    "phase2-eval-002807": {
+      "top1_score": 0.4068182706832886,
+      "top3_mean_score": 0.3991779883702596,
+      "top1_top5_gap": 0.019302546977996826,
+      "candidate_count": 50
+    },
+    "phase2-eval-002808": {
+      "top1_score": 0.3886130452156067,
+      "top3_mean_score": 0.3759702245394389,
+      "top1_top5_gap": 0.027781188488006592,
+      "candidate_count": 50
+    },
+    "phase2-eval-002809": {
+      "top1_score": 0.3620608448982239,
+      "top3_mean_score": 0.3491448362668355,
+      "top1_top5_gap": 0.021435320377349854,
+      "candidate_count": 50
+    },
+    "phase2-eval-002810": {
+      "top1_score": 0.49552273750305176,
+      "top3_mean_score": 0.4503301779429118,
+      "top1_top5_gap": 0.08693987131118774,
+      "candidate_count": 50
+    }
+  },
+  "latency_ms": {
+    "p50": 595.006,
+    "p95": 669.903
+  }
+}

@@ -10970,3 +10970,109 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.7 — Add CRAG-style confidence
 grading, using `qwen3_embedding` dense-only retrieval (unreranked - Task
 3.6 selected `no_rerank`) as the candidate source.
+
+---
+
+## 2026-09-12 — Task 3.7: CRAG-style confidence grading
+
+Resumed under the Task 3.99 controlled-execution-loop after Task 3.6.
+Audited Task 3.6 fresh (doctor/portable/full/result-artifact/ablation-
+row/TEST-discipline) rather than trusting the prior turn's completion
+claim - all independently confirmed. Task 3.7's own contract had two
+open gaps the roadmap doesn't resolve: it names "top-1 reranker score"
+as a feature (Task 3.6 selected `no_rerank` - no such score exists), and
+its refusal-rate metrics need "should refuse" examples the frozen
+89-question ranking scope structurally cannot provide (it contains only
+answerable questions). Unlike Task 3.6's reranker-model choice (an
+arbitrary external fact), both gaps here had a defensible answer
+derivable from the repository's own prior decisions, so they were
+resolved by documented engineering judgment rather than a new question
+to the user - frozen in `configs/phase_3_7_crag_confidence_grading.json`
+before any formal run. See `project_plan/PHASE3_CRAG_CONFIDENCE_GRADING.md`
+for full detail.
+
+### Contract decisions
+
+Score source: substitute the frozen Task 3.3 dense retrieval score
+(cosine similarity) for the unavailable reranker score. Population:
+`should_answer` = the exact frozen 89-question scope (unchanged);
+`should_refuse` = the 113 DEV questions (71+16+13+13, live-count
+verified) whose `(category,subtype)` is in Task 3.1's own
+`NOT_APPLICABLE_SHAPES` - a fixed classification reused verbatim, never
+redefined. Deliberately excluded: the ~94% of DEV Task 3.1 excluded from
+the 89-question scope for having no indexed gold document - reusing
+that population would silently reopen Task 3.1's scope decision without
+review.
+
+### Results
+
+```text
+calibrated threshold (top1_score, Youden's J): 0.5531  (J=0.7644)
+true_refusal_rate:    83.19%  (94/113)
+false_refusal_rate:    6.74%  ( 6/89)
+missed_failure_rate:  16.81%  (19/113)
+```
+
+A single dense-cosine-similarity feature (no reranker, no LLM grader)
+separates answerable from should-refuse questions with Youden's J=0.76 -
+real, usable signal about whether the corpus actually contains a
+relevant answer, at the cost of mislabeling ~1 in 15 genuinely
+answerable questions as low-confidence. Dense parent reproduced its
+frozen Task 3.3 per-question metrics exactly (89/89) before any CRAG
+number was trusted.
+
+### New modules
+
+`src/crag/confidence.py` (`compute_confidence_features`, `should_refuse`
+- single-feature gate, `classify_outcome`, and
+`calibrate_threshold_youden_j` - deterministic non-parametric sweep,
+ties broken by the lowest candidate threshold) and
+`src/eval/phase3_crag.py` (config hash, rate aggregation reusing Task
+2.6's `aggregate_rate` unmodified, and the CRAG ablation row -
+`refusal_metric`, a base ablation-table column that has been `N/A`
+through every prior task, is finally populated with
+`missed_failure_rate`). `ABLATION_TABLE_COLUMNS` extended additively
+again (9 new CRAG columns) - every prior row verified byte-for-byte
+unchanged.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1657 passed, 30 deselected**
+  (+37 new: synthetic-score-fixture CRAG feature/threshold/outcome
+  tests, phase3_crag pure-logic tests, and AST-based static guards over
+  the new orchestration script; also fixed three pre-existing Task
+  3.4/3.5/3.6 tests that over-strictly asserted every row must contain
+  every currently-defined ablation column, including columns this task
+  added).
+- `scripts/dev.py test` (full): **1687 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_crag.py`, `src/crag/confidence.py`, or
+`src/eval/phase3_crag.py` (AST-verified, portable test). No paid API/
+generation calls. FinanceBench not rerun. Frozen Task 3.2 chunk config,
+Task 3.3 dense winner identity, and Task 3.5/3.6 selections
+(`dense_only`/`no_rerank`) verified unchanged before the run. Row 0 and
+every Task 3.2-3.6 ablation-table row confirmed byte-for-byte unchanged
+in their pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+```
+
+**Next roadmap task:** Phase 3, Task 3.8 — Add rules-first router
+(company-name→CIK resolution, fiscal-year/form-type extraction,
+known-XBRL-concept lookup, intent classification), using
+`qwen3_embedding` dense-only unreranked retrieval as the downstream
+candidate source.

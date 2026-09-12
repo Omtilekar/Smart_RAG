@@ -1,0 +1,45 @@
+{
+  "run_schema_version": 2,
+  "run_id": "45cd62d8-8ab9-49a7-8e35-435ab7c6af55",
+  "git_sha": "11de7971390d708c9a4fb3205fbfe738f0fcf021",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe"
+  },
+  "index_identity_hash": "c532896a0bdf17d10acc0549bacc2ba3776609b0f56f374dcb2c8a8ec7c9b64c",
+  "retrieval_config": {
+    "type": "dense_only_crag_gated",
+    "candidate_k": 50,
+    "threshold": 0.5530984401702881
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-12T03:39:16.116539Z",
+  "metrics": {
+    "true_refusal_rate": 0.831858407079646,
+    "false_refusal_rate": 0.06741573033707865,
+    "missed_failure_rate": 0.168141592920354
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_7_crag_confidence_grading",
+  "run_kind": "phase3_crag_confidence_grading",
+  "notes": "Task 3.7 CRAG confidence grading (Youden's J threshold=0.5531) over dense-only (ba99e2f7861c...), should_answer=89, should_refuse=113.",
+  "record_origin": "live",
+  "run_record_sha256": "56da058d4e872d6093e2cf549e6d963ce58af29d58bf6cb3949074498c1b97d3"
+}

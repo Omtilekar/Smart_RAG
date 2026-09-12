@@ -1550,10 +1550,16 @@ Phase 3 — Make It Good                                — IN PROGRESS
     Recall@5/Precision@5 (95% CIs entirely below 0; gained=0/lost=17 at
     hit@5) - no_rerank selected - see
     project_plan/PHASE3_CROSS_ENCODER_RERANKING.md
+  3.7 CRAG-style confidence grading                     — COMPLETE
+    top1_score (dense cosine similarity, substituted for the unavailable
+    reranker score) threshold=0.5531 (Youden's J=0.7644); true_refusal
+    83.19% (94/113), false_refusal 6.74% (6/89), missed_failure 16.81%
+    (19/113) - see project_plan/PHASE3_CRAG_CONFIDENCE_GRADING.md
 ```
 
-**Next action:** Phase 3, Task 3.7 — CRAG-style confidence grading,
-using `qwen3_embedding` dense-only unreranked retrieval (Task 3.6
-selected `no_rerank`) as the candidate source (do not start
+**Next action:** Phase 3, Task 3.8 — Rules-first router (company-name→CIK
+resolution, fiscal-year/form-type extraction, known-XBRL-concept lookup,
+intent classification), using `qwen3_embedding` dense-only unreranked
+retrieval as the downstream candidate source (do not start
 implementation from this document alone without re-reading the exact
 next subtask).

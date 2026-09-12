@@ -103,3 +103,6 @@ results/*
 # Task 3.6 - same mechanism, one small reranking result JSON.
 !results/phase3_6/
 !results/phase3_6/*.json
+# Task 3.7 - same mechanism, one small CRAG confidence-grading result JSON.
+!results/phase3_7/
+!results/phase3_7/*.json

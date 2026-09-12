@@ -130,10 +130,13 @@ def test_build_sparse_ablation_row_shape_and_flags():
     assert row["sparse_only_hits_at_50"] == 7
     assert row["delta_vs_qwen_dense_mrr"] == -0.3
     # Every column Task 3.4 itself owns must be present. Later columns added
-    # additively by Task 3.5/3.6 (hybrid-only/rerank-only fields) are
-    # correctly absent here - `_row_to_csv_dict()` defaults them to NA
-    # when writing this row to CSV.
-    later_task_columns = set(p3.ABLATION_TABLE_HYBRID_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_RERANK_EXTRA_COLUMNS)
+    # additively by Task 3.5/3.6/3.7 (hybrid-only/rerank-only/CRAG-only
+    # fields) are correctly absent here - `_row_to_csv_dict()` defaults
+    # them to NA when writing this row to CSV.
+    later_task_columns = (
+        set(p3.ABLATION_TABLE_HYBRID_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_RERANK_EXTRA_COLUMNS)
+        | set(p3.ABLATION_TABLE_CRAG_EXTRA_COLUMNS)
+    )
     for col in set(p3.ABLATION_TABLE_COLUMNS) - later_task_columns:
         assert col in row, f"missing ablation-table column {col!r} in sparse row"
 

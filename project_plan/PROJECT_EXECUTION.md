@@ -1561,9 +1561,16 @@ Phase 3 — Make It Good                                — IN PROGRESS
     accuracy=85.82% (1658/1932), macro_f1=0.8871; unanswerable precision
     is the diagnosed weak spot (0.34 - concept-matching recall limits) -
     see project_plan/PHASE3_RULES_FIRST_ROUTER.md
+  3.9 Metadata pre-filtering                            — COMPLETE
+    only cik+fiscal_year are real filter dimensions given the frozen
+    chunk artifact (form_type constant, no section column); positive
+    result - R@10 88->89/89, MRR 0.9251->1.0, nDCG@10 0.9407->1.0,
+    metadata_prefilter selected via the unmodified Task 3.2/3.3
+    selection rule - see project_plan/PHASE3_METADATA_PREFILTERING.md
 ```
 
-**Next action:** Phase 3, Task 3.9 — Metadata pre-filtering (CIK/year/
-form/section), applied before retrieval using the router's extracted
-cik/fiscal_years/form_type signals (do not start implementation from
-this document alone without re-reading the exact next subtask).
+**Next action:** Phase 3, Task 3.10 — Structured XBRL SQL path for
+supported numeric questions, using the Task 3.8 router's `xbrl_fact`
+intent classification to decide when to route to it instead of
+retrieval (do not start implementation from this document alone without
+re-reading the exact next subtask).

@@ -1,0 +1,1465 @@
+{
+  "row_id": "metadata_prefilter",
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "config_hash": "311d21f5543a5ec099e2686f19e750573ffe64ab95ab88b5b754a7e959f4d6c7",
+  "run_id": "4e29daf8-6486-47e2-8248-95ab911dcdb6",
+  "git_sha": "ffe2a42081feffccea12172d1e4c918b08cc34fd",
+  "question_count": 89,
+  "filtered_question_count": 89,
+  "fallback_question_count": 0,
+  "baseline_metrics": {
+    "doc_recall_at_10": 0.9887640449438202,
+    "doc_recall_at_10_hits": 88,
+    "doc_recall_at_50": 1.0,
+    "doc_recall_at_50_hits": 89,
+    "doc_mrr": 0.9251382200820403,
+    "doc_ndcg_at_10": 0.9406706590441349
+  },
+  "filtered_metrics": {
+    "doc_recall_at_10": 1.0,
+    "doc_recall_at_10_hits": 89,
+    "doc_recall_at_50": 1.0,
+    "doc_recall_at_50_hits": 89,
+    "doc_mrr": 1.0,
+    "doc_ndcg_at_10": 1.0
+  },
+  "baseline_per_question": {
+    "phase2-eval-000006": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000023": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000057": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000059": {
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-000072": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000083": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000097": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000098": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000101": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000126": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000136": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000265": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000296": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000310": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000376": {
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-000391": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000400": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000413": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000478": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000537": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000658": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000665": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000714": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000729": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000749": {
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-000783": {
+      "hit10": true,
+      "rank10": 7,
+      "rr10": 0.14285714285714285,
+      "ndcg10": 0.3333333333333333,
+      "hit50": true,
+      "rank50": 7
+    },
+    "phase2-eval-000784": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000803": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000809": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000831": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000866": {
+      "hit10": true,
+      "rank10": 9,
+      "rr10": 0.1111111111111111,
+      "ndcg10": 0.3010299956639812,
+      "hit50": true,
+      "rank50": 9
+    },
+    "phase2-eval-000883": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000893": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000897": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000933": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000935": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000992": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001030": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001045": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001066": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001069": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001089": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001130": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001135": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001165": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001186": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001193": {
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001198": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001204": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001218": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001228": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001235": {
+      "hit10": true,
+      "rank10": 4,
+      "rr10": 0.25,
+      "ndcg10": 0.43067655807339306,
+      "hit50": true,
+      "rank50": 4
+    },
+    "phase2-eval-001243": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001249": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001296": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001333": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001341": {
+      "hit10": true,
+      "rank10": 2,
+      "rr10": 0.5,
+      "ndcg10": 0.6309297535714575,
+      "hit50": true,
+      "rank50": 2
+    },
+    "phase2-eval-001370": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001371": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001380": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001442": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001445": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001450": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001472": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001507": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001522": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001539": {
+      "hit10": false,
+      "rank10": null,
+      "rr10": 0.0,
+      "ndcg10": 0.0,
+      "hit50": true,
+      "rank50": 13
+    },
+    "phase2-eval-001570": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001698": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001701": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001713": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001714": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001745": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001765": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001801": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001817": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001874": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001916": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001920": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001947": {
+      "hit10": true,
+      "rank10": 3,
+      "rr10": 0.3333333333333333,
+      "ndcg10": 0.5,
+      "hit50": true,
+      "rank50": 3
+    },
+    "phase2-eval-001959": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002560": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002561": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002562": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002577": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002579": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002591": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002593": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002623": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    }
+  },
+  "filtered_per_question": {
+    "phase2-eval-000006": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000023": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000057": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000059": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000072": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000083": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000097": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000098": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000101": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000126": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000136": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000265": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000296": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000310": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000376": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000391": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000400": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000413": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000478": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000537": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000658": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000665": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000714": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000729": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000749": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000783": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000784": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000803": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000809": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000831": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000866": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000883": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000893": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000897": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000933": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000935": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-000992": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001030": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001045": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001066": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001069": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001089": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001130": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001135": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001165": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001186": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001193": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001198": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001204": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001218": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001228": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001235": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001243": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001249": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001296": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001333": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001341": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001370": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001371": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001380": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001442": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001445": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001450": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001472": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001507": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001522": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001539": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001570": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001698": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001701": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001713": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001714": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001745": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001765": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001801": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001817": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001874": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001916": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001920": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001947": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-001959": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002560": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002561": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002562": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002577": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002579": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002591": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002593": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    },
+    "phase2-eval-002623": {
+      "hit10": true,
+      "rank10": 1,
+      "rr10": 1.0,
+      "ndcg10": 1.0,
+      "hit50": true,
+      "rank50": 1
+    }
+  },
+  "latency_ms": {
+    "baseline": {
+      "p50": 603.495,
+      "p95": 723.949
+    },
+    "filtered": {
+      "p50": 573.544,
+      "p95": 691.458
+    }
+  },
+  "diagnostics_path": "C:\\Om\\Codes\\RAG\\artifacts\\eval\\phase3_9_metadata_prefiltering\\query_diagnostics.jsonl"
+}

@@ -109,3 +109,6 @@ results/*
 # Task 3.8 - same mechanism, one small router-evaluation result JSON.
 !results/phase3_8/
 !results/phase3_8/*.json
+# Task 3.9 - same mechanism, one small metadata-prefiltering result JSON.
+!results/phase3_9/
+!results/phase3_9/*.json

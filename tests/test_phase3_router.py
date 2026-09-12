@@ -118,7 +118,9 @@ def test_build_router_ablation_row_shape_and_flags():
     assert row["router_macro_f1"] == 0.7
     assert row["gazetteer_size"] == 1500
     assert row["doc_recall_at_10"] == p3.NA
-    for col in p3.ABLATION_TABLE_COLUMNS:
+    # Later columns added additively by Task 3.9 (filter-only fields) are
+    # correctly absent here - `_row_to_csv_dict()` defaults them to NA.
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_FILTER_EXTRA_COLUMNS):
         assert col in row, f"missing ablation-table column {col!r} in router row"
 
 

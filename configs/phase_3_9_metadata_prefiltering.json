@@ -1,0 +1,43 @@
+{
+  "task": "3.9",
+  "experiment_version": 1,
+
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "question_ids_sha256": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_schema_version": 1,
+  "chunk_count": 323971,
+
+  "dense_baseline": {
+    "candidate_id": "qwen3_embedding", "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3", "embedding_dimension": 1024,
+    "embedding_identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "index_identity_hash": "c532896a0bdf17d10acc0549bacc2ba3776609b0f56f374dcb2c8a8ec7c9b64c",
+    "reference_metrics": {
+      "doc_recall_at_10": 0.9887640449438202, "doc_recall_at_10_hits": 88,
+      "doc_recall_at_50": 1.0, "doc_recall_at_50_hits": 89,
+      "doc_mrr": 0.9251382200820403, "doc_ndcg_at_10": 0.9406706590441349
+    }
+  },
+  "candidate_k": 50,
+
+  "filter_dimension_decision": "PROJECT_EXECUTION.md Task 3.9 lists 4 filter dimensions: CIK, year, form, section. Verified against the live frozen chunk artifact before implementation: form_type is a constant ('10-K') across all 323,971 rows - filtering on it is a no-op, not implemented as a real filter. There is no 'section' column at all - Task 3.2 selected FIXED (non-section-aware) splitting, so no chunk carries section metadata. Only cik (1,370 distinct values) and fiscal_year (5 distinct values, 2016-2020) are real, discriminative pre-filter dimensions given the current frozen artifacts - implemented as a compound cik+fiscal_year predicate. This is the 'where possible' scoping PROJECT_EXECUTION.md's own wording anticipates, not a silently reduced contract.",
+
+  "extraction_source": "src.router.rules.classify_intent() (Task 3.8, frozen, unmodified) applied to each question's raw TEXT ONLY - never the question record's own hidden cik/fiscal_year ground-truth fields, which would be test leakage. A question filters iff the router resolves EXACTLY ONE distinct cik AND EXACTLY ONE distinct fiscal_year from its text; otherwise the query falls back to unfiltered dense search for that question (recorded explicitly as a fallback, never silently treated as 'filtered').",
+
+  "prefilter_mechanism": "src.index.lancedb_index.exact_cosine_search_filtered() - a scalar SQL predicate ('cik = <n> AND fiscal_year = <y>', built only from validated Python ints, never from raw text) applied via LanceDB's .where(..., prefilter=True) BEFORE the exact/brute-force cosine search - verified empirically (Stage 2) that LanceDB 0.37.1's .where() already prefilters by default, and prefilter=True is passed explicitly anyway for clarity.",
+
+  "selection_rule": "Reuses src.eval.phase3_ablation.select_round_winner/is_practical_tie/paired_bootstrap_delta_ci UNMODIFIED (same priority order as Tasks 3.2/3.3: doc_recall@50 > doc_mrr > doc_ndcg@10 > doc_recall@10) - unlike Tasks 3.5/3.6, both arms here search the same embeddings/index and can have a genuinely different Recall@50, so the original Recall@50-keyed practical-tie rule is meaningful again. Tie-break (src.eval.phase3_filter.filtered_tiebreak_key): prefer the simpler unfiltered baseline on a practical tie.",
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "bootstrap_unit": "question_id",
+
+  "generation_enabled": false,
+  "reranker_enabled": false,
+  "metric_schema_version": 1,
+  "metric_definitions": "doc_recall@10/@50, doc_mrr, doc_ndcg@10 via the same Task 2.6 granularity-agnostic functions used since Task 3.4 - unmodified."
+}

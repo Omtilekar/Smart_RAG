@@ -168,3 +168,33 @@ def exact_cosine_search(table, query_vector, limit: int, expected_dimension: int
         .limit(limit)
         .to_arrow()
     )
+
+
+def exact_cosine_search_filtered(table, query_vector, limit: int, *, where: str,
+                                  expected_dimension: int = EMBEDDING_DIMENSION) -> pa.Table:
+    """Task 3.9 - identical to `exact_cosine_search()` except the scalar
+    `where` predicate is applied as a PRE-filter (`prefilter=True`,
+    LanceDB 0.37.1's own default for `.where()` - verified empirically
+    against a disposable synthetic table before this was written: with a
+    rare filter value and `limit` far exceeding the number of matching
+    rows, the default `.where()` and explicit `prefilter=True` return
+    every matching row, while `prefilter=False` returns fewer - it takes
+    the top-`limit` nearest neighbors FIRST across the whole table, then
+    discards non-matching ones, silently losing true matches that
+    weren't in that initial window). `prefilter=True` is passed
+    explicitly here for clarity even though it is already the default -
+    never rely on an unstated default for a correctness-critical choice.
+
+    `where` must already be a fully-formed, safe SQL predicate (e.g.
+    `"cik = 12345"`) - this function does not build or sanitize it (see
+    `src.retrieval.filtered` for that)."""
+    if limit <= 0:
+        raise VectorIndexError(f"limit must be positive, got {limit}")
+    validated = validate_query_vector(query_vector, expected_dimension=expected_dimension)
+    return (
+        table.search(validated)
+        .distance_type(DISTANCE_METRIC)
+        .where(where, prefilter=True)
+        .limit(limit)
+        .to_arrow()
+    )

@@ -11193,3 +11193,116 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.9 — Metadata pre-filtering
 (CIK/year/form/section), applied before retrieval using the router's
 extracted cik/fiscal_years/form_type signals.
+
+---
+
+## 2026-09-12 — Task 3.9: metadata pre-filtering (positive result: metadata_prefilter selected)
+
+Continued under the Task 3.99 controlled-execution-loop after Task 3.8.
+Audited Task 3.8 fresh before continuing. Verified the roadmap's 4
+filter dimensions against the real frozen chunk artifact before writing
+any code: `cik` (1,370 distinct values) and `fiscal_year` (5 distinct
+values, 2016-2020) are real, discriminative dimensions; `form_type` is
+a constant (`"10-K"`) across all 323,971 rows - a no-op filter; `section`
+has no column at all (Task 3.2 selected fixed, non-section-aware
+splitting). Implemented CIK+fiscal_year pre-filtering only - the
+roadmap's own "where possible" wording anticipated exactly this, so no
+user decision was needed here (unlike Tasks 3.6/3.8's genuine gaps). See
+`project_plan/PHASE3_METADATA_PREFILTERING.md` for full detail.
+
+### LanceDB prefilter semantics (verified empirically before formal code)
+
+Built a disposable synthetic table with a rare filter value and a limit
+far exceeding the matching-row count: LanceDB 0.37.1's `.where()`
+defaults to `prefilter=True` (confirmed - default and explicit
+`prefilter=True` both return every true match; `prefilter=False` -
+computing top-k nearest neighbors across the WHOLE table first, then
+discarding non-matches - returns fewer, silently losing true matches
+dominated out by the majority filter value). `prefilter=True` is passed
+explicitly anyway for clarity.
+
+### Extraction source (no test leakage)
+
+cik/fiscal_year are extracted from each question's raw TEXT ONLY via
+Task 3.8's frozen, unmodified `classify_intent()` - never from the
+question record's own hidden ground-truth fields. A question filters
+only if the router resolves exactly one distinct cik AND exactly one
+distinct fiscal year; otherwise it falls back to unfiltered search,
+recorded explicitly.
+
+### New modules
+
+`src/index/lancedb_index.py` gained `exact_cosine_search_filtered()`
+(additive - Task 1.5's `exact_cosine_search()` untouched), `src/retrieval/filtered.py`
+(`MetadataFilteredRetriever` + `build_predicate()` - builds a safe SQL
+predicate from validated ints only, immune to injection by
+construction), and `src/eval/phase3_filter.py` (config hash + ablation
+row - **selection reuses `phase3_ablation.select_round_winner`/
+`is_practical_tie`/`paired_bootstrap_delta_ci` completely unmodified**,
+since unlike Tasks 3.5/3.6 both arms here search the same
+embeddings/index and Recall@50 is genuinely comparable again; only a
+new tie-break preferring the simpler unfiltered baseline was added).
+
+### Results - positive result
+
+```text
+                unfiltered baseline   metadata-prefiltered   delta
+doc_recall@10:  0.9888 (88/89)        1.0000 (89/89)         +0.0112
+doc_recall@50:  1.0000 (89/89)        1.0000 (89/89)          0.0000
+doc_mrr:        0.9251                1.0000                 +0.0749
+doc_ndcg@10:    0.9407                1.0000                 +0.0593
+```
+
+All 89/89 questions were filtered (router extracted exactly one cik +
+one fiscal year from every question's text - these are all
+single-company, single-fiscal-year xbrl_fact-shaped questions by
+construction). Restricting the candidate pool to only the named
+document's own chunks makes retrieval trivial to win - perfect
+Recall@10/MRR/nDCG@10. **Selected: `metadata_prefilter`** - resolved
+automatically by the unmodified Task 3.2/3.3 selection rule, no user
+decision required. Unfiltered baseline re-verified to reproduce its
+frozen Task 3.3 per-question metrics exactly (89/89) before any
+filtered number was trusted.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1748 passed, 30 deselected**
+  (+79 new: synthetic-LanceDB-table prefilter-semantics tests, fake-
+  retriever MetadataFilteredRetriever tests, phase3_filter pure-logic
+  tests including the reused-selection-rule integration, and AST-based
+  static guards over the new orchestration script - including a check
+  that oracle ground-truth cik/fiscal_year fields are never read; also
+  fixed four pre-existing Task 3.4/3.5/3.6/3.7 tests and one Task 3.8
+  test that over-strictly required every ablation row dict to contain
+  every currently-defined column, including columns this task added).
+- `scripts/dev.py test` (full): **1778 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_filter.py`, `src/retrieval/filtered.py`,
+or `src/eval/phase3_filter.py` (AST-verified, portable test). No paid
+API/generation calls. FinanceBench not rerun. Row 0 and every Task
+3.2-3.8 ablation-table row confirmed byte-for-byte unchanged in their
+pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+```
+
+**Next roadmap task:** Phase 3, Task 3.10 — Structured XBRL SQL path for
+supported numeric questions, using the Task 3.8 router's `xbrl_fact`
+intent classification to decide when to route to it instead of
+retrieval.

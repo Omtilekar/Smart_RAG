@@ -1,0 +1,62 @@
+{
+  "task": "3.6",
+  "experiment_version": 1,
+
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "question_ids_sha256": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_schema_version": 1,
+  "split_mode": "fixed",
+  "window_size_tokens": 256,
+  "overlap_tokens": 0,
+  "chunk_count": 323971,
+
+  "base_retrieval": {
+    "note": "Task 3.5 selected dense-only retrieval (RRF hybrid was practically tied with dense and dense-only was preferred as the simpler architecture) - reranking operates on the frozen Qwen dense-only candidate pool, not the sparse or hybrid stream.",
+    "candidate_id": "qwen3_embedding", "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3", "embedding_dimension": 1024,
+    "embedding_identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "index_identity_hash": "c532896a0bdf17d10acc0549bacc2ba3776609b0f56f374dcb2c8a8ec7c9b64c",
+    "reference_metrics": {
+      "doc_recall_at_10": 0.9887640449438202, "doc_recall_at_10_hits": 88,
+      "doc_recall_at_50": 1.0, "doc_recall_at_50_hits": 89,
+      "doc_mrr": 0.9251382200820403, "doc_ndcg_at_10": 0.9406706590441349
+    }
+  },
+
+  "candidate_grid_decision": "PROJECT_EXECUTION.md Task 3.6 names no specific reranker model (only 'a small serving candidate' + an optional larger quality ceiling) - a materially ambiguous contract per the Task 3.99 controlled-execution-loop's own LOOP STEP 1 rule. User-approved candidate grid (2026-09-12): cross-encoder/ms-marco-MiniLM-L6-v2 only. The optional larger-quality-ceiling comparison is explicitly deferred, not attempted in this round.",
+
+  "reranker": {
+    "candidate_id": "ce_minilm_l6",
+    "model_repository": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "max_seq_length": 512,
+    "num_labels": 1,
+    "score_activation": "raw_logit",
+    "trust_remote_code": false,
+    "license": "apache-2.0",
+    "model_size_bytes": 91815758,
+    "note": "Revision pinned from the installed sentence-transformers 6.0.0's own resolved huggingface_hub cache ref at pilot time - never 'main'. Score direction (higher=more relevant, raw unbounded logit, no sigmoid applied) verified empirically before formal code was written: a clearly relevant pair scored ~9.1, a mismatched pair ~-7.3."
+  },
+
+  "rerank_base_k": 50,
+  "candidate_set_recall_note": "Reranking reorders the fixed 50-chunk dense candidate pool only - it can never change which chunks are in that pool. doc_recall@50 is therefore mathematically identical before and after reranking (verified at run time via src.eval.phase3_rerank.assert_candidate_set_recall_unchanged) and is reported for continuity, never claimed as an improvement.",
+
+  "generation_enabled": false,
+  "crag_enabled": false,
+  "router_enabled": false,
+  "metadata_prefilter_enabled": false,
+
+  "metric_schema_version": 1,
+  "evaluation_schema_hash": "7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126",
+  "metric_definitions": "doc_recall@10/@50 (continuity metrics, unchanged by reranking) via the same Task 2.6 granularity-agnostic functions used since Task 3.4; doc_mrr, doc_ndcg@10 (rank10-based, Task 2.6 + Task 3.1's document_relevances_at_k); doc_precision_at_5 (new Task 3.6 metric, src.eval.metrics.precision_at_k, over the same document_relevances_at_k(...,k=5) binary relevance vector - one hit maximum per document, never a new dedup rule); doc_recall_at_5 (hit@5, Task 2.6's hit_at_k). PROJECT_EXECUTION.md's own Task 3.6 'Primary metrics' list (MRR, nDCG@10, Precision@5, Recall@5).",
+
+  "selection_rule": "src.eval.phase3_rerank.select_rerank_configuration: priority order doc_mrr > doc_ndcg@10 > doc_precision_at_5 > doc_recall_at_5 against the no-rerank (dense-only) baseline. Practical tie: Recall@5 hit delta <= 1 out of 89 AND paired MRR/nDCG@10 95% bootstrap CIs both include 0 -> prefer no_rerank (simpler, avoids the reranker's extra query-time model call). A win on one ranking metric with a credible (95% CI entirely below 0) regression on another is flagged for a user decision, never auto-resolved. A negative result (no_rerank remains selected) is a fully valid Task 3.6 outcome, exactly as Task 3.5 established for hybrid fusion.",
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "bootstrap_unit": "question_id"
+}

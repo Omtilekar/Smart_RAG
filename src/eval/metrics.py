@@ -101,6 +101,29 @@ def mean_reciprocal_rank(reciprocal_ranks: Sequence[float]) -> float:
     return sum(reciprocal_ranks) / len(reciprocal_ranks)
 
 
+# --------------------------------------------------------------- precision@k (binary relevance)
+#
+# Task 3.6 - reuses the same binary relevance vector convention as
+# dcg_at_k/idcg_at_k (one hit maximum per relevant item - callers pass a
+# relevance vector already deduplicated by e.g.
+# `src.eval.phase3_baseline.document_relevances_at_k`, never a second
+# dedup implementation here).
+
+def precision_at_k(relevances: Sequence[int], k: int) -> float:
+    """Precision@k = (# relevant items in the top k) / k. Requires
+    exactly `k` relevance values (never silently pads/truncates a
+    shorter list - a caller with fewer than k candidates must decide how
+    to represent the missing ranks, not this function)."""
+    if k < 1:
+        raise MetricInputError(f"k must be >= 1, got {k}")
+    if len(relevances) != k:
+        raise MetricInputError(f"expected exactly {k} relevance values, got {len(relevances)}")
+    for rank, rel in enumerate(relevances, start=1):
+        if rel not in (0, 1):
+            raise MetricInputError(f"binary relevance required, got {rel!r} at rank {rank}")
+    return sum(relevances) / k
+
+
 # --------------------------------------------------------------- nDCG@k (binary relevance)
 #
 # Frozen discount convention: gain_i / log2(rank_i + 1) for rank_i

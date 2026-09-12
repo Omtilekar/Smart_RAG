@@ -1544,9 +1544,16 @@ Phase 3 — Make It Good                                — IN PROGRESS
     dense (Recall@10 hit delta=0, both 95% CIs include 0) - dense-only
     selected as the simpler architecture - see
     project_plan/PHASE3_RRF_HYBRID_FUSION.md
+  3.6 Cross-encoder reranking                           — COMPLETE
+    large negative result: cross-encoder/ms-marco-MiniLM-L6-v2 reranking
+    of the dense-only candidate pool credibly REGRESSES MRR/nDCG@10/
+    Recall@5/Precision@5 (95% CIs entirely below 0; gained=0/lost=17 at
+    hit@5) - no_rerank selected - see
+    project_plan/PHASE3_CROSS_ENCODER_RERANKING.md
 ```
 
-**Next action:** Phase 3, Task 3.6 — Cross-encoder reranking over
-`qwen3_embedding` dense-only retrieval (the Task 3.5-selected mode) (do
-not start implementation from this document alone without re-reading
-the exact next subtask).
+**Next action:** Phase 3, Task 3.7 — CRAG-style confidence grading,
+using `qwen3_embedding` dense-only unreranked retrieval (Task 3.6
+selected `no_rerank`) as the candidate source (do not start
+implementation from this document alone without re-reading the exact
+next subtask).

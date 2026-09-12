@@ -10860,3 +10860,113 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.6 — Add cross-encoder reranking,
 using `qwen3_embedding` dense-only retrieval (the Task 3.5-selected
 mode) as the candidate source.
+
+---
+
+## 2026-09-12 — Task 3.6: cross-encoder reranking (large negative result - no_rerank selected)
+
+Reran under the Task 3.99 controlled-execution-loop after Task 3.5.
+`PROJECT_EXECUTION.md` names no specific reranker model for Task 3.6
+(unlike Task 3.3's explicit four-model table) - a materially ambiguous
+task contract per the loop's own LOOP STEP 1 rule, so the run stopped
+and asked the user to pick the candidate grid before implementing
+anything. User selected `cross-encoder/ms-marco-MiniLM-L6-v2` only
+(pinned revision `233902d25c440f23af6f7d6e94d2946bac0bee0a`, resolved
+from the installed sentence-transformers cache at pilot time); the
+roadmap's optional larger-quality-ceiling comparison was explicitly
+deferred. See `project_plan/PHASE3_CROSS_ENCODER_RERANKING.md` for full
+detail.
+
+### Pilot findings
+
+`CrossEncoder.predict()` returns a raw unbounded logit (no sigmoid) -
+higher is more relevant, never a probability (verified: relevant pair
+~9.1, mismatched pair ~-7.3). `num_labels=1`, `max_seq_length=512`,
+~92MB, fp32 on GPU, no CPU fallback.
+
+### Results - large, credible negative result
+
+```text
+                no_rerank (dense-only)   reranked (ce_minilm_l6)   delta
+doc_recall@5:   0.9663 (86/89)           0.7753 (69/89)            -0.1910
+doc_precision@5: 0.1933                  0.1551                    -0.0382
+doc_mrr:        0.9251                   0.6580                    -0.2671
+doc_ndcg@10:    0.9407                   0.7074                    -0.2333
+```
+
+Not a subtle tie: 95% paired bootstrap CIs entirely below 0 for both
+MRR (`[-0.3499, -0.1869]`) and nDCG@10 (`[-0.3060, -0.1627]`); hit@5 vs
+no-rerank shows gained=0/lost=17/unchanged=72 - reranking never helped
+a single question and demoted the correct document out of the top-5/
+top-10 window for 17 of 89. `doc_recall@50` unchanged (89/89, verified
+identical by construction - same candidate set, only reordered),
+confirming this is a pure reranking-quality effect, not a retrieval bug.
+Likely cause (not investigated further, out of scope): the reranker is
+trained on MS MARCO web-search query/short-passage pairs, quite unlike
+long SEC financial narrative/tabular chunks.
+
+**Selected: `no_rerank`** - "reranking does not improve any ranking
+metric over no-rerank on the frozen priority order." Uniformly worse on
+every metric (not a one-up-one-down trade-off), so the frozen rule
+resolved this cleanly and automatically with no user decision required.
+
+### New modules
+
+`src/rerank/cross_encoder.py` (`RerankerModelSpec` + generic load/score,
+mirroring `model_registry`'s pattern; its own `reranker_identity()`
+deliberately does not reuse `compute_embedding_identity()`, which
+assumes a dimension/convention shape a reranker doesn't have),
+`src/retrieval/reranked.py` (`RerankedRetriever` - retrieves the base
+dense pool once, reranks; candidate-set recall integrity asserted at
+run time via `assert_candidate_set_recall_unchanged`), a new
+`src.eval.metrics.precision_at_k()` (reuses the existing
+`document_relevances_at_k` one-hit-maximum convention, no new dedup
+rule), and `src/eval/phase3_rerank.py` (frozen selection rule with its
+own Recall@5-keyed practical-tie test - Task 3.2's Recall@50-keyed rule
+is meaningless here since reranking cannot change Recall@50 by
+construction, and Task 3.5's rule is keyed on a different depth).
+`ABLATION_TABLE_COLUMNS` extended additively again (14 new rerank
+columns, `selected` shared with Task 3.5's hybrid row) - every prior row
+verified byte-for-byte unchanged.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1620 passed, 30 deselected**
+  (+46 new: fake-retriever/fake-score-function reranker composition
+  tests, phase3_rerank pure-logic tests including the selection-rule
+  gates, AST-based static guards over the new orchestration script, and
+  4 new `precision_at_k` unit tests; also fixed two pre-existing Task
+  3.4/3.5 tests that over-strictly asserted every row must contain
+  every currently-defined ablation column, including columns this task
+  would add).
+- `scripts/dev.py test` (full): **1650 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_reranker.py`, `src/rerank/cross_encoder.py`,
+`src/retrieval/reranked.py`, or `src/eval/phase3_rerank.py` (AST-verified,
+portable test). No paid API/generation calls. FinanceBench not rerun.
+Frozen Task 3.2 chunk config, Task 3.3 dense winner identity, and Task
+3.5 selection (`dense_only`) verified unchanged before the run
+(re-verified live: dense parent reproduced its frozen Task 3.3
+per-question metrics exactly, 89/89 questions, before any reranked
+number was trusted). Row 0 and every Task 3.2/3.3/3.4/3.5 ablation-table
+row confirmed byte-for-byte unchanged in their pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+```
+
+**Next roadmap task:** Phase 3, Task 3.7 — Add CRAG-style confidence
+grading, using `qwen3_embedding` dense-only retrieval (unreranked - Task
+3.6 selected `no_rerank`) as the candidate source.

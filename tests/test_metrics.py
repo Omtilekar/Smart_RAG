@@ -46,6 +46,7 @@ from src.eval.metrics import (
     dcg_at_k,
     idcg_at_k,
     ndcg_at_k,
+    precision_at_k,
     numeric_exact_match,
     correct_refusal,
 )
@@ -531,3 +532,26 @@ def test_metric_round_trip_through_eval_store():
     es.complete_run(con, run_id=run_id)
     assert es.get_run(con, run_id)["status"] == "complete"
     con.close()
+
+
+# --------------------------------------------------------------- Task 3.6: precision_at_k
+
+def test_precision_at_k_hand_calculation():
+    assert precision_at_k([1, 0, 0, 0, 0], k=5) == pytest.approx(0.2)
+    assert precision_at_k([1, 1, 1, 1, 1], k=5) == pytest.approx(1.0)
+    assert precision_at_k([0, 0, 0, 0, 0], k=5) == pytest.approx(0.0)
+
+
+def test_precision_at_k_requires_exactly_k_values():
+    with pytest.raises(MetricInputError):
+        precision_at_k([1, 0], k=5)
+
+
+def test_precision_at_k_rejects_non_binary_relevance():
+    with pytest.raises(MetricInputError):
+        precision_at_k([1, 2, 0], k=3)
+
+
+def test_precision_at_k_rejects_k_below_one():
+    with pytest.raises(MetricInputError):
+        precision_at_k([1], k=0)

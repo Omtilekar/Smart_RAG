@@ -1,0 +1,80 @@
+{
+  "task": "3.5",
+  "experiment_version": 1,
+
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "question_ids_sha256": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_schema_version": 1,
+  "split_mode": "fixed",
+  "window_size_tokens": 256,
+  "overlap_tokens": 0,
+  "chunk_count": 323971,
+
+  "dense_parent": {
+    "candidate_id": "qwen3_embedding",
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "embedding_identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "index_identity_hash": "c532896a0bdf17d10acc0549bacc2ba3776609b0f56f374dcb2c8a8ec7c9b64c",
+    "reference_metrics": {
+      "doc_recall_at_10": 0.9887640449438202, "doc_recall_at_10_hits": 88,
+      "doc_recall_at_50": 1.0, "doc_recall_at_50_hits": 89,
+      "doc_mrr": 0.9251382200820403, "doc_ndcg_at_10": 0.9406706590441349
+    },
+    "note": "Frozen Task 3.3 winner. Identity/metrics are loaded live from results/phase3_3/qwen3_embedding.json at run time (never hardcoded/recomputed here) and this stored copy is only a plan-time cross-check."
+  },
+
+  "sparse_parent": {
+    "row_id": "bm25_fts",
+    "backend": "lancedb_native_fts",
+    "lancedb_version": "0.37.1",
+    "sparse_index_identity_hash": "f72f505188d1b948cae5913dddca059487fec364390c257b1375fd6dde1abe7d",
+    "reference_metrics": {
+      "doc_recall_at_10": 0.9662921348314607, "doc_recall_at_10_hits": 86,
+      "doc_recall_at_50": 0.9887640449438202, "doc_recall_at_50_hits": 88,
+      "doc_mrr": 0.8829855537720707, "doc_ndcg_at_10": 0.9028476433166785
+    },
+    "note": "Frozen Task 3.4 baseline. Identity/metrics are loaded live from results/phase_3_4_bm25_fts_baseline.json at run time (never hardcoded/recomputed here) and this stored copy is only a plan-time cross-check."
+  },
+
+  "parent_stream_reuse_policy": "Neither parent's full top-50 ranked chunk list was persisted with self-verifying provenance in a form suitable for direct reuse (Task 3.3 never wrote per-query ranked lists to disk at all; Task 3.4's git-ignored query_diagnostics.jsonl predates this task and carries no embedded identity tag). Task 3.5 therefore reruns RETRIEVAL ONLY for both parents against their already-frozen, unmodified artifacts (the dense Qwen LanceDB index and the sparse LanceDB FTS index) - no embeddings are recomputed, no index is rebuilt, no FTS index is rebuilt. Every rerun per-question hit10/rank10/rr10/ndcg10/hit50/rank50 is verified to reproduce the frozen Task 3.3/3.4 per_question values exactly before fusion proceeds.",
+
+  "fusion": {
+    "method": "reciprocal_rank_fusion",
+    "rrf_k": 60,
+    "formula": "RRF(d) = [1/(rrf_k+dense_rank(d)) if d in dense candidates else 0] + [1/(rrf_k+sparse_rank(d)) if d in sparse candidates else 0]; ranks are 1-based; ranks only, no raw dense-distance or sparse-_score normalization/mixing.",
+    "fusion_union_key": "chunk_id",
+    "dense_candidate_k": 50,
+    "sparse_candidate_k": 50,
+    "final_candidate_k": 50,
+    "duplicate_chunk_id_within_one_stream": "error",
+    "tie_break": [
+      "1. higher rrf_score",
+      "2. lower best_parent_rank = min(dense_rank, sparse_rank)",
+      "3. lower dense_rank (missing dense rank treated as infinity)",
+      "4. lower sparse_rank (missing sparse rank treated as infinity)",
+      "5. lexical chunk_id ascending"
+    ]
+  },
+
+  "generation_enabled": false,
+  "reranker_enabled": false,
+  "crag_enabled": false,
+  "router_enabled": false,
+  "metadata_prefilter_enabled": false,
+
+  "metric_schema_version": 1,
+  "evaluation_schema_hash": "7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126",
+  "metric_definitions": "doc_recall@10 / doc_recall@50 / doc_mrr / doc_ndcg@10 via src.eval.baseline_metrics-equivalent granularity-agnostic Task 2.6 functions (first_hit_rank/hit_at_k/reciprocal_rank/ndcg_at_k) plus Task 3.1's document_relevances_at_k - identical semantics to Tasks 3.1-3.4, unmodified.",
+
+  "selection_rule": "PROJECT_EXECUTION.md Task 3.5 Stage 9, implemented in src.eval.phase3_hybrid.select_hybrid_configuration: Gate 1 (absolute) - hybrid is eligible only if doc_recall@50 == 89/89, matching dense's ceiling exactly. Gate 2 (eligible candidates only) - compare doc_mrr > doc_ndcg@10 > doc_recall@10 against dense (Recall@50 is at ceiling for both and cannot distinguish an improvement). Practical tie: Recall@10 hit delta <= 1 out of 89 AND paired MRR/nDCG@10 95% bootstrap CIs both include 0 -> prefer dense-only (simpler, no second retrieval path). A hybrid win on one ranking metric with a credible (95% CI entirely below 0) regression on another is flagged for a user decision, never auto-resolved. A negative result (dense-only remains selected) is a fully valid Task 3.5 outcome.",
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "bootstrap_unit": "question_id"
+}

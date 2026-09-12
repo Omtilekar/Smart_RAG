@@ -362,7 +362,24 @@ ABLATION_TABLE_SPARSE_EXTRA_COLUMNS: tuple[str, ...] = (
     "fts_search_latency_p50_ms", "fts_search_latency_p95_ms",
 )
 
-ABLATION_TABLE_COLUMNS: tuple[str, ...] = _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS
+# Task 3.5 - additive RRF-hybrid columns, same mechanism as Task 3.4's
+# extension above (`src.eval.phase3_hybrid` imports this tuple rather
+# than redefining it). Every prior row keeps its own values byte-for-
+# byte identical and simply gains these columns with value `NA`.
+ABLATION_TABLE_HYBRID_EXTRA_COLUMNS: tuple[str, ...] = (
+    "fusion_method", "rrf_k", "dense_candidate_k", "sparse_candidate_k", "final_candidate_k",
+    "sparse_index_identity",
+    "delta_vs_sparse_recall10", "delta_vs_sparse_recall50", "delta_vs_sparse_mrr", "delta_vs_sparse_ndcg10",
+    "hit10_gained_vs_dense", "hit10_lost_vs_dense", "hit50_gained_vs_dense", "hit50_lost_vs_dense",
+    "hybrid_both_parent_top10", "hybrid_dense_only_top10", "hybrid_sparse_only_top10",
+    "hybrid_both_parent_top50", "hybrid_dense_only_top50", "hybrid_sparse_only_top50",
+    "dense_latency_p50_ms", "sparse_latency_p50_ms", "fusion_latency_p50_ms",
+    "selected",
+)
+
+ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
+    _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
+)
 
 
 def build_row0(
@@ -500,7 +517,7 @@ __all__ = [
     "CoverageResult", "audit_question_coverage", "audit_dev_coverage",
     "select_phase3_dev_scope", "compute_phase3_dev_scope_sha256", "compute_question_ids_sha256",
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
-    "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS",
+    "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

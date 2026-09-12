@@ -97,3 +97,6 @@ results/*
 # Task 3.4 - same mechanism, one small sparse-baseline result JSON.
 !results/phase3_4/
 !results/phase3_4/*.json
+# Task 3.5 - same mechanism, one small hybrid-fusion result JSON.
+!results/phase3_5/
+!results/phase3_5/*.json

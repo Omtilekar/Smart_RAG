@@ -10743,3 +10743,120 @@ Phase 3 — Make It Good                        — IN PROGRESS
 frozen Task 3.3 `qwen3_embedding` dense candidate with this Task 3.4
 sparse baseline, using the dense-only/sparse-only complementarity
 evidence above.
+
+---
+
+## 2026-09-12 — Task 3.5: RRF hybrid fusion (negative result - dense-only selected)
+
+Reciprocal Rank Fusion of the frozen Task 3.3 dense winner
+(`Qwen/Qwen3-Embedding-0.6B`) and the frozen Task 3.4 sparse LanceDB-
+native FTS baseline, evaluated over the exact frozen 89-question
+`DEV/evaluable-subset`. See `project_plan/PHASE3_RRF_HYBRID_FUSION.md`
+for full detail. Fusion only - chunking, the dense model/index, and the
+sparse index are unchanged from Tasks 3.2-3.4.
+
+### Parent reproduction
+
+Neither parent's full top-50 ranked chunk list was persisted anywhere
+with self-verifying provenance suitable for direct reuse, so
+`scripts/run_phase3_rrf_hybrid.py` reruns RETRIEVAL ONLY for both
+parents against their already-frozen, unmodified artifacts (no
+embeddings recomputed, no index rebuilt). Every one of the 89 recomputed
+per-question metrics was verified to reproduce the frozen Task 3.3/3.4
+values exactly before the hybrid result was trusted.
+
+### RRF definition
+
+`rrf_k=60`, dense/sparse/final candidate depth 50, fusion at `chunk_id`
+level, ranks only (no dense-distance/sparse-`_score` normalization or
+mixing), deterministic tie-break (score -> best_parent_rank -> dense
+rank -> sparse rank -> lexical chunk_id).
+
+### Results
+
+```text
+Mode          R@10       R@50       MRR       nDCG@10
+Dense Qwen    88/89      89/89      0.9251    0.9407
+Sparse FTS    86/89      88/89      0.8830    0.9028
+RRF hybrid    88/89      89/89      0.9457    0.9566
+```
+
+Hybrid preserves dense's 89/89 R@50 ceiling exactly (Gate 1 passes) and
+raises MRR (+0.0206) and nDCG@10 (+0.0160) as point estimates. But the
+95% paired bootstrap CIs for both deltas include 0 (N=89) and the
+Recall@10 hit delta is exactly 0 (gained 1 question, lost 1 relative to
+dense) - the frozen Stage 9 practical-tie rule (Recall@10 hit delta <=1
+AND both CIs include 0) classifies hybrid and dense as practically tied.
+
+**Selected: `dense_only`** - "hybrid is practically tied with dense
+(Recall@10 hit delta=0, MRR/nDCG@10 95% CIs include 0) - dense-only
+preferred: simpler, avoids a second retrieval path at query time.
+Hybrid did not earn its extra complexity." A fully valid negative
+result per the roadmap's own framing.
+
+Per-question movement vs dense: hit@10 gained=1/lost=1/unchanged=87;
+hit@50 gained=0/lost=0/unchanged=89; rank10 movement
+improved=9/worsened=4/unchanged=76. Fusion composition (evidence hybrid
+genuinely draws on sparse, not just reproducing dense order): top10
+both=714/dense_only=97/sparse_only=79 (across 89 questions x 10 slots);
+top50 both=1084/dense_only=1710/sparse_only=1656.
+
+### New modules
+
+`src/retrieval/fusion.py` (pure `rrf_fuse()` - validates rrf_k/limit,
+rejects duplicate chunk_id within one parent stream, never mutates
+parent objects), `src/retrieval/hybrid.py` (`HybridRetriever` - calls
+dense once, sparse once, fuses; a parent failure propagates rather than
+silently degrading to one arm), `src/eval/phase3_hybrid.py` (gain/loss
+classification, rank-movement, fusion-source composition, the frozen
+Stage 9 selection rule, and the hybrid ablation row - deliberately does
+NOT reuse `phase3_ablation.is_practical_tie()`, which is keyed on a
+Recall@50 hit delta that is structurally uninformative here since Gate
+1 already requires exact R@50 preservation; a correctly-scoped
+`is_practical_tie_hybrid()` keyed on Recall@10 is defined instead).
+`ABLATION_TABLE_COLUMNS` extended additively again (23 new hybrid
+columns) - every prior row verified byte-for-byte unchanged.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1570 passed, 30 deselected**
+  (+162 new: synthetic-fixture RRF fusion tests, HybridRetriever
+  composition/parent-failure tests, phase3_hybrid pure-logic tests
+  including the Stage 9 selection-rule gates, and AST-based static
+  guards over the new orchestration script; also fixed one pre-existing
+  Task 3.4 test that over-strictly asserted every row must literally
+  contain every currently-defined ablation column, including columns a
+  later task would add).
+- `scripts/dev.py test` (full): **1600 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_rrf_hybrid.py`, `src/retrieval/fusion.py`,
+`src/retrieval/hybrid.py`, or `src/eval/phase3_hybrid.py` (AST-verified,
+portable test). No paid API/generation calls. FinanceBench not rerun.
+Frozen Task 3.2 chunk config, Task 3.3 dense winner identity, and Task
+3.4 sparse baseline identity verified unchanged before the run
+(re-verified live: dense/sparse parents reproduced their frozen
+per-question metrics exactly, 89/89 questions, before any hybrid number
+was trusted). Row 0 and every Task 3.2/3.3/3.4 ablation-table row
+confirmed byte-for-byte unchanged in their pre-existing columns (`git
+diff` also confirms `results/phase_3_1_trusted_baseline.json` through
+`results/phase_3_4_bm25_fts_baseline.json` and their per-candidate
+result directories are byte-identical).
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+```
+
+**Next roadmap task:** Phase 3, Task 3.6 — Add cross-encoder reranking,
+using `qwen3_embedding` dense-only retrieval (the Task 3.5-selected
+mode) as the candidate source.

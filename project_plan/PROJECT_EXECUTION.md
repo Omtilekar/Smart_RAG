@@ -1538,9 +1538,15 @@ Phase 3 — Make It Good                                — IN PROGRESS
     dense reference (qwen3_embedding) recorded for provenance/comparison
     only, never rebuilt or used to score a sparse query - see
     project_plan/PHASE3_BM25_FTS_BASELINE.md
+  3.5 RRF hybrid fusion                                 — COMPLETE
+    negative result: hybrid preserves dense's 89/89 R@50 ceiling and
+    raises MRR/nDCG@10 as point estimates, but is practically tied with
+    dense (Recall@10 hit delta=0, both 95% CIs include 0) - dense-only
+    selected as the simpler architecture - see
+    project_plan/PHASE3_RRF_HYBRID_FUSION.md
 ```
 
-**Next action:** Phase 3, Task 3.5 — RRF hybrid fusion of the frozen
-Task 3.3 dense winner with the Task 3.4 sparse baseline (do not start
-implementation from this document alone without re-reading the exact
-next subtask).
+**Next action:** Phase 3, Task 3.6 — Cross-encoder reranking over
+`qwen3_embedding` dense-only retrieval (the Task 3.5-selected mode) (do
+not start implementation from this document alone without re-reading
+the exact next subtask).

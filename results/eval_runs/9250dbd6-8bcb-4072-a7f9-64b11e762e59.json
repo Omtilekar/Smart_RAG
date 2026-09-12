@@ -1,0 +1,51 @@
+{
+  "run_schema_version": 2,
+  "run_id": "9250dbd6-8bcb-4072-a7f9-64b11e762e59",
+  "git_sha": "f205ccb91cedbe419907fa0b30896a035c7271e2",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe"
+  },
+  "index_identity_hash": "c532896a0bdf17d10acc0549bacc2ba3776609b0f56f374dcb2c8a8ec7c9b64c",
+  "retrieval_config": {
+    "type": "rrf_hybrid",
+    "rrf_k": 60,
+    "dense_k": 50,
+    "sparse_k": 50,
+    "final_k": 50,
+    "sparse_index_identity_hash": "f72f505188d1b948cae5913dddca059487fec364390c257b1375fd6dde1abe7d"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-12T02:46:36.243616Z",
+  "metrics": {
+    "doc_recall_at_10": 0.9887640449438202,
+    "doc_recall_at_10_hits": 88,
+    "doc_recall_at_50": 1.0,
+    "doc_recall_at_50_hits": 89,
+    "doc_mrr": 0.9456928838951312,
+    "doc_ndcg_at_10": 0.9566492776240085
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_5_rrf_hybrid_fusion",
+  "run_kind": "phase3_rrf_hybrid_retrieval",
+  "notes": "Task 3.5 RRF hybrid fusion (rrf_k=60) of frozen Qwen dense + Task 3.4 sparse over chunks (ba99e2f7861c...).",
+  "record_origin": "live",
+  "run_record_sha256": "44893449f042fe2c71de637af130c817cc6cd116424757edefb610e720e75c3d"
+}

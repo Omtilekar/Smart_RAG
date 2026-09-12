@@ -129,7 +129,10 @@ def test_build_sparse_ablation_row_shape_and_flags():
     assert row["dense_only_hits_at_50"] == 6
     assert row["sparse_only_hits_at_50"] == 7
     assert row["delta_vs_qwen_dense_mrr"] == -0.3
-    for col in p3.ABLATION_TABLE_COLUMNS:
+    # Every column Task 3.4 itself owns must be present. Later columns added
+    # additively by Task 3.5 (hybrid-only fields) are correctly absent here -
+    # `_row_to_csv_dict()` defaults them to NA when writing this row to CSV.
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_HYBRID_EXTRA_COLUMNS):
         assert col in row, f"missing ablation-table column {col!r} in sparse row"
 
 

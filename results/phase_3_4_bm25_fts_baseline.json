@@ -1,0 +1,1148 @@
+{
+  "task": "3.4",
+  "phase3_4_config_hash": "39ce7fc85e2e62a99dc3685c25685184738c3df49ada824c0488a9e9083eca11",
+  "phase3_4_config": {
+    "task": "3.4",
+    "experiment_version": 1,
+    "eval_split": "dev",
+    "eval_scope_kind": "fixed_evaluable_subset_v1",
+    "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+    "question_count": 89,
+    "question_ids_sha256": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "chunk_schema_version": 1,
+    "split_mode": "fixed",
+    "window_size_tokens": 256,
+    "overlap_tokens": 0,
+    "chunk_count": 323971,
+    "dense_reference": {
+      "candidate_id": "qwen3_embedding",
+      "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+      "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+      "embedding_dimension": 1024,
+      "used_for_sparse_scoring": false,
+      "note": "Frozen Task 3.3 winner. Identity/metrics are loaded live from results/phase3_3/qwen3_embedding.json at run time (never hardcoded/recomputed here) and used only for Stage 8's paired dense-vs-sparse comparison and for provenance in the Task 3.4 run record's embedding_model field - the dense model computes no sparse query scores."
+    },
+    "sparse_backend": "lancedb_native_fts",
+    "lancedb_version": "0.37.1",
+    "table_name": "chunks",
+    "indexed_column": "text",
+    "fts_index_name": "chunk_text_fts",
+    "fts_index_config": {
+      "note": "Simplest documented/default LanceDB 0.37.1 FTS() configuration - verified empirically against a disposable synthetic table (Stage 2), never assumed from memory or tuned for this project.",
+      "base_tokenizer": "simple",
+      "language": "English",
+      "lower_case": true,
+      "stem": true,
+      "remove_stop_words": true,
+      "ascii_folding": true,
+      "with_position": false,
+      "max_token_length": 40,
+      "ngram_min_length": 3,
+      "ngram_max_length": 3,
+      "prefix_only": false,
+      "block_size": 128,
+      "custom_stop_words": null
+    },
+    "score_contract": {
+      "native_score_field": "_score",
+      "direction": "higher_is_better",
+      "public_field_name": "sparse_score",
+      "note": "Native LanceDB FTS BM25-style score, preserved faithfully and never renamed to a dense-style 'distance'/'cosine score', never normalized across queries, never combined with a dense score in Task 3.4."
+    },
+    "query_transform": {
+      "policy": "raw_user_question_ascii_double_quote_stripped",
+      "note": "Raw user question text, verbatim, EXCEPT literal ASCII double-quote characters (U+0022) are stripped before the query reaches LanceDB's FTS parser. Verified empirically (Stage 2/6): with with_position=false (this config's frozen default), any '\"'-containing query is parsed as a phrase query and raises ValueError('Invalid input, position is not found but required for phrase queries...') for perfectly ordinary natural-language input - this is the one deterministic, documented sanitization rule Stage 6 permits, applied identically to every query. Verified separately that none of the 89 frozen DEV question texts contain a literal double-quote character, so this rule never changes the formal Task 3.4 result - it exists only so the general-purpose SparseRetriever boundary does not crash on ordinary text. No other query rewriting, expansion, synonym handling, or SEC-specific dictionary is applied."
+    },
+    "candidate_k": 50,
+    "generation_enabled": false,
+    "reranker_enabled": false,
+    "crag_enabled": false,
+    "router_enabled": false,
+    "metadata_prefilter_enabled": false,
+    "metric_schema_version": 1,
+    "evaluation_schema_hash": "7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126",
+    "metric_definitions": "doc_recall@10 / doc_recall@50 / doc_mrr / doc_ndcg@10 via src.eval.baseline_metrics (Task 1.10) + src.eval.metrics (Task 2.6) + src.eval.phase3_baseline.document_relevances_at_k (Task 3.1's nDCG double-counting fix) - unmodified, identical semantics to Tasks 3.1-3.3. chunk_recall@10, chunk_mrr, precision_at_5, faithfulness, citation_grounding, and generation metrics remain N/A.",
+    "comparison_policy": "Analysis only (PROJECT_EXECUTION.md Task 3.4 Stage 8): sparse-only results are paired-compared against the frozen Task 3.3 qwen3_embedding dense winner by question_id, using src.eval.phase3_ablation.paired_bootstrap_delta_ci (reused unmodified) for doc_recall@10/@50, doc_mrr, and doc_ndcg@10 deltas. No automatic winner is selected, no RRF/hybrid fusion is implemented, and no dense+sparse score combination occurs in Task 3.4. Dense-only/sparse-only/both/neither complementarity at hit@10 and hit@50 is reported as evidence for the Task 3.5 hybrid-fusion decision, not as a pass/fail gate on the sparse baseline itself.",
+    "bootstrap_seed": 42,
+    "bootstrap_iterations": 10000,
+    "bootstrap_unit": "question_id"
+  },
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_count": 323971,
+  "corpus_document_count": 1493,
+  "dense_reference": {
+    "candidate_id": "qwen3_embedding",
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "embedding_identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "used_for_sparse_scoring": false,
+    "metrics": {
+      "doc_recall_at_10": 0.9887640449438202,
+      "doc_recall_at_10_hits": 88,
+      "doc_recall_at_50": 1.0,
+      "doc_recall_at_50_hits": 89,
+      "doc_mrr": 0.9251382200820403,
+      "doc_ndcg_at_10": 0.9406706590441349
+    }
+  },
+  "sparse_result": {
+    "build_stats": {
+      "row_count": 323971,
+      "fts_build_seconds": 3.905,
+      "reused": false,
+      "index_size_bytes": 295378841,
+      "db_path": "C:\\Om\\Codes\\RAG\\artifacts\\indexes\\ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06\\lancedb_fts_sparse"
+    },
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "row_id": "bm25_fts",
+    "sparse_index_identity": {
+      "sparse_index_identity_version": 1,
+      "chunk_schema_version": 1,
+      "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+      "index_type": "fts_lancedb_native",
+      "lancedb_version": "0.37.1",
+      "table_name": "chunks",
+      "indexed_column": "text",
+      "fts_index_name": "chunk_text_fts",
+      "fts_config": {
+        "base_tokenizer": "simple",
+        "language": "English",
+        "lower_case": true,
+        "stem": true,
+        "remove_stop_words": true,
+        "ascii_folding": true,
+        "with_position": false,
+        "max_token_length": 40,
+        "ngram_min_length": 3,
+        "ngram_max_length": 3,
+        "prefix_only": false,
+        "block_size": 128,
+        "custom_stop_words": null
+      }
+    },
+    "sparse_index_identity_hash": "f72f505188d1b948cae5913dddca059487fec364390c257b1375fd6dde1abe7d",
+    "run_id": "0af0d507-c5db-4ead-b296-3e2be9020412",
+    "git_sha": "bf7c3bb15cf841e3a386a77eca9aef863830bedb",
+    "config_hash": "39ce7fc85e2e62a99dc3685c25685184738c3df49ada824c0488a9e9083eca11",
+    "question_count": 89,
+    "metrics": {
+      "doc_recall_at_10": 0.9662921348314607,
+      "doc_recall_at_10_hits": 86,
+      "doc_recall_at_50": 0.9887640449438202,
+      "doc_recall_at_50_hits": 88,
+      "doc_mrr": 0.8829855537720707,
+      "doc_ndcg_at_10": 0.9028476433166785
+    },
+    "per_question": {
+      "phase2-eval-000006": {
+        "target_document_id": "23111_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000023": {
+        "target_document_id": "805022_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000057": {
+        "target_document_id": "1262976_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000059": {
+        "target_document_id": "1299130_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000072": {
+        "target_document_id": "1404624_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000083": {
+        "target_document_id": "1489096_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000097": {
+        "target_document_id": "1555995_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000098": {
+        "target_document_id": "1556263_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000101": {
+        "target_document_id": "1574186_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000126": {
+        "target_document_id": "1763329_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000136": {
+        "target_document_id": "52827_2016.htm",
+        "hit10": true,
+        "rank10": 5,
+        "rr10": 0.2,
+        "ndcg10": 0.38685280723454163,
+        "hit50": true,
+        "rank50": 5
+      },
+      "phase2-eval-000265": {
+        "target_document_id": "1810019_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000296": {
+        "target_document_id": "879526_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000310": {
+        "target_document_id": "1054102_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000376": {
+        "target_document_id": "1610532_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000391": {
+        "target_document_id": "1718512_2018.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000400": {
+        "target_document_id": "1810019_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000413": {
+        "target_document_id": "39368_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000478": {
+        "target_document_id": "1237831_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000537": {
+        "target_document_id": "36146_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000658": {
+        "target_document_id": "1710366_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000665": {
+        "target_document_id": "1772921_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000714": {
+        "target_document_id": "928465_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000729": {
+        "target_document_id": "1156815_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000749": {
+        "target_document_id": "1408710_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000783": {
+        "target_document_id": "1610532_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000784": {
+        "target_document_id": "1617351_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000803": {
+        "target_document_id": "42316_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000809": {
+        "target_document_id": "317540_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000831": {
+        "target_document_id": "850209_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000866": {
+        "target_document_id": "1113481_2016.htm",
+        "hit10": true,
+        "rank10": 3,
+        "rr10": 0.3333333333333333,
+        "ndcg10": 0.5,
+        "hit50": true,
+        "rank50": 3
+      },
+      "phase2-eval-000883": {
+        "target_document_id": "1341439_2016.htm",
+        "hit10": true,
+        "rank10": 2,
+        "rr10": 0.5,
+        "ndcg10": 0.6309297535714575,
+        "hit50": true,
+        "rank50": 2
+      },
+      "phase2-eval-000893": {
+        "target_document_id": "1518985_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000897": {
+        "target_document_id": "1540684_2016.htm",
+        "hit10": true,
+        "rank10": 2,
+        "rr10": 0.5,
+        "ndcg10": 0.6309297535714575,
+        "hit50": true,
+        "rank50": 2
+      },
+      "phase2-eval-000933": {
+        "target_document_id": "1822791_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000935": {
+        "target_document_id": "36146_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-000992": {
+        "target_document_id": "1191359_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001030": {
+        "target_document_id": "1566373_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001045": {
+        "target_document_id": "1649338_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001066": {
+        "target_document_id": "1822791_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001069": {
+        "target_document_id": "39911_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001089": {
+        "target_document_id": "813762_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001130": {
+        "target_document_id": "1237831_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001135": {
+        "target_document_id": "1353615_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001165": {
+        "target_document_id": "1518548_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001186": {
+        "target_document_id": "1635650_2016.htm",
+        "hit10": true,
+        "rank10": 2,
+        "rr10": 0.5,
+        "ndcg10": 0.6309297535714575,
+        "hit50": true,
+        "rank50": 2
+      },
+      "phase2-eval-001193": {
+        "target_document_id": "1687229_2017.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001198": {
+        "target_document_id": "1784970_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001204": {
+        "target_document_id": "88572_2016.htm",
+        "hit10": false,
+        "rank10": null,
+        "rr10": 0.0,
+        "ndcg10": 0.0,
+        "hit50": true,
+        "rank50": 47
+      },
+      "phase2-eval-001218": {
+        "target_document_id": "867038_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001228": {
+        "target_document_id": "933036_2016.htm",
+        "hit10": true,
+        "rank10": 7,
+        "rr10": 0.14285714285714285,
+        "ndcg10": 0.3333333333333333,
+        "hit50": true,
+        "rank50": 7
+      },
+      "phase2-eval-001235": {
+        "target_document_id": "1080014_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001243": {
+        "target_document_id": "1267425_2019.htm",
+        "hit10": true,
+        "rank10": 2,
+        "rr10": 0.5,
+        "ndcg10": 0.6309297535714575,
+        "hit50": true,
+        "rank50": 2
+      },
+      "phase2-eval-001249": {
+        "target_document_id": "1338929_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001296": {
+        "target_document_id": "1590715_2017.htm",
+        "hit10": true,
+        "rank10": 10,
+        "rr10": 0.1,
+        "ndcg10": 0.2890648263178879,
+        "hit50": true,
+        "rank50": 10
+      },
+      "phase2-eval-001333": {
+        "target_document_id": "1822791_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001341": {
+        "target_document_id": "42316_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001370": {
+        "target_document_id": "832101_2016.htm",
+        "hit10": true,
+        "rank10": 2,
+        "rr10": 0.5,
+        "ndcg10": 0.6309297535714575,
+        "hit50": true,
+        "rank50": 2
+      },
+      "phase2-eval-001371": {
+        "target_document_id": "844856_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001380": {
+        "target_document_id": "944075_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001442": {
+        "target_document_id": "1626878_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001445": {
+        "target_document_id": "1632933_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001450": {
+        "target_document_id": "1662382_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001472": {
+        "target_document_id": "101295_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001507": {
+        "target_document_id": "1129260_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001522": {
+        "target_document_id": "1372299_2016.htm",
+        "hit10": true,
+        "rank10": 6,
+        "rr10": 0.16666666666666666,
+        "ndcg10": 0.3562071871080222,
+        "hit50": true,
+        "rank50": 6
+      },
+      "phase2-eval-001539": {
+        "target_document_id": "1458704_2018.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001570": {
+        "target_document_id": "1617351_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001698": {
+        "target_document_id": "1561550_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001701": {
+        "target_document_id": "1575858_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001713": {
+        "target_document_id": "1642375_2019.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001714": {
+        "target_document_id": "1646228_2018.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001745": {
+        "target_document_id": "225628_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001765": {
+        "target_document_id": "936402_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001801": {
+        "target_document_id": "1346655_2020.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001817": {
+        "target_document_id": "1463208_2017.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001874": {
+        "target_document_id": "39368_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001916": {
+        "target_document_id": "1067294_2017.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001920": {
+        "target_document_id": "1128353_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001947": {
+        "target_document_id": "1419554_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-001959": {
+        "target_document_id": "1490906_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-002560": {
+        "target_document_id": "1129260_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-002561": {
+        "target_document_id": "1371489_2016.htm",
+        "hit10": true,
+        "rank10": 7,
+        "rr10": 0.14285714285714285,
+        "ndcg10": 0.3333333333333333,
+        "hit50": true,
+        "rank50": 7
+      },
+      "phase2-eval-002562": {
+        "target_document_id": "1389002_2018.htm",
+        "hit10": false,
+        "rank10": null,
+        "rr10": 0.0,
+        "ndcg10": 0.0,
+        "hit50": false,
+        "rank50": null
+      },
+      "phase2-eval-002577": {
+        "target_document_id": "821002_2017.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-002579": {
+        "target_document_id": "1324772_2016.htm",
+        "hit10": false,
+        "rank10": null,
+        "rr10": 0.0,
+        "ndcg10": 0.0,
+        "hit50": true,
+        "rank50": 11
+      },
+      "phase2-eval-002591": {
+        "target_document_id": "21535_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-002593": {
+        "target_document_id": "101538_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      },
+      "phase2-eval-002623": {
+        "target_document_id": "1438461_2016.htm",
+        "hit10": true,
+        "rank10": 1,
+        "rr10": 1.0,
+        "ndcg10": 1.0,
+        "hit50": true,
+        "rank50": 1
+      }
+    },
+    "underfilled_question_ids": [],
+    "latency_ms": {
+      "fts_search": {
+        "p50": 6.522,
+        "p95": 8.481
+      },
+      "retrieval_total": {
+        "p50": 6.522,
+        "p95": 8.481
+      }
+    },
+    "run_seconds": 0.587,
+    "diagnostics_path": "C:\\Om\\Codes\\RAG\\artifacts\\eval\\phase3_4_bm25_fts_baseline\\query_diagnostics.jsonl"
+  },
+  "paired_sparse_vs_dense": {
+    "deltas": {
+      "recall10": -0.022471910112359494,
+      "recall50": -0.011235955056179803,
+      "mrr": -0.04215266630996961,
+      "ndcg10": -0.03782301572745639
+    },
+    "bootstrap": {
+      "recall50_hit_delta": -1,
+      "recall10_hit_delta": -2,
+      "mrr_ci": [
+        -0.11781701444622772,
+        0.03192438023898703
+      ],
+      "mrr_point_estimate": -0.04215266630996961,
+      "ndcg_ci": [
+        -0.10230343191303881,
+        0.0248328169667823
+      ],
+      "ndcg_point_estimate": -0.03782301572745639,
+      "recall10_ci": [
+        -0.0674157303370787,
+        0.022471910112359494
+      ],
+      "hit10_gained": [
+        "phase2-eval-001539"
+      ],
+      "hit10_lost": [
+        "phase2-eval-001204",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "hit50_gained": [],
+      "hit50_lost": [
+        "phase2-eval-002562"
+      ]
+    },
+    "bootstrap_notable_rank_moves": [
+      {
+        "question_id": "phase2-eval-001296",
+        "reference_rank10": 1,
+        "candidate_rank10": 10,
+        "delta": -9
+      },
+      {
+        "question_id": "phase2-eval-000783",
+        "reference_rank10": 7,
+        "candidate_rank10": 1,
+        "delta": 6
+      },
+      {
+        "question_id": "phase2-eval-000866",
+        "reference_rank10": 9,
+        "candidate_rank10": 3,
+        "delta": 6
+      },
+      {
+        "question_id": "phase2-eval-001228",
+        "reference_rank10": 1,
+        "candidate_rank10": 7,
+        "delta": -6
+      },
+      {
+        "question_id": "phase2-eval-002561",
+        "reference_rank10": 1,
+        "candidate_rank10": 7,
+        "delta": -6
+      },
+      {
+        "question_id": "phase2-eval-001522",
+        "reference_rank10": 1,
+        "candidate_rank10": 6,
+        "delta": -5
+      },
+      {
+        "question_id": "phase2-eval-000136",
+        "reference_rank10": 1,
+        "candidate_rank10": 5,
+        "delta": -4
+      },
+      {
+        "question_id": "phase2-eval-001235",
+        "reference_rank10": 4,
+        "candidate_rank10": 1,
+        "delta": 3
+      },
+      {
+        "question_id": "phase2-eval-001947",
+        "reference_rank10": 3,
+        "candidate_rank10": 1,
+        "delta": 2
+      },
+      {
+        "question_id": "phase2-eval-000059",
+        "reference_rank10": 2,
+        "candidate_rank10": 1,
+        "delta": 1
+      }
+    ]
+  },
+  "complementarity": {
+    "hit_at_10": {
+      "both": 85,
+      "dense_only": 3,
+      "sparse_only": 1,
+      "neither": 0,
+      "dense_only_question_ids": [
+        "phase2-eval-001204",
+        "phase2-eval-002562",
+        "phase2-eval-002579"
+      ],
+      "sparse_only_question_ids": [
+        "phase2-eval-001539"
+      ]
+    },
+    "hit_at_50": {
+      "both": 88,
+      "dense_only": 1,
+      "sparse_only": 0,
+      "neither": 0,
+      "dense_only_question_ids": [
+        "phase2-eval-002562"
+      ],
+      "sparse_only_question_ids": []
+    }
+  },
+  "first_hit_rank_comparison_at_10": {
+    "sparse_better": 10,
+    "dense_better": 13,
+    "same": 66
+  },
+  "ablation_row": {
+    "row_id": "bm25_fts",
+    "configuration": "sparse_lancedb_fts_baseline",
+    "status": "phase3_4_bm25_fts_baseline",
+    "run_id": "0af0d507-c5db-4ead-b296-3e2be9020412",
+    "git_sha": "bf7c3bb15cf841e3a386a77eca9aef863830bedb",
+    "phase3_config_hash": "39ce7fc85e2e62a99dc3685c25685184738c3df49ada824c0488a9e9083eca11",
+    "eval_split": "dev",
+    "eval_scope_kind": "fixed_evaluable_subset_v1",
+    "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+    "question_count": 89,
+    "corpus_document_count": 1493,
+    "chunk_count": 323971,
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "embedding_model": "Qwen/Qwen3-Embedding-0.6B",
+    "embedding_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_identity": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "index_identity": "f72f505188d1b948cae5913dddca059487fec364390c257b1375fd6dde1abe7d",
+    "retrieval": "lancedb_native_fts",
+    "candidate_k": 50,
+    "doc_recall_at_10": 0.9662921348314607,
+    "doc_recall_at_50": 0.9887640449438202,
+    "doc_mrr": 0.8829855537720707,
+    "doc_ndcg_at_10": 0.9028476433166785,
+    "precision_at_5": "N/A",
+    "refusal_metric": "N/A",
+    "retrieval_latency_p50_ms": 6.522,
+    "retrieval_latency_p95_ms": 8.481,
+    "query_embedding_latency_p50_ms": "N/A",
+    "search_latency_p50_ms": 6.522,
+    "index_size_bytes": 295378841,
+    "retrieval_mode": "sparse_only",
+    "sparse_backend": "lancedb_native_fts",
+    "lancedb_version": "0.37.1",
+    "fts_indexed_column": "text",
+    "dense_used_in_this_row": false,
+    "delta_vs_qwen_dense_recall10": -0.022471910112359494,
+    "delta_vs_qwen_dense_recall50": -0.011235955056179803,
+    "delta_vs_qwen_dense_mrr": -0.04215266630996961,
+    "delta_vs_qwen_dense_ndcg10": -0.03782301572745639,
+    "dense_only_hits_at_10": 3,
+    "sparse_only_hits_at_10": 1,
+    "dense_only_hits_at_50": 1,
+    "sparse_only_hits_at_50": 0,
+    "fts_build_seconds": 3.905,
+    "fts_index_size_bytes": 295378841,
+    "fts_search_latency_p50_ms": 6.522,
+    "fts_search_latency_p95_ms": 8.481,
+    "notes": "Task 3.4: LanceDB-native FTS (simple tokenizer, stem=True, stopwords_removed=True), sparse-only (dense_used_in_this_row=false). Dense reference: qwen3_embedding (Task 3.3 frozen winner, not rebuilt)."
+  },
+  "limitations": [
+    "Evaluated only over the frozen Task 3.1 89-question DEV/evaluable-subset (4.9% of full DEV).",
+    "N=89 is small; bootstrap CIs govern which sparse-vs-dense differences are credible.",
+    "Sparse-only baseline: no RRF/hybrid fusion, no reranking, no CRAG, no router, no metadata pre-filtering, no generation - dense-vs-sparse is an analysis comparison only, not a winner selection.",
+    "LanceDB native FTS returns only nonzero-score matches, so a small number of questions may receive fewer than 50 candidates - see sparse_result.underfilled_question_ids.",
+    "chunk_recall@10, chunk_mrr, precision@5, faithfulness, citation_grounding, and generation metrics remain N/A - no valid chunk-level or generation gold exists for this scope."
+  ],
+  "next_task_readiness": "Sparse baseline frozen and comparable to the Task 3.3 dense winner on the identical 89-question scope. Complementarity counts above are the evidence Task 3.5 (RRF hybrid fusion) needs to decide whether hybrid retrieval is likely to add value."
+}

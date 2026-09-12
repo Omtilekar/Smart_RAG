@@ -94,3 +94,6 @@ results/*
 # embedding-model benchmark candidate.
 !results/phase3_3/
 !results/phase3_3/*.json
+# Task 3.4 - same mechanism, one small sparse-baseline result JSON.
+!results/phase3_4/
+!results/phase3_4/*.json

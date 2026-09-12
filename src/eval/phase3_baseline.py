@@ -333,7 +333,7 @@ def verify_artifact_identities(config: Mapping[str, Any], *, live_chunk_config_h
 
 # --------------------------------------------------------------- ablation table
 
-ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
+_ABLATION_TABLE_COLUMNS_V1: tuple[str, ...] = (
     "row_id", "configuration", "status", "run_id", "git_sha", "phase3_config_hash",
     "eval_split", "eval_scope_kind", "eval_scope_sha256", "question_count",
     "corpus_document_count", "chunk_count", "chunk_config_hash", "embedding_model",
@@ -343,6 +343,26 @@ ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     "retrieval_latency_p50_ms", "retrieval_latency_p95_ms", "query_embedding_latency_p50_ms",
     "search_latency_p50_ms", "index_size_bytes", "notes",
 )
+
+# Task 3.4 - additive sparse-baseline columns, single source of truth
+# (`src.eval.phase3_sparse` imports this tuple rather than redefining it).
+# `_row_to_csv_dict()` below already defaults any column absent from an
+# existing row's dict to `NA`, so every prior row (0, A0-C1, the four
+# Task 3.3 embedding candidates) keeps its own values byte-for-byte
+# identical and simply gains these columns with value `NA` - never a
+# breaking schema change.
+ABLATION_TABLE_SPARSE_EXTRA_COLUMNS: tuple[str, ...] = (
+    "retrieval_mode", "sparse_backend", "lancedb_version", "fts_indexed_column",
+    "dense_used_in_this_row",
+    "delta_vs_qwen_dense_recall10", "delta_vs_qwen_dense_recall50",
+    "delta_vs_qwen_dense_mrr", "delta_vs_qwen_dense_ndcg10",
+    "dense_only_hits_at_10", "sparse_only_hits_at_10",
+    "dense_only_hits_at_50", "sparse_only_hits_at_50",
+    "fts_build_seconds", "fts_index_size_bytes",
+    "fts_search_latency_p50_ms", "fts_search_latency_p95_ms",
+)
+
+ABLATION_TABLE_COLUMNS: tuple[str, ...] = _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS
 
 
 def build_row0(
@@ -480,6 +500,7 @@ __all__ = [
     "CoverageResult", "audit_question_coverage", "audit_dev_coverage",
     "select_phase3_dev_scope", "compute_phase3_dev_scope_sha256", "compute_question_ids_sha256",
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
-    "ABLATION_TABLE_COLUMNS", "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
+    "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS",
+    "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

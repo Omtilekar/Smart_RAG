@@ -1,0 +1,76 @@
+{
+  "task": "3.4",
+  "experiment_version": 1,
+
+  "eval_split": "dev",
+  "eval_scope_kind": "fixed_evaluable_subset_v1",
+  "eval_scope_sha256": "78980d25fa4a0a4971fcc356449ec5453d425a52c9e43d63a88a2c3fae532f68",
+  "question_count": 89,
+  "question_ids_sha256": "6d3522d0d4ee888b620d148d33eab58ebdc07aab3395b34a6bb51c0dcfabe1b1",
+
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_schema_version": 1,
+  "split_mode": "fixed",
+  "window_size_tokens": 256,
+  "overlap_tokens": 0,
+  "chunk_count": 323971,
+
+  "dense_reference": {
+    "candidate_id": "qwen3_embedding",
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "used_for_sparse_scoring": false,
+    "note": "Frozen Task 3.3 winner. Identity/metrics are loaded live from results/phase3_3/qwen3_embedding.json at run time (never hardcoded/recomputed here) and used only for Stage 8's paired dense-vs-sparse comparison and for provenance in the Task 3.4 run record's embedding_model field - the dense model computes no sparse query scores."
+  },
+
+  "sparse_backend": "lancedb_native_fts",
+  "lancedb_version": "0.37.1",
+  "table_name": "chunks",
+  "indexed_column": "text",
+  "fts_index_name": "chunk_text_fts",
+  "fts_index_config": {
+    "note": "Simplest documented/default LanceDB 0.37.1 FTS() configuration - verified empirically against a disposable synthetic table (Stage 2), never assumed from memory or tuned for this project.",
+    "base_tokenizer": "simple",
+    "language": "English",
+    "lower_case": true,
+    "stem": true,
+    "remove_stop_words": true,
+    "ascii_folding": true,
+    "with_position": false,
+    "max_token_length": 40,
+    "ngram_min_length": 3,
+    "ngram_max_length": 3,
+    "prefix_only": false,
+    "block_size": 128,
+    "custom_stop_words": null
+  },
+
+  "score_contract": {
+    "native_score_field": "_score",
+    "direction": "higher_is_better",
+    "public_field_name": "sparse_score",
+    "note": "Native LanceDB FTS BM25-style score, preserved faithfully and never renamed to a dense-style 'distance'/'cosine score', never normalized across queries, never combined with a dense score in Task 3.4."
+  },
+
+  "query_transform": {
+    "policy": "raw_user_question_ascii_double_quote_stripped",
+    "note": "Raw user question text, verbatim, EXCEPT literal ASCII double-quote characters (U+0022) are stripped before the query reaches LanceDB's FTS parser. Verified empirically (Stage 2/6): with with_position=false (this config's frozen default), any '\"'-containing query is parsed as a phrase query and raises ValueError('Invalid input, position is not found but required for phrase queries...') for perfectly ordinary natural-language input - this is the one deterministic, documented sanitization rule Stage 6 permits, applied identically to every query. Verified separately that none of the 89 frozen DEV question texts contain a literal double-quote character, so this rule never changes the formal Task 3.4 result - it exists only so the general-purpose SparseRetriever boundary does not crash on ordinary text. No other query rewriting, expansion, synonym handling, or SEC-specific dictionary is applied."
+  },
+
+  "candidate_k": 50,
+  "generation_enabled": false,
+  "reranker_enabled": false,
+  "crag_enabled": false,
+  "router_enabled": false,
+  "metadata_prefilter_enabled": false,
+
+  "metric_schema_version": 1,
+  "evaluation_schema_hash": "7dd055a16b9c19ead250e3b5bc94f672d9d857dd65766b30ff64612a66fed126",
+  "metric_definitions": "doc_recall@10 / doc_recall@50 / doc_mrr / doc_ndcg@10 via src.eval.baseline_metrics (Task 1.10) + src.eval.metrics (Task 2.6) + src.eval.phase3_baseline.document_relevances_at_k (Task 3.1's nDCG double-counting fix) - unmodified, identical semantics to Tasks 3.1-3.3. chunk_recall@10, chunk_mrr, precision_at_5, faithfulness, citation_grounding, and generation metrics remain N/A.",
+
+  "comparison_policy": "Analysis only (PROJECT_EXECUTION.md Task 3.4 Stage 8): sparse-only results are paired-compared against the frozen Task 3.3 qwen3_embedding dense winner by question_id, using src.eval.phase3_ablation.paired_bootstrap_delta_ci (reused unmodified) for doc_recall@10/@50, doc_mrr, and doc_ndcg@10 deltas. No automatic winner is selected, no RRF/hybrid fusion is implemented, and no dense+sparse score combination occurs in Task 3.4. Dense-only/sparse-only/both/neither complementarity at hit@10 and hit@50 is reported as evidence for the Task 3.5 hybrid-fusion decision, not as a pass/fail gate on the sparse baseline itself.",
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "bootstrap_unit": "question_id"
+}

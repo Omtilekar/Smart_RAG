@@ -1530,9 +1530,17 @@ Phase 3 — Make It Good                                — IN PROGRESS
   3.2 Chunking ablation                                — COMPLETE
     winner: fixed 256-token windows, zero overlap, fixed (non-section-
     aware) splitting - see project_plan/PHASE3_CHUNKING_ABLATION.md
+  3.3 Embedding model benchmark                        — COMPLETE
+    winner: Qwen/Qwen3-Embedding-0.6B (dim 1024) - see
+    project_plan/PHASE3_EMBEDDING_MODEL_BENCHMARK.md
+  3.4 LanceDB BM25/FTS sparse retrieval baseline        — COMPLETE
+    sparse-only, LanceDB-native FTS over the frozen 256/0/fixed chunks;
+    dense reference (qwen3_embedding) recorded for provenance/comparison
+    only, never rebuilt or used to score a sparse query - see
+    project_plan/PHASE3_BM25_FTS_BASELINE.md
 ```
 
-**Next action:** Phase 3, Task 3.3 — Embedding model benchmark, run
-against the frozen 256-token/zero-overlap/fixed chunking strategy
-selected in Task 3.2 (do not start implementation from this document
-alone without re-reading the exact next subtask).
+**Next action:** Phase 3, Task 3.5 — RRF hybrid fusion of the frozen
+Task 3.3 dense winner with the Task 3.4 sparse baseline (do not start
+implementation from this document alone without re-reading the exact
+next subtask).

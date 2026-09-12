@@ -10629,3 +10629,117 @@ Phase 3 — Make It Good                        — IN PROGRESS
 **Next roadmap task:** Phase 3, Task 3.4 — Add LanceDB-native BM25/FTS as
 the initial sparse retrieval baseline, run against the frozen 256/0/fixed
 chunking strategy and the `qwen3_embedding` dense model selected here.
+
+---
+
+## 2026-09-12 — Task 3.4: LanceDB-native BM25/FTS sparse retrieval baseline
+
+DEV-only, sparse-only lexical retrieval baseline built with LanceDB-
+native full-text search over the frozen Task 3.2 chunking winner
+(`chunk_config_hash=ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`),
+evaluated over the exact frozen 89-question `DEV/evaluable-subset`. See
+`project_plan/PHASE3_BM25_FTS_BASELINE.md` for full detail. Retrieval
+modality only changes (dense-only -> sparse-only); the frozen Task 3.3
+`qwen3_embedding` dense winner was never rebuilt, never touched, and
+never used to score a sparse query.
+
+### Installed API audit
+
+`lancedb==0.37.1`. `Table.create_fts_index()` is deprecated since 0.25.0
+- used the supported `table.create_index(column, config=FTS())` path
+instead, verified against a disposable synthetic table first. Native
+score field `_score`, higher is better (verified: repeated-term chunk
+outranked single-mention chunk). Index persists across a fresh
+`lancedb.connect()` in a new process. One real finding: with the
+installed default `with_position=False`, a query containing a literal
+ASCII double-quote raises `ValueError` (phrase-query parsing needs a
+position index this config doesn't build) - verified no other
+punctuation/Unicode/SEC-term class (`10-K`, `Item 1A`, `R&D`, `%`, `$`,
+hyphens, slashes, parentheses, apostrophes, curly quotes) triggers this,
+and separately verified none of the 89 frozen DEV questions contain a
+literal double-quote, so `sanitize_fts_query()`'s one-character-class
+strip never changes the formal result - it only hardens the general
+retriever boundary.
+
+### Build
+
+323,971 chunks indexed directly from the frozen Task 3.2 chunk Parquet
+(no rechunking, no re-normalization, no embedding step). FTS build time
+3.9s; index size ~295 MB. Built at a separate LanceDB artifact path
+(`artifacts/indexes/<chunk_config_hash>/lancedb_fts_sparse/`) - the
+trusted Task 3.3 dense Qwen index was never opened or mutated.
+
+### Results
+
+```text
+                sparse (bm25_fts)   qwen3_embedding (dense, Task 3.3)   delta
+doc_recall@10:  0.9663 (86/89)      0.9888 (88/89)                     -0.0225
+doc_recall@50:  0.9888 (88/89)      1.0000 (89/89)                     -0.0112
+doc_mrr:        0.8830              0.9251                             -0.0422
+doc_ndcg@10:    0.9028              0.9407                             -0.0378
+p50/p95 latency: 6.5ms / 8.5ms
+```
+
+Dense remains stronger overall - expected for a purely lexical baseline
+against a strong instruction-tuned dense encoder. Complementarity (the
+Task 3.5 evidence): hit@10 both=85, dense_only=3, **sparse_only=1**,
+neither=0; hit@50 both=88, dense_only=1, sparse_only=0, neither=0.
+Sparse recovers a question dense alone misses at hit@10 while losing 3
+dense catches - non-zero complementarity in both directions, exactly
+the signal the roadmap says makes a sparse baseline worth keeping even
+when it does not beat dense standalone.
+
+### New modules
+
+`src/index/lancedb_fts.py` (FTS build/search primitives + a sparse-
+artifact identity that deliberately does NOT reuse Task 2.10's
+`compute_index_identity()` - that function requires an
+`embedding_identity_hash` a sparse-only artifact does not have; forcing
+a fake one in would misuse a field that means something real for the
+dense index), `src/retrieval/sparse.py` (`SparseRetriever`, faithful
+`sparse_score`, never renamed/normalized/combined with a dense score),
+`src/eval/phase3_sparse.py` (complementarity + first-hit-rank comparison
++ sparse ablation row, reusing `phase3_baseline`/`phase3_ablation`'s
+scope guards and paired bootstrap unmodified). `ABLATION_TABLE_COLUMNS`
+extended additively (17 new sparse-specific columns) - every prior row
+verified byte-for-byte unchanged in its existing columns; new columns
+default to `N/A` for rows that predate them.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1488 passed, 30 deselected**
+  (+77 new: synthetic-fixture LanceDB FTS tests, sparse retriever
+  validation/score-contract/schema tests, phase3_sparse pure-logic
+  tests, and AST-based static guards over the new orchestration script).
+- `scripts/dev.py test` (full): **1518 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_bm25_fts_baseline.py`, `src/index/lancedb_fts.py`,
+`src/retrieval/sparse.py`, or `src/eval/phase3_sparse.py` (AST-verified,
+portable test). No paid API/generation calls. FinanceBench not rerun.
+Frozen Task 3.2 chunk config and Task 3.3 dense winner identity
+(`Qwen/Qwen3-Embedding-0.6B`@`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`,
+dim 1024) verified unchanged before build/evaluate/compare. Row 0 and
+every Task 3.2/3.3 ablation-table row confirmed byte-for-byte unchanged
+in their pre-existing columns (`git diff` also confirms
+`results/phase_3_1_trusted_baseline.json`, `results/phase_3_2_chunking_ablation.json`,
+`results/phase_3_3_embedding_model_benchmark.json`, and
+`results/phase3_2/`, `results/phase3_3/` are byte-identical).
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+```
+
+**Next roadmap task:** Phase 3, Task 3.5 — Add RRF hybrid fusion of the
+frozen Task 3.3 `qwen3_embedding` dense candidate with this Task 3.4
+sparse baseline, using the dense-only/sparse-only complementarity
+evidence above.

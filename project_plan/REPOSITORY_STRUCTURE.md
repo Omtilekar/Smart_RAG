@@ -19,7 +19,13 @@ SEC-RAG/
 │   │                     # config hashing, embedding/index identity, artifact
 │   │                     # manifests, compatibility enforcement
 │   ├── ingest/          # IMPLEMENTED — data acquisition + validation + audit
-│   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter
+│   ├── normalize/       # IMPLEMENTED (Task 1.2) — EDGAR-CORPUS sections -> Markdown/frontmatter;
+│   │                     # Task 4.1 added FULL_CORPUS_FRONTMATTER_KEYS + a
+│   │                     # generalized render_frontmatter()/render_document()
+│   │                     # (optional `keys`, None -> YAML null) and
+│   │                     # is_all_sections_empty() - body rendering
+│   │                     # (render_body/normalize_newlines/output_filename)
+│   │                     # is byte-for-byte unchanged
 │   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet;
 │   │                     # metadata_schema.py (Task 2.9) — canonical chunk record
 │   │                     # schema (chunk_uid/chunk_local_id identity, field
@@ -77,7 +83,10 @@ SEC-RAG/
 │                         # identity/rubric/prompt/schema config),
 │                         # phase_3_1_trusted_baseline.json (Task 3.1, frozen
 │                         # Phase 3 DEV/evaluable-subset scope + every
-│                         # referenced Phase 1 artifact identity)
+│                         # referenced Phase 1 artifact identity),
+│                         # phase_4_1_full_corpus_normalization.json (Task 4.1,
+│                         # frozen full-corpus frontmatter/company-name-policy/
+│                         # checkpoint contract + phase_4_1_config_hash)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -167,7 +176,12 @@ SEC-RAG/
 │                         # `--status` filing/section navigation over Task
 │                         # 2.8's parsed structural corpus; see
 │                         # project_plan/PHASE3_TREE_SECTION_NAVIGATION.md)
-│                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md
+│                         # - see project_plan/DEVELOPER_COMMANDS.md, project_plan/SERVING_FEASIBILITY.md;
+│                         # normalize_full_corpus.py (Task 4.1, `--plan`/
+│                         # `--pilot`/`--run [--limit N]`/`--status`/
+│                         # `--verify-sample` resumable full-EDGAR-CORPUS
+│                         # normalization driver; see
+│                         # project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md)
 ├── results/             # planned: small committed metrics/experiment summaries;
 │                         # results/eval_runs/<run_id>.json — one immutable
 │                         # git-tracked evaluation-run record per execution

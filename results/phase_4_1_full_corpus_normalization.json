@@ -1,0 +1,40 @@
+{
+  "build_elapsed_seconds_last_run": 0.0,
+  "build_elapsed_seconds_bulk_run": 2981.641,
+  "build_note": "89,070 of 91,086 units were normalized in one bulk --run invocation (2981.6s, 29.87 docs/s, peak_rss=524,283,904 bytes); the remaining 2,016 (pilot sample + an earlier 2,000-doc throughput benchmark) were normalized in prior invocations under the same phase_4_1_config_hash/checkpoint. This finalization invocation (build_elapsed_seconds_last_run) processed 0 new units and only built the manifest/this result file.",
+  "build_manifest_sha256": "3ca76cfd6e789811012c60adb7ba7aa9c8c3d002547fbc5310da47481342f3f9",
+  "cik_count": 25937,
+  "company_name_lookup_ciks_resolved": 10757,
+  "created_at_utc": "2026-09-12T17:16:16Z",
+  "determinism_verification_method": "phase_4_1_config_hash (semantic_hash over the frozen config) + deterministic sorted-document_id processing order/manifest + per-document content_sha256 recorded in build_state.jsonl and manifest.jsonl + idempotent resume (re-running --run against a complete checkpoint reprocesses 0 units, verified directly) + --verify-sample (re-rendered the 16-document Stage 6 pilot sample in memory and diffed content_sha256 against the manifest: 0 mismatches)",
+  "documents_per_second_last_run": null,
+  "documents_per_second_bulk_run": 29.87,
+  "failed_count": 0,
+  "failed_sample": [],
+  "git_sha": "0b63dc3a5b6bb8b933012615e52efe6f9e3db3f9",
+  "missing_count": 0,
+  "normalized_document_count": 90239,
+  "normalizer_version": "phase1-minimal-v1",
+  "output_format": "one *.md file per filing (frontmatter + body), flat directory",
+  "output_location_logical_key": "artifacts/normalized_full/754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f",
+  "paid_api_calls": 0,
+  "peak_rss_bytes_last_run": 268460032,
+  "peak_rss_bytes_bulk_run": 524283904,
+  "phase_4_1_config_hash": "754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f",
+  "protected_test_status": {
+    "official_runs_budget": 3,
+    "official_runs_used": 0,
+    "opened": false
+  },
+  "source_dataset": "edgar_corpus",
+  "source_row_count": 91086,
+  "status": "COMPLETE",
+  "task": "phase_4_1_full_corpus_normalization",
+  "total_normalized_bytes": 13175754341,
+  "unique_document_count": 91086,
+  "valid_empty_source_count": 847,
+  "year_range": [
+    1993,
+    2020
+  ]
+}

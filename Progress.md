@@ -11784,3 +11784,97 @@ Phase 3 — Make It Good                        — COMPLETE
 **Phase 4 has NOT been started and is NOT authorized by this audit.**
 This controller's scope ends at Phase 3 exit; starting Phase 4 requires
 an explicit human decision.
+
+---
+
+## 2026-09-12 — Task 4.1: Full-Corpus Normalization
+
+Explicit human decision to start Phase 4 (per
+`prompts/phase_4/task_4.1_full_corpus_normalization.md`). Scaled Task
+1.2's minimal EDGAR-CORPUS -> Markdown normalizer from the 1,500-filing
+Phase 1 dev corpus to the complete, frozen 91,086-filing EDGAR-CORPUS.
+Body-rendering logic (`render_body`/`normalize_newlines`/
+`output_filename`) is byte-for-byte unchanged from Task 1.2 - only the
+frontmatter contract and a new resumable driver are new. See
+`project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md` for full detail.
+
+**Stopped and reported mid-task**: Task 1.2's `company` frontmatter
+field was populated via an XBRL CIK->name join that covered 100% of the
+1,500-row dev corpus (Task 1.1 pre-filtered to the XBRL-aligned
+population), but only 26.51% of the full corpus's 25,937 CIKs
+(34.09% of rows) resolve against the same join - EDGAR-CORPUS has no
+company-name column of its own. Reported field/coverage/policy options
+to the user rather than silently fabricating or dropping the field;
+user selected **nullable company** (2026-09-12), tie-broken by
+most-recently-filed name when a CIK has multiple historical names.
+
+```text
+source rows:                    91,086
+normalized (non-empty body):    90,239
+valid-empty-source count:          847
+unexplained failures:                0
+normalizer_version:      phase1-minimal-v1
+phase_4_1_config_hash:   754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f
+build_manifest_sha256:   3ca76cfd6e789811012c60adb7ba7aa9c8c3d002547fbc5310da47481342f3f9
+artifact location:  artifacts/normalized_full/754d9c...197f/  (git-ignored)
+artifact size:           13,175,754,341 bytes (~12.27 GiB)
+elapsed (bulk run):       2,981.6 s for 89,070 units (29.87 docs/s); peak RSS 524,283,904 bytes
+resume/checkpoint:  append-only build_state.jsonl, config/source-identity-
+                     bound header, per-unit content-hash re-verification on
+                     resume, atomic tmp+replace per-document writes,
+                     FAILED units always retried - verified directly:
+                     re-running --run against the complete checkpoint
+                     reprocessed 0 units
+sample validation:   16-doc deterministic stratified pilot (all splits,
+                     1990s/2000s/2010s/2020, largest/smallest/5 empty
+                     docs) manually traced source-row -> frontmatter ->
+                     body -> manifest entry; --verify-sample re-rendered
+                     the same 16 in memory: 0 content-hash mismatches
+```
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1905 passed, 32 deselected** (+40
+  new in `tests/test_phase_4_1_full_corpus_normalization.py`, tiny
+  synthetic fixtures only, covering config-hash determinism, source-
+  identity/duplicate rejection, metadata type normalization, no-
+  fabrication of `company`, section ordering/empty-section/empty-
+  document handling, CRLF/Unicode/trailing-newline, path-traversal
+  rejection on the new `normalized_dir_for_config()`, checkpoint config/
+  source-mismatch rejection, corrupted-unit/corrupt-checkpoint
+  detection, failed-rows-never-silently-vanish accounting, manifest
+  completeness/hash/content-hash determinism, the Task 1.2 body-
+  compatibility regression, and AST-based static guards proving the
+  driver's own source never imports any later-phase package - src.chunk/
+  embeddings/index/retrieval/generation/rerank/crag/router/sql/nav/api/
+  guards/eval.test_access).
+- `scripts/dev.py test` (full): **1937 passed**, 0 skipped (+2
+  `local_data`-marked: the real-artifact Task 1.2 body-compatibility
+  regression, and a frozen-source-file hash-before/after check around a
+  `--plan` invocation).
+
+### Regression gates
+
+Frozen `data/` unchanged throughout (re-verified: parquet/`xbrl.duckdb`
+sizes match documented invariants; 36 raw XBRL ZIPs, 990 primary
+filings, both matching frozen facts). No chunking, embedding, indexing,
+retrieval, generation, or LLM/API call occurred (structurally
+impossible - the driver's own source never imports those packages,
+verified by AST). Protected TEST: unopened, 0/3 official runs used, no
+`src.eval.test_access` import anywhere in the driver. No paid API calls.
+Phase 1's dev-corpus artifact (`artifacts/normalized/phase1-minimal-v1/`)
+and Phase 3's frozen ablation table are both untouched - the new
+`artifacts/normalized_full/<phase_4_1_config_hash>/` output tree is
+fully additive (new `src.storage.normalized_dir_for_config()` helper,
+keyed by the full config hash rather than the bare `normalizer_version`
+string, so it can never collide with Task 1.2's existing directory).
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+```
+
+**Next roadmap task:** 4.2 Full-corpus chunking.

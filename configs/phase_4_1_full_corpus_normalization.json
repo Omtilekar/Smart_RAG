@@ -1,0 +1,78 @@
+{
+  "config": {
+    "accession_policy": "always null for edgar_corpus - no reliable accession linkage exists",
+    "body_rendering_source": "src.normalize.edgar_markdown render_body/normalize_newlines/output_filename - unmodified from Task 1.2",
+    "build_manifest_schema_version": 1,
+    "checkpoint_unit": "one source row (document_id) per unit",
+    "cik_type": "int64 (python int, cast from source VARCHAR)",
+    "company_name_policy": {
+      "match_key": "cik only - no accession/period join (EDGAR-CORPUS carries no accession)",
+      "measured_coverage_2026_09_12": {
+        "ciks_covered": 6877,
+        "ciks_total": 25937,
+        "rows_covered": 31047,
+        "rows_total": 91086
+      },
+      "missing_value_policy": "null - never fabricated, never guessed from filename/ticker heuristics",
+      "policy_decision": "user-approved 2026-09-12: nullable company, over drop-field/scope-restriction alternatives",
+      "source_table": "data/xbrl.duckdb submissions (frozen, read-only)",
+      "tie_break_on_multiple_names": "row with maximum `filed` (YYYYMMDD string, lexicographically well-ordered)"
+    },
+    "document_id_policy": "reuse EDGAR-CORPUS filename verbatim (e.g. 1005817_2016.htm) - never row number, array position, UUID, or invented accession",
+    "empty_document_policy": "a filing where all 20 section_* columns are null/empty/whitespace-only is written as a frontmatter-only document (empty body, zero Item headings) - the general programmatic form of Task 1.2's hand-curated KNOWN_EMPTY_BODY_DOCUMENT_IDS allowlist",
+    "empty_section_policy": "null/empty/whitespace-only section omitted entirely - no heading, no body - unchanged from Task 1.2",
+    "expected_source_cik_count": 25937,
+    "expected_source_document_count": 91086,
+    "expected_source_year_max": 2020,
+    "expected_source_year_min": 1993,
+    "fiscal_year_type": "int32 (python int, cast from source VARCHAR)",
+    "form_type_constant": "10-K",
+    "frontmatter_keys": [
+      "cik",
+      "company",
+      "form_type",
+      "fiscal_year",
+      "source",
+      "source_filename",
+      "document_id",
+      "source_split"
+    ],
+    "frontmatter_schema_version": "phase_4_1-full-corpus-v1",
+    "newline_policy": "CRLF/CR -> LF; exactly one trailing newline; UTF-8",
+    "normalizer_version": "phase1-minimal-v1",
+    "output_filename_policy": "extension replaced only, 1:1 - unchanged from Task 1.2 (src.normalize.edgar_markdown.output_filename)",
+    "processing_order_policy": "deterministic stratified pilot sample first (Stage 6), then ascending sorted document_id for the remainder",
+    "section_columns": [
+      "section_1",
+      "section_1A",
+      "section_1B",
+      "section_2",
+      "section_3",
+      "section_4",
+      "section_5",
+      "section_6",
+      "section_7",
+      "section_7A",
+      "section_8",
+      "section_9",
+      "section_9A",
+      "section_9B",
+      "section_10",
+      "section_11",
+      "section_12",
+      "section_13",
+      "section_14",
+      "section_15"
+    ],
+    "section_ordering_policy": "fixed SEC Item order, taken directly from source parquet column order - unchanged from Task 1.2",
+    "source_dataset": "edgar_corpus",
+    "source_files": [
+      "data/edgar_corpus/test.parquet",
+      "data/edgar_corpus/train.parquet",
+      "data/edgar_corpus/validation.parquet"
+    ],
+    "source_identity_field": "filename",
+    "task": "phase_4_1_full_corpus_normalization"
+  },
+  "phase_4_1_config_hash": "754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f"
+}

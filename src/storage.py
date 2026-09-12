@@ -135,6 +135,21 @@ class StoragePaths:
     def normalized_dir(self, version: str) -> Path:
         return self.artifacts_root / "normalized" / safe_component(version)
 
+    def normalized_dir_for_config(self, config_hash: str) -> Path:
+        """Task 4.1 - full-corpus normalization output, keyed by the full
+        `phase_4_1_config_hash` rather than the bare `normalizer_version`
+        string. `normalized_dir(version)` alone is not sufficient identity
+        here: the full-corpus frontmatter contract (nullable `company`, no
+        `development_manifest_sha256`) differs from Task 1.2's dev-corpus
+        contract while `normalizer_version` stays the same
+        (`phase1-minimal-v1`, per repository decision) - reusing
+        `normalized_dir()` would silently collide two different contracts
+        into one directory. Mirrors `chunks_dir(chunk_config_hash)`'s
+        existing pattern."""
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(config_hash, "phase_4_1_config_hash")
+        return self.artifacts_root / "normalized_full" / safe_component(config_hash)
+
     def chunks_dir(self, chunk_config_hash: str) -> Path:
         """Task 0.7 only consumes an already-computed chunk_config_hash -
         it does not compute one. Hashing the chunking config is the future

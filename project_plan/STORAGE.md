@@ -45,6 +45,7 @@ data/                          # FROZEN — read-only, Data Preparation output
 
 artifacts/                     # GENERATED, git-ignored, created on demand
 ├── normalized/<version>/
+├── normalized_full/<phase_4_1_config_hash>/   # Task 4.1 - full 91,086-doc build
 ├── chunks/<chunk_config_hash>/
 ├── indexes/<chunk_config_hash>/<embedding_model_key>/
 ├── eval/<eval_version>/
@@ -84,6 +85,11 @@ storage.xbrl_db
 
 # generated outputs (deterministic, versioned)
 storage.normalized_dir(version)
+storage.normalized_dir_for_config(phase_4_1_config_hash)   # Task 4.1 - keyed by full config hash,
+                                                              # not just normalizer_version, since the
+                                                              # full-corpus frontmatter contract differs
+                                                              # from Task 1.2's dev-corpus contract while
+                                                              # normalizer_version stays "phase1-minimal-v1"
 storage.chunks_dir(chunk_config_hash)
 storage.index_dir(chunk_config_hash, embedding_model)
 storage.eval_dir(eval_version)

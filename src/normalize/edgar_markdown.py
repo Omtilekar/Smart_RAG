@@ -29,6 +29,20 @@ FRONTMATTER_KEYS: tuple[str, ...] = (
     "development_manifest_sha256",
 )
 
+# Task 4.1 full-corpus frontmatter contract. Drops development_manifest_sha256
+# (no per-filing dev manifest exists at full-corpus scale - Task 1.1's manifest
+# covered only the 1,500-filing dev subset). `company` is deliberately in this
+# key list too, but - unlike Task 1.2's dev-corpus contract, where every row
+# resolved via the XBRL-aligned manifest - it is a genuinely nullable field
+# here: only 26.51% of full EDGAR-CORPUS CIKs (6,877/25,937; 34.09% of rows,
+# 31,047/91,086 - measured directly against data/xbrl.duckdb) have any XBRL
+# submissions record to look a company name up from. See
+# project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md.
+FULL_CORPUS_FRONTMATTER_KEYS: tuple[str, ...] = (
+    "cik", "company", "form_type", "fiscal_year", "source",
+    "source_filename", "document_id", "source_split",
+)
+
 
 def section_column_to_item_label(column: str) -> str:
     """'section_1A' -> 'Item 1A'. No invented titles - the label is exactly
@@ -67,22 +81,30 @@ def render_body(sections: dict[str, str | None]) -> str:
     return "\n\n".join(blocks)
 
 
-def render_frontmatter(fields: dict) -> str:
+def render_frontmatter(fields: dict, keys: tuple[str, ...] = FRONTMATTER_KEYS) -> str:
     """Deterministic YAML frontmatter. String values are JSON-quoted via
     stdlib json.dumps (a valid, safely-escaped YAML double-quoted scalar) -
     no hand-rolled quoting, no new dependency. Integer values are emitted
-    unquoted. Key order is fixed (FRONTMATTER_KEYS), not dict insertion
-    order, so output is stable regardless of how the caller built `fields`.
+    unquoted. `None` is emitted as the bare YAML `null` literal - a
+    legitimate, explicit "not authoritatively available" value, never a
+    fabricated placeholder (Task 4.1's `company` field on
+    FULL_CORPUS_FRONTMATTER_KEYS is the first caller to use this). Key order
+    is fixed by `keys` (defaults to FRONTMATTER_KEYS, Task 1.2's original
+    contract - unchanged, so every existing call site keeps its exact prior
+    behavior), not dict insertion order, so output is stable regardless of
+    how the caller built `fields`.
     """
-    missing = [k for k in FRONTMATTER_KEYS if k not in fields]
+    missing = [k for k in keys if k not in fields]
     if missing:
         raise ValueError(f"missing required frontmatter fields: {missing}")
     lines = ["---"]
-    for key in FRONTMATTER_KEYS:
+    for key in keys:
         value = fields[key]
-        if isinstance(value, bool):
+        if value is None:
+            lines.append(f"{key}: null")
+        elif isinstance(value, bool):
             raise TypeError(f"unexpected bool for frontmatter field {key!r}")
-        if isinstance(value, int):
+        elif isinstance(value, int):
             lines.append(f"{key}: {value}")
         elif isinstance(value, str):
             lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}")
@@ -92,15 +114,35 @@ def render_frontmatter(fields: dict) -> str:
     return "\n".join(lines)
 
 
-def render_document(fields: dict, sections: dict[str, str | None]) -> str:
+def render_document(
+    fields: dict,
+    sections: dict[str, str | None],
+    frontmatter_keys: tuple[str, ...] = FRONTMATTER_KEYS,
+) -> str:
     """Full Markdown document: frontmatter, blank line, body (possibly
-    empty - see the 7 zero-text-section filings documented in
-    PHASE1_NORMALIZATION.md), exactly one trailing newline."""
-    frontmatter = render_frontmatter(fields)
+    empty - see the known zero-text-section filings documented in
+    PHASE1_NORMALIZATION.md / PHASE4_FULL_CORPUS_NORMALIZATION.md), exactly
+    one trailing newline. `frontmatter_keys` defaults to Task 1.2's original
+    FRONTMATTER_KEYS; Task 4.1 passes FULL_CORPUS_FRONTMATTER_KEYS instead.
+    Body rendering (`render_body`) is completely untouched by this
+    parameter - textual normalization semantics never change with the
+    caller's frontmatter contract."""
+    frontmatter = render_frontmatter(fields, keys=frontmatter_keys)
     body = render_body(sections)
     if body:
         return f"{frontmatter}\n\n{body}\n"
     return f"{frontmatter}\n"
+
+
+def is_all_sections_empty(sections: dict[str, str | None]) -> bool:
+    """True when every SECTION_COLUMNS value is null/empty/whitespace-only -
+    the general, full-corpus form of Task 1.2's hand-curated
+    KNOWN_EMPTY_BODY_DOCUMENT_IDS allowlist. Pure predicate, no I/O."""
+    for column in SECTION_COLUMNS:
+        raw = sections.get(column)
+        if raw is not None and normalize_newlines(raw).strip():
+            return False
+    return True
 
 
 def output_filename(document_id: str) -> str:

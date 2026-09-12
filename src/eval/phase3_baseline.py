@@ -401,9 +401,14 @@ ABLATION_TABLE_CRAG_EXTRA_COLUMNS: tuple[str, ...] = (
     "true_refusal_rate", "false_refusal_rate", "missed_failure_rate", "crag_youden_j",
 )
 
+# Task 3.8 - additive rules-first-router columns, same mechanism.
+ABLATION_TABLE_ROUTER_EXTRA_COLUMNS: tuple[str, ...] = (
+    "gazetteer_size", "concept_registry_size", "router_accuracy", "router_macro_f1",
+)
+
 ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
-    + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS
+    + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS + ABLATION_TABLE_ROUTER_EXTRA_COLUMNS
 )
 
 
@@ -543,7 +548,7 @@ __all__ = [
     "select_phase3_dev_scope", "compute_phase3_dev_scope_sha256", "compute_question_ids_sha256",
     "build_phase3_config", "compute_phase3_config_hash", "verify_artifact_identities",
     "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
-    "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS",
+    "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS", "ABLATION_TABLE_ROUTER_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

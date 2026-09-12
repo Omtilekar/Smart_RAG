@@ -1555,11 +1555,15 @@ Phase 3 — Make It Good                                — IN PROGRESS
     reranker score) threshold=0.5531 (Youden's J=0.7644); true_refusal
     83.19% (94/113), false_refusal 6.74% (6/89), missed_failure 16.81%
     (19/113) - see project_plan/PHASE3_CRAG_CONFIDENCE_GRADING.md
+  3.8 Rules-first router                                — COMPLETE
+    scoped to 6/10 intents (numeric_narrative/narrative/section_summary
+    have zero DEV examples anywhere - user-approved scope decision);
+    accuracy=85.82% (1658/1932), macro_f1=0.8871; unanswerable precision
+    is the diagnosed weak spot (0.34 - concept-matching recall limits) -
+    see project_plan/PHASE3_RULES_FIRST_ROUTER.md
 ```
 
-**Next action:** Phase 3, Task 3.8 — Rules-first router (company-name→CIK
-resolution, fiscal-year/form-type extraction, known-XBRL-concept lookup,
-intent classification), using `qwen3_embedding` dense-only unreranked
-retrieval as the downstream candidate source (do not start
-implementation from this document alone without re-reading the exact
-next subtask).
+**Next action:** Phase 3, Task 3.9 — Metadata pre-filtering (CIK/year/
+form/section), applied before retrieval using the router's extracted
+cik/fiscal_years/form_type signals (do not start implementation from
+this document alone without re-reading the exact next subtask).

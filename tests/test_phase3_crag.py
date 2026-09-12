@@ -84,7 +84,9 @@ def test_build_crag_ablation_row_shape_and_flags():
     assert row["question_count"] == 89 + 113
     assert row["refusal_metric"] == row["missed_failure_rate"]
     assert row["doc_recall_at_10"] == p3.NA  # no ranking metric computed in this task
-    for col in p3.ABLATION_TABLE_COLUMNS:
+    # Later columns added additively by Task 3.8 (router-only fields) are
+    # correctly absent here - `_row_to_csv_dict()` defaults them to NA.
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_ROUTER_EXTRA_COLUMNS):
         assert col in row, f"missing ablation-table column {col!r} in CRAG row"
 
 

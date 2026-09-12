@@ -11076,3 +11076,120 @@ Phase 3 — Make It Good                        — IN PROGRESS
 known-XBRL-concept lookup, intent classification), using
 `qwen3_embedding` dense-only unreranked retrieval as the downstream
 candidate source.
+
+---
+
+## 2026-09-12 — Task 3.8: rules-first router
+
+Continued under the Task 3.99 controlled-execution-loop after Task 3.7.
+Audited Task 3.7 fresh (doctor/portable/full/result-artifact/ablation-
+row/TEST-discipline) before continuing - all independently confirmed.
+Task 3.8's roadmap contract names 10 target intents, but exhaustively
+counting every `(category,subtype)` shape in the full 1,932-question
+DEV corpus found ZERO examples of `numeric_narrative`, `narrative`, or
+`section_summary` -
+`src.eval.evaluation_dataset.build_narrative_record()` exists in code
+but every record it could produce stays `status=pending_review` and was
+never promoted into the frozen eval set. Building/evaluating a router
+for intents with no real labeled example anywhere would require
+fabricating new eval data (a Task-2.3-scale decision), so this was
+raised to the user rather than decided silently. **User-approved
+(2026-09-12): scope the router to the 6 intents with real DEV ground
+truth.** See `project_plan/PHASE3_RULES_FIRST_ROUTER.md` for full detail.
+
+### A discovery that simplified this task considerably
+
+Every DEV question record already carries an `intent_label` field,
+frozen at Task 2.3 generation time, matching the 6-intent scope exactly
+(xbrl_fact=1402, numeric_derived=244, unanswerable=139, cross_entity=105,
+out_of_scope=29, advice=13, total=1932) - PROJECT_EXECUTION.md's "build
+a labelled router evaluation set" is satisfied by data that already
+existed; no new eval-set construction was needed.
+
+### Data sources reused, not fabricated
+
+Company gazetteer (1,673 companies): built from the DEV question
+dataset's own embedded company/CIK fields, not a new external
+company-master file. XBRL concept registry (15 tags): `configs/eval_tags.yaml`
+via `src.eval.tag_registry` (Task 2.2, frozen). Fiscal-year window
+(2016-2020): `src.eval.truth_contract.SUPPORTED_FISCAL_YEAR_MIN/MAX`
+(Task 2.1, frozen), reused verbatim.
+
+### New modules
+
+`src/router/rules.py` (`CompanyGazetteer`, `extract_fiscal_years`,
+`extract_form_type`, `resolve_xbrl_concept`, and `classify_intent` - a
+deterministic keyword/regex/gazetteer cascade, deliberately
+generalizable phrase cues rather than a memorized copy of
+`ADVERSARIAL_TEMPLATES`'s 60 exact template strings) and
+`src/eval/phase3_router.py` (`build_confusion_matrix`,
+`per_class_metrics`, `overall_accuracy`, `macro_f1` - a genuinely new
+metric family, since Task 2.6's `metrics.py` is retrieval/refusal-rate
+shaped, not multi-class-classification shaped). `ABLATION_TABLE_COLUMNS`
+extended additively again (4 new router columns) - every prior row
+verified byte-for-byte unchanged.
+
+### Results
+
+```text
+overall accuracy: 85.82% (1658/1932)
+macro F1:         0.8871
+
+                  precision   recall    f1       support
+advice            1.0000      0.9231    0.9600   13
+cross_entity      1.0000      1.0000    1.0000   105
+numeric_derived   1.0000      1.0000    1.0000   244
+out_of_scope      0.9655      0.9655    0.9655   29
+unanswerable      0.3374      1.0000    0.5045   139
+xbrl_fact         1.0000      0.8060    0.8926   1402
+```
+
+Perfect classification for cross_entity/numeric_derived (structural
+cues are highly reliable). `unanswerable` has perfect recall but low
+precision (0.34) - literal tag-label substring matching has limited
+recall for differently-phrased concept mentions, pushing some
+genuinely-answerable xbrl_fact questions into the conservative
+unanswerable fallback (visible as xbrl_fact's 0.806 recall) - an
+honest, explainable rule weakness, not a bug. LLM router comparison not
+benchmarked - the roadmap's own "only if the rule baseline leaves
+meaningful gaps" condition is not clearly met yet.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1704 passed, 30 deselected**
+  (+47 new: synthetic gazetteer/registry-fixture router tests,
+  phase3_router pure-logic tests including confusion-matrix/per-class-
+  metric hand calculations, and AST-based static guards over the new
+  orchestration script; also fixed four pre-existing Task
+  3.4/3.5/3.6/3.7 tests that over-strictly asserted every row must
+  contain every currently-defined ablation column, including columns
+  this task added).
+- `scripts/dev.py test` (full): **1734 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_router.py`, `src/router/rules.py`, or
+`src/eval/phase3_router.py` (AST-verified, portable test). No paid
+API/generation calls. FinanceBench not rerun. Row 0 and every Task
+3.2-3.7 ablation-table row confirmed byte-for-byte unchanged in their
+pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+```
+
+**Next roadmap task:** Phase 3, Task 3.9 — Metadata pre-filtering
+(CIK/year/form/section), applied before retrieval using the router's
+extracted cik/fiscal_years/form_type signals.

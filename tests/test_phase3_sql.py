@@ -85,7 +85,7 @@ def test_build_sql_ablation_row_shape_and_flags():
     # Later columns added additively by Task 3.11 (derived-calculation-only
     # fields) are correctly absent here - `_row_to_csv_dict()` defaults
     # them to NA.
-    for col in set(p3.ABLATION_TABLE_COLUMNS) - set(p3.ABLATION_TABLE_DERIVED_EXTRA_COLUMNS):
+    for col in set(p3.ABLATION_TABLE_COLUMNS) - (set(p3.ABLATION_TABLE_DERIVED_EXTRA_COLUMNS) | set(p3.ABLATION_TABLE_NAV_EXTRA_COLUMNS)):
         assert col in row, f"missing ablation-table column {col!r} in SQL row"
 
 

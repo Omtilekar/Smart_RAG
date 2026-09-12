@@ -11486,3 +11486,98 @@ Phase 3 — Make It Good                        — IN PROGRESS
 
 **Next roadmap task:** Phase 3, Task 3.12 — per
 `project_plan/PROJECT_EXECUTION.md`'s exact numbered contract.
+
+---
+
+## 2026-09-12 — Task 3.12: simple tree/section navigation
+
+Continued under the Task 3.99 controlled-execution-loop after Task
+3.11. PROJECT_EXECUTION.md's own example query ("Summarize Item 7 of
+this filing") has zero matching examples anywhere in the 1,932-question
+DEV corpus - no question mentions "Item" or "section" at all. Unlike
+Task 3.8's partial-scope situation, there is no DEV subset to score
+against, so formal evaluation instead measures the navigation layer's
+own structural correctness/coverage against Task 2.8's already-parsed
+corpus (990 documents) - real, already-computed ground truth (each
+node's own `section_id`), not new hand labeling. See
+`project_plan/PHASE3_TREE_SECTION_NAVIGATION.md` for full detail.
+
+### Pipeline
+
+`question -> extract_item_reference() (text-only) + (cik, fiscal_year)
+extraction -> resolve_filing_document_id() against the frozen
+`submissions` table -> load exactly ONE document's Task 2.8 parsed
+nodes -> filter to section_id == requested item -> return only those
+nodes`. No retrieval, no embedding call, no generation, no full-corpus
+scan.
+
+### New modules
+
+`src/nav/section_navigation.py` (`extract_item_reference()` - text-only
+regex over Task 2.8's own canonical Item-id set, never guesses;
+`resolve_filing_document_id()` - outcomes found/filing_not_found/
+ambiguous_filing [43 cik+fiscal_year groups in the corpus have more
+than one 10-K submission, e.g. amended filings - never silently picks
+one]; `navigate_to_section()` - loads exactly one document's parsed
+JSON, never scans any other) and `src/eval/phase3_nav.py` (rate
+aggregation reusing Task 2.6's `aggregate_rate` unmodified, and the
+navigation ablation row).
+
+### Results
+
+```text
+filing_resolution_rate: 99.90% (987/988)
+section_found_rate:     99.88% (19027/19050)
+scope_leak_rate:         0.00% (0/19027)  -- hard safety invariant
+```
+
+`scope_leak_rate` is exactly 0.00% across all 19,027 successful
+navigations: every returned node's section_id equals exactly the
+requested item, and node_count is always strictly less than
+total_document_node_count - proof no global/full-document read ever
+occurred. The small residuals are consistent with known corpus
+structure (amended-filing ambiguity, occasional heading-detection
+misses already documented as a Task 2.8 limitation), not a new defect.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1854 passed, 30 deselected**
+  (new: synthetic-DuckDB + tmp_path-backed parsed-corpus navigation
+  tests including a call-counting spy proving exactly one document is
+  ever loaded per navigation, phase3_nav pure-logic tests, and AST-based
+  static guards over the new orchestration script; also fixed eight
+  pre-existing tests across Tasks 3.4-3.11 that over-strictly required
+  every ablation row dict to contain every currently-defined column,
+  including columns this task added).
+- `scripts/dev.py test` (full): **1884 passed**, 0 skipped.
+
+### Regression gates
+
+Protected SEC TEST: unopened, 0/3 official runs used throughout - never
+imported by `scripts/run_phase3_nav.py`, `src/nav/section_navigation.py`,
+or `src/eval/phase3_nav.py` (AST-verified, portable test). No paid
+API/generation calls. FinanceBench not rerun. Row 0 and every Task
+3.2-3.11 ablation-table row confirmed byte-for-byte unchanged in their
+pre-existing columns.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+  3.10 Structured XBRL SQL path               — COMPLETE (routing_coverage=80.60%, sql_exact_match_rate=99.91%, trap_leak_rate=0.00%)
+  3.11 Deterministic derived calculations     — COMPLETE (difference: coverage=79.51%/exact=100%; greater_than: coverage=82.86%/exact=100%)
+  3.12 Simple tree/section navigation         — COMPLETE (filing_resolution_rate=99.90%, section_found_rate=99.88%, scope_leak_rate=0.00%)
+```
+
+**Next roadmap task:** Phase 3, Task 3.13 — Maintain the ablation table
+(per `project_plan/PROJECT_EXECUTION.md`'s exact numbered contract).

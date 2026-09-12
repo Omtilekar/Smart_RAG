@@ -424,10 +424,17 @@ ABLATION_TABLE_DERIVED_EXTRA_COLUMNS: tuple[str, ...] = (
     "greater_than_routing_coverage", "greater_than_exact_match_rate",
 )
 
+# Task 3.12 - additive tree/section-navigation columns, same mechanism.
+ABLATION_TABLE_NAV_EXTRA_COLUMNS: tuple[str, ...] = (
+    "nav_parsed_document_count", "nav_navigation_attempt_count",
+    "nav_filing_resolution_rate", "nav_section_found_rate", "nav_scope_leak_rate",
+)
+
 ABLATION_TABLE_COLUMNS: tuple[str, ...] = (
     _ABLATION_TABLE_COLUMNS_V1 + ABLATION_TABLE_SPARSE_EXTRA_COLUMNS + ABLATION_TABLE_HYBRID_EXTRA_COLUMNS
     + ABLATION_TABLE_RERANK_EXTRA_COLUMNS + ABLATION_TABLE_CRAG_EXTRA_COLUMNS + ABLATION_TABLE_ROUTER_EXTRA_COLUMNS
     + ABLATION_TABLE_FILTER_EXTRA_COLUMNS + ABLATION_TABLE_SQL_EXTRA_COLUMNS + ABLATION_TABLE_DERIVED_EXTRA_COLUMNS
+    + ABLATION_TABLE_NAV_EXTRA_COLUMNS
 )
 
 
@@ -569,6 +576,7 @@ __all__ = [
     "ABLATION_TABLE_COLUMNS", "ABLATION_TABLE_SPARSE_EXTRA_COLUMNS", "ABLATION_TABLE_HYBRID_EXTRA_COLUMNS",
     "ABLATION_TABLE_RERANK_EXTRA_COLUMNS", "ABLATION_TABLE_CRAG_EXTRA_COLUMNS", "ABLATION_TABLE_ROUTER_EXTRA_COLUMNS",
     "ABLATION_TABLE_FILTER_EXTRA_COLUMNS", "ABLATION_TABLE_SQL_EXTRA_COLUMNS", "ABLATION_TABLE_DERIVED_EXTRA_COLUMNS",
+    "ABLATION_TABLE_NAV_EXTRA_COLUMNS",
     "build_row0", "load_ablation_table", "write_ablation_table", "upsert_row",
     "build_result_summary",
 ]

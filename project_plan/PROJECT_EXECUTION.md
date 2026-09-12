@@ -1580,8 +1580,16 @@ Phase 3 — Make It Good                                — IN PROGRESS
     routing_coverage=79.51% (194/244), exact_match=100% once attempted;
     greater_than: routing_coverage=82.86% (87/105), exact_match=100%
     once attempted - see project_plan/PHASE3_DERIVED_CALCULATIONS.md
+  3.12 Simple tree/section navigation                   — COMPLETE
+    zero DEV question examples of this query shape exist anywhere;
+    formal evaluation instead measures structural correctness/coverage
+    against Task 2.8's parsed corpus (990 documents, 19,050 navigation
+    attempts): filing_resolution_rate=99.90% (987/988),
+    section_found_rate=99.88% (19027/19050), scope_leak_rate=0.00%
+    (0/19027, hard safety invariant) - see
+    project_plan/PHASE3_TREE_SECTION_NAVIGATION.md
 ```
 
-**Next action:** Phase 3, Task 3.12 — Simple tree/section navigation (do
+**Next action:** Phase 3, Task 3.13 — Maintain the ablation table (do
 not start implementation from this document alone without re-reading
 the exact next subtask).

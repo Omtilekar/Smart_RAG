@@ -1,0 +1,44 @@
+{
+  "run_schema_version": 2,
+  "run_id": "73523725-b1ba-4eaf-81ea-5de9b5aacff9",
+  "git_sha": "100b297f92cded2fab9ff498f27f2a0ed44169ee",
+  "git_dirty": true,
+  "chunk_schema_version": 1,
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "embedding_model": {
+    "model_repository": "Qwen/Qwen3-Embedding-0.6B",
+    "model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "vector_dtype": "float32",
+    "normalize_embeddings": true,
+    "identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe"
+  },
+  "index_identity_hash": null,
+  "retrieval_config": {
+    "type": "tree_section_navigation",
+    "downstream_of": "primary_html_structural_parse"
+  },
+  "reranker_config": {
+    "enabled": false
+  },
+  "generation_model": null,
+  "split": "dev",
+  "eval_set_version": "phase2-v1",
+  "split_version": "phase2-split-v1",
+  "split_sha256": "2818e6a07f8a465a648bd9e10c78642fec6e8d20f07ca379ef790a190c0c96ee",
+  "timestamp": "2026-09-12T06:45:10.577411Z",
+  "metrics": {
+    "filing_resolution_rate": 0.9989878542510121,
+    "section_found_rate": 0.9987926509186351,
+    "scope_leak_rate": 0.0
+  },
+  "evaluation_source": "internal_phase2",
+  "benchmark_name": null,
+  "benchmark_version": null,
+  "benchmark_source_hash": null,
+  "experiment_name": "phase3_12_tree_section_navigation",
+  "run_kind": "phase3_tree_section_navigation",
+  "notes": "Task 3.12 filing/section navigation over 990 Task-2.8-parsed documents, 19050 section-navigation attempts.",
+  "record_origin": "live",
+  "run_record_sha256": "ef406b049267bf080e3674f115879a63677bb8389e9592e4c710f55acb188d96"
+}

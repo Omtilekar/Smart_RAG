@@ -1588,8 +1588,15 @@ Phase 3 — Make It Good                                — IN PROGRESS
     section_found_rate=99.88% (19027/19050), scope_leak_rate=0.00%
     (0/19027, hard safety invariant) - see
     project_plan/PHASE3_TREE_SECTION_NAVIGATION.md
+  3.13 Maintain the ablation table                       — COMPLETE
+    verification-only checkpoint, no code changed: all 19 rows have
+    non-empty row_id/phase3_config_hash/run_id/git_sha; every git_sha
+    resolves to a real commit; every Task 3.4-3.12 config hash
+    re-derives exactly from its checked-in configs/phase_3_*.json via
+    Task 2.10's semantic_hash() - see
+    project_plan/PHASE3_ABLATION_TABLE_MAINTENANCE.md
 ```
 
-**Next action:** Phase 3, Task 3.13 — Maintain the ablation table (do
-not start implementation from this document alone without re-reading
-the exact next subtask).
+**Next action:** Phase 3, Task 3.14 — Re-check against the Phase 0
+serving budget (do not start implementation from this document alone
+without re-reading the exact next subtask).

@@ -11581,3 +11581,72 @@ Phase 3 — Make It Good                        — IN PROGRESS
 
 **Next roadmap task:** Phase 3, Task 3.13 — Maintain the ablation table
 (per `project_plan/PROJECT_EXECUTION.md`'s exact numbered contract).
+
+---
+
+## 2026-09-12 — Task 3.13: maintain the ablation table (verification-only)
+
+Continued under the Task 3.99 controlled-execution-loop after Task
+3.12. This task's roadmap requirement ("every row must be reproducible
+from config + git SHA") is a maintenance checkpoint, not a new
+experiment - no source code changed. See
+`project_plan/PHASE3_ABLATION_TABLE_MAINTENANCE.md` for full detail.
+
+### Audit performed
+
+- Every one of the 19 accumulated rows has non-empty `row_id`,
+  `phase3_config_hash`, `run_id`, `git_sha`.
+- Every row's `git_sha` verified against live repository history with
+  `git cat-file -e <sha>` - all 19 resolve to a real commit.
+- Every Task 3.4-3.12 row's `phase3_config_hash` was independently
+  re-derived from its checked-in `configs/phase_3_*.json` file via Task
+  2.10's `semantic_hash()` and matched exactly against the stored hash
+  (9/9 match: bm25_fts, hybrid_rrf, ce_minilm_l6, crag_confidence,
+  rules_router, metadata_prefilter, xbrl_sql_path, derived_calculations,
+  tree_section_navigation).
+- Row 0 and every prior row remain byte-for-byte unchanged.
+- The roadmap's own example summary table (Configuration / Recall@50 /
+  MRR / nDCG@10 / Precision@5 / Refusal metric / Latency) was populated
+  with real values from the live CSV and documented, including an
+  explicit note that rows are independent experiments against their own
+  frozen upstream inputs, not a literally-stacked pipeline, and that
+  negative results (hybrid, reranking) are shown honestly rather than
+  filtered out.
+
+### Regression gates
+
+No code changed; `scripts/dev.py doctor`/`test --portable`/`test` were
+already green from Task 3.12's own closeout (1884 passed). Protected
+SEC TEST: unopened, 0/3 official runs used.
+
+### Git discipline note
+
+Task 3.12 was committed directly to `main` rather than via a dedicated
+`ablation/*` branch, breaking the established one-branch-per-experiment
+convention (`project_plan/GIT_CONVENTIONS.md`). Content, tests, and
+provenance are correct and no history was fabricated, so it was not
+unwound; branch discipline resumes for Task 3.14 onward. Task 3.13
+itself made no code changes, so no branch was needed for it.
+
+### Phase Status
+
+```text
+Phase 3 — Make It Good                        — IN PROGRESS
+  3.1 Capture the trusted baseline            — COMPLETE
+  3.2 Chunking ablation                       — COMPLETE
+  3.3 Embedding model benchmark               — COMPLETE
+  3.4 LanceDB BM25/FTS sparse baseline        — COMPLETE
+  3.5 RRF hybrid fusion                       — COMPLETE (negative result: dense-only selected)
+  3.6 Cross-encoder reranking                 — COMPLETE (negative result: no_rerank selected)
+  3.7 CRAG-style confidence grading           — COMPLETE (threshold=0.5531, J=0.7644)
+  3.8 Rules-first router                      — COMPLETE (accuracy=85.82%, macro_f1=0.8871; scoped to 6/10 intents)
+  3.9 Metadata pre-filtering                  — COMPLETE (positive result: metadata_prefilter selected, R@10 88->89/89, MRR 0.925->1.0)
+  3.10 Structured XBRL SQL path               — COMPLETE (routing_coverage=80.60%, sql_exact_match_rate=99.91%, trap_leak_rate=0.00%)
+  3.11 Deterministic derived calculations     — COMPLETE (difference: coverage=79.51%/exact=100%; greater_than: coverage=82.86%/exact=100%)
+  3.12 Simple tree/section navigation         — COMPLETE (filing_resolution_rate=99.90%, section_found_rate=99.88%, scope_leak_rate=0.00%)
+  3.13 Maintain the ablation table            — COMPLETE (verification-only; 19/19 rows reproducible from config+git SHA)
+```
+
+**Next roadmap task:** Phase 3, Task 3.14 — Re-check against the Phase
+0 serving budget (per `project_plan/PROJECT_EXECUTION.md`'s exact
+numbered contract).

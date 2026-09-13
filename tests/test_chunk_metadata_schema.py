@@ -70,7 +70,7 @@ class TestCanonicalSchema:
 
     @pytest.mark.parametrize("name,nullable", [
         ("chunk_schema_version", False), ("chunk_uid", False), ("chunk_local_id", False),
-        ("document_id", False), ("accession", True), ("cik", False), ("company", False),
+        ("document_id", False), ("accession", True), ("cik", False), ("company", True),
         ("form_type", False), ("fiscal_year", False), ("period_end", True), ("filed_date", True),
         ("sic", True), ("section_id", True), ("section_title", True), ("ordinal", False),
         ("char_start", True), ("char_end", True), ("content_type", False), ("table_id", True),
@@ -79,6 +79,13 @@ class TestCanonicalSchema:
     def test_nullability_contract(self, name, nullable):
         field = next(f for f in ms.CANONICAL_FIELDS if f.name == name)
         assert field.nullable is nullable
+
+    def test_current_schema_version_is_2(self):
+        # Task 4.2 bumped v1 -> v2 (company became nullable). Historical
+        # v1 call sites (the frozen Task 1.2/2.9 dev-corpus audit, every
+        # Phase 3 ablation-table chunk) pin chunk_schema_version=1 as
+        # their own literal and are unaffected by this module's default.
+        assert ms.CHUNK_SCHEMA_VERSION == 2
 
     def test_content_types_frozen(self):
         assert ms.CONTENT_TYPES == ("prose", "table", "table_summary")
@@ -279,8 +286,17 @@ class TestValidateChunkRecord:
         record = make_record(some_extension_field="anything")
         ms.validate_chunk_record(record)
 
-    def test_non_nullable_field_none_rejected(self):
+    def test_company_none_allowed_schema_v2(self):
+        # Task 4.2: company became nullable in schema v2 - Task 4.1's
+        # approved policy leaves it NULL for ~66% of full-corpus rows
+        # with no XBRL CIK->name match. Must not be treated as an error.
         record = make_record(company=None)
+        ms.validate_chunk_record(record)  # must not raise
+
+    def test_form_type_none_still_rejected(self):
+        # A genuinely non-nullable field must still reject None - the v2
+        # change only widened `company`, nothing else.
+        record = make_record(form_type=None)
         with pytest.raises(ms.ChunkMetadataError):
             ms.validate_chunk_record(record)
 
@@ -443,16 +459,20 @@ class TestPhase1RealArtifactCompatibility:
         path = Path("artifacts") / "chunks" / PHASE1_CHUNK_CONFIG_HASH / "chunks.parquet"
         table = pq.read_table(path)
         rows = table.to_pylist()
+        # Pinned literal, not ms.CHUNK_SCHEMA_VERSION's current default - this
+        # is the frozen historical Task 1.2/2.9 dev-corpus audit, built and
+        # documented under schema v1, unaffected by Task 4.2's v1->v2 bump.
+        historical_schema_version = 1
         records = []
         for row in rows:
             local_id = ms.build_chunk_local_id(row["ordinal"])
             uid = ms.build_chunk_uid(
-                chunk_schema_version=ms.CHUNK_SCHEMA_VERSION, source="edgar_corpus",
+                chunk_schema_version=historical_schema_version, source="edgar_corpus",
                 document_id=row["document_id"], chunk_config_hash=row["chunk_config_hash"],
                 chunk_local_id=local_id,
             )
             records.append({
-                "chunk_schema_version": ms.CHUNK_SCHEMA_VERSION, "chunk_uid": uid, "chunk_local_id": local_id,
+                "chunk_schema_version": historical_schema_version, "chunk_uid": uid, "chunk_local_id": local_id,
                 "document_id": row["document_id"], "accession": None, "cik": row["cik"], "company": row["company"],
                 "form_type": row["form_type"], "fiscal_year": row["fiscal_year"], "period_end": None,
                 "filed_date": None, "sic": None, "section_id": None, "section_title": None,
@@ -479,16 +499,17 @@ class TestTask28RealArtifactCompatibility:
             nodes = json.load(f)
 
         demo_config_hash = hashlib.sha256(b"test-primary-compat").hexdigest()
+        historical_schema_version = 1  # pinned literal - same rationale as above
         records = []
         for node in nodes[:20]:
             canonical_content_type = "prose" if node["content_type"] == "narrative" else "table"
             local_id = ms.build_chunk_local_id(node["source_order"], section_id=node["section_id"])
             uid = ms.build_chunk_uid(
-                chunk_schema_version=ms.CHUNK_SCHEMA_VERSION, source="primary", document_id=document_id,
+                chunk_schema_version=historical_schema_version, source="primary", document_id=document_id,
                 chunk_config_hash=demo_config_hash, chunk_local_id=local_id,
             )
             records.append({
-                "chunk_schema_version": ms.CHUNK_SCHEMA_VERSION, "chunk_uid": uid, "chunk_local_id": local_id,
+                "chunk_schema_version": historical_schema_version, "chunk_uid": uid, "chunk_local_id": local_id,
                 "document_id": document_id, "accession": "0000100122-24-000002", "cik": 100122,
                 "company": "Placeholder Co", "form_type": "10-K", "fiscal_year": 2023,
                 "period_end": None, "filed_date": None, "sic": None,

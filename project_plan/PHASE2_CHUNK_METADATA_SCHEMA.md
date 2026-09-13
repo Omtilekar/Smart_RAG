@@ -348,6 +348,41 @@ equivalents were run independently and agree).
   pipeline (Task 2.10+) must compute both from an actual chunking
   configuration and tokenizer, not reuse these placeholder values.
 
+## Schema v2 (Task 4.2, 2026-09-13)
+
+`company` became **nullable**. `CHUNK_SCHEMA_VERSION` incremented 1 -> 2 per
+this document's own schema-evolution policy above (a nullability rule
+changed).
+
+Rationale: Task 4.1's approved full-corpus normalization policy leaves
+`company` genuinely `NULL` for 65.91% of the complete 91,086-filing
+EDGAR-CORPUS (no XBRL CIK->name submission match exists for that CIK - see
+`project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md`). The v1 schema's
+`company` non-nullable constraint was only ever satisfiable because Task
+1.1's 1,500-filing dev corpus was deliberately pre-filtered to the
+XBRL-aligned population (100% company coverage there, by construction) -
+the full corpus has no such pre-filter.
+
+No other field's nullability, type, or the `chunk_uid`/`chunk_local_id`
+algorithms changed.
+
+**Historical v1 data is unaffected, not silently reinterpreted**: the
+frozen 162,357-row Task 1.2/2.9 dev-corpus audit and every Phase 3
+ablation-table chunk (`chunk_config_hash` family rooted at
+`f1dc04d4b7...`/`ba99e2f786...`) were built with `chunk_schema_version=1`
+pinned as an explicit literal in their own producing code
+(`scripts/run_phase3_trusted_baseline.py`'s `CHUNK_SCHEMA_VERSION = 1`,
+`scripts/audit_chunk_metadata_schema.py`'s
+`HISTORICAL_CHUNK_SCHEMA_VERSION = 1`) - neither reads this module's
+"current" `CHUNK_SCHEMA_VERSION` default, so bumping it to 2 changes
+nothing about any already-computed historical `chunk_uid`. None of that
+historical data ever had a NULL `company` value in the first place, so
+the widened nullability rule would not have changed its validity even if
+it had been re-validated.
+
+Task 4.2's full-corpus production chunks are the first real data to use
+`chunk_schema_version=2`.
+
 ## Task 2.9 / Task 2.10 boundary
 
 Task 2.9 freezes what a chunk record MEANS: field set, types,

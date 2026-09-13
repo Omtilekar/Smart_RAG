@@ -1,0 +1,60 @@
+{
+  "build": {
+    "artifact_root": "artifacts/chunks_full/754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f/ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "document_manifest_sha256": "b8e5706f05001c323401192c36a5f4326d92a6b77f14dfa4916fdf67f8ba9da0",
+    "documents_per_second_last_run": null,
+    "documents_with_chunks": 90239,
+    "documents_without_chunks": 847,
+    "elapsed_seconds_last_run": 0.0,
+    "build_note": "Built across three invocations: a 3,000-document throughput benchmark (218.5s, 13.83 docs/s), a long background run interrupted by a system-wide low-memory kill (not a driver defect - the checkpoint was verified intact, 0 corrupted shards, at 66,440/91,086 documents when killed), and the resumed completion run for the remaining 24,646 documents (1,550.0s, 15.90 docs/s, peak_rss=2,318,495,744 bytes - this figure is the trustworthy measured throughput). This finalization invocation processed 0 new units and only ran Stage 8/9 validation plus the manifest/result writers.",
+    "failed_document_count": 0,
+    "parquet_compression": "zstd",
+    "peak_rss_bytes_last_run": 934088704,
+    "phase_4_2_build_config_hash": "9253de8418deef249ef412e3e3b155e4551c6d35b117aac4cdf67b0e292994e9",
+    "shard_count": 54,
+    "shard_manifest_sha256": "b0421c390e218099f20563faffcfaa8791678ba571995738f5cd7df82a7088ac",
+    "target_rows_per_shard": 200000,
+    "total_chunk_count": 10487096
+  },
+  "chunking": {
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "chunk_schema_version": 2,
+    "overlap_tokens": 0,
+    "split_mode": "fixed",
+    "stride_tokens": 256,
+    "tokenizer_repository": "BAAI/bge-small-en-v1.5",
+    "tokenizer_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "window_size_tokens": 256
+  },
+  "created_at_utc": "2026-09-13T16:43:59Z",
+  "git_sha": "6e609d43af7cafd4ff771dc02fc7d74c71acba6c",
+  "gpu_used": false,
+  "input": {
+    "normalized_nonempty_count": 90239,
+    "normalizer_version": "phase1-minimal-v1",
+    "phase_4_1_build_manifest_sha256": "3ca76cfd6e789811012c60adb7ba7aa9c8c3d002547fbc5310da47481342f3f9",
+    "phase_4_1_config_hash": "754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f",
+    "source_document_count": 91086,
+    "valid_empty_source_count": 847
+  },
+  "paid_api_calls": 0,
+  "protected_test": {
+    "official_runs_used": 0,
+    "opened": false
+  },
+  "status": "COMPLETE",
+  "task": "phase_4_2_full_corpus_chunking",
+  "validation": {
+    "duplicate_chunk_uid_count": 0,
+    "extra_document_count": 0,
+    "missing_document_count": 0,
+    "row_counts_reconcile": true,
+    "sample_check_count": 17,
+    "sample_check_failures": [],
+    "schema_violation_count": 0,
+    "shard_hash_mismatch_count": 0,
+    "token_count_violation_count": 0,
+    "total_unique_chunk_uids": 10487096,
+    "unexpected_zero_chunk_document_count": 0
+  }
+}

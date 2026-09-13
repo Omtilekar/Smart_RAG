@@ -11878,3 +11878,118 @@ Phase 4 — Make It Real                        — IN PROGRESS
 ```
 
 **Next roadmap task:** 4.2 Full-corpus chunking.
+
+---
+
+## 2026-09-13 — Task 4.2: Full-Corpus Chunking
+
+Scaled the frozen Task 3.2 winner (`fixed`/256-token window/0 overlap,
+`chunk_config_hash=ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`)
+from the 1,493-document Phase 3 dev corpus to the complete Task 4.1
+full-corpus normalization output (91,086 documents). Reused
+`src/chunk/fixed_window.py`'s tokenizer/window/offset logic and
+`src/chunk/metadata_schema.py`'s canonical Task 2.9 schema unmodified - a
+scale-out task, not a new chunking experiment. See
+`project_plan/PHASE4_FULL_CORPUS_CHUNKING.md` for full detail.
+
+**Schema evolution (v1 -> v2)**: Task 4.1's approved nullable-`company`
+policy contradicted Task 2.9's frozen non-nullable `company` field for
+65.91% of the full corpus. Per `PHASE2_CHUNK_METADATA_SCHEMA.md`'s own
+schema-evolution rule (a nullability change requires a version bump),
+bumped `CHUNK_SCHEMA_VERSION` 1 -> 2 and made `company` nullable - no other
+field changed. Historical v1 data (the frozen Task 1.2/2.9 dev-corpus audit,
+every Phase 3 ablation-table chunk) is provably unaffected: those call
+sites pin `chunk_schema_version=1` as their own literal, never this
+module's "current" default (fixed `scripts/audit_chunk_metadata_schema.py`
+to pin the same literal, closing a latent future-reproducibility gap).
+
+```text
+input Task 4.1 identity:
+  phase_4_1_config_hash:          754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f
+  phase_4_1_build_manifest_sha256: 3ca76cfd6e789811012c60adb7ba7aa9c8c3d002547fbc5310da47481342f3f9
+
+frozen chunk_config_hash (unchanged, reused verbatim):
+  ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06
+chunk_schema_version:            2
+phase_4_2_build_config_hash:     9253de8418deef249ef412e3e3b155e4551c6d35b117aac4cdf67b0e292994e9
+
+total chunk count:               10,487,096
+documents with chunks:               90,239
+zero-chunk documents:                    847  (matches Task 4.1's valid-empty count exactly)
+shard count:                              54
+artifact size:                3,406,258,160 bytes (~3.17 GiB)
+document_manifest_sha256:     b8e5706f05001c323401192c36a5f4326d92a6b77f14dfa4916fdf67f8ba9da0
+shard_manifest_sha256:        b0421c390e218099f20563faffcfaa8791678ba571995738f5cd7df82a7088ac
+
+elapsed (resumed completion segment): 1,550.0s for 24,646 documents (15.90 docs/s)
+peak RSS (same segment):      2,318,495,744 bytes
+resume/checkpoint:  shard-atomic (a shard's document-completion list is
+                     written in the SAME checkpoint line as the shard's
+                     own identity/hash - no window where a shard exists on
+                     disk with only some of its documents marked done);
+                     every shard hash re-verified against the real file
+                     before being trusted on resume; FAILED documents
+                     always retried. One real-world interruption: a
+                     system-wide low-memory kill (not a driver defect) at
+                     66,440/91,086 documents - checkpoint verified fully
+                     intact (0 corrupted shards) before resuming.
+sample validation:   17-doc deterministic stratified pilot (all splits,
+                     year bands 1993-99/2000-09/2010-19/2020, largest/
+                     smallest by size, 5 empty-source docs), traced
+                     end-to-end (manifest -> body -> chunk rows ->
+                     chunk_local_id/chunk_uid -> char offsets -> document
+                     manifest -> shard manifest): 17/17 passed
+full-corpus validation (every one of 10,487,096 rows, not a sample):
+  duplicate chunk_uid: 0, missing/extra documents: 0, wrong config-hash/
+  schema-version/source rows: 0, token_count out of [1,256]: 0,
+  non-contiguous ordinals: 0, shard hash mismatches: 0,
+  sum(shard row_count) == sum(document chunk_count) == 10,487,096: TRUE
+```
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1939 passed, 34 deselected** (+34 new
+  in `tests/test_phase_4_2_full_corpus_chunking.py`: a synthetic
+  whitespace-tokenizer fixture exercising the real `chunk_one_document()`
+  integration path - window/overlap/partial-window semantics, frontmatter
+  exclusion, Task 2.9 schema/identity reuse, nullable-company acceptance,
+  no-fabrication of accession/date/SIC, char-offset round-trip, section
+  metadata always NULL, one-document-never-split-across-shards, atomic
+  shard publication, checkpoint/manifest identity-mismatch rejection,
+  corrupted/missing-shard exclusion on resume, a full simulated-
+  interruption-then-resume integration test with a duplicate-chunk_uid
+  check, document/shard manifest completeness and hash determinism, and
+  AST-based static guards proving the driver never imports embedding/
+  index/retrieval/generation/rerank/crag/router/sql/nav/api/guards/
+  eval.test_access; +2 new in `tests/test_chunk_metadata_schema.py` for the
+  v1->v2 schema evolution). `scripts/dev.py test` (full): **1973 passed**,
+  0 skipped (+2 `local_data`/`model`-marked: the real Task 3.2 regression
+  against the frozen A1 dev chunk artifact, and a frozen-Task-4.1-artifact/
+  source-`data/` hash-before/after check).
+
+### Regression gates
+
+Frozen `data/` and Task 4.1's normalized artifact both re-verified
+byte-unchanged after the build (manifest hash recomputed and matched
+exactly). The Phase 3 A1 dev chunk artifact
+(`artifacts/chunks/ba99e2f786.../chunks.parquet`) was never opened for
+writing - the new `artifacts/chunks_full/<p41-hash>/<chunk-hash>/`
+namespace (new, additive `storage.chunks_dir_full()` helper, keyed by
+*both* identities) cannot collide with it, verified directly. No chunking
+tokenizer substitution occurred despite Task 4.3 using a different
+embedding model (Qwen) - the frozen BGE tokenizer/256/0/fixed recipe was
+reproduced exactly, recomputed hash verified against the frozen value
+before any build code ran. No embedding, indexing, retrieval, generation,
+or LLM/API call occurred (structurally impossible - AST-verified). No GPU
+used. Protected TEST: unopened, 0/3 official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+```
+
+**Next roadmap task:** 4.3 Full-corpus embedding.

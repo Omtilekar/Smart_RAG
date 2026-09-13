@@ -17,6 +17,22 @@ Central invariant (Final Principle): same source + same chunking
 semantics -> same `chunk_uid`; different chunking semantics -> different
 `chunk_uid`. Missing metadata stays honestly `None` - this module never
 fabricates an accession, a date, a SIC code, or a character offset.
+
+Schema v2 (Task 4.2, 2026-09-13): `company` is now nullable. Task 4.1's
+approved full-corpus normalization policy leaves `company` genuinely NULL
+for 65.91% of EDGAR-CORPUS rows (no XBRL CIK->name match exists) - the
+v1 schema's `company` non-nullable constraint was only ever satisfiable
+because Task 1.1's 1,500-filing dev corpus was pre-filtered to the
+XBRL-aligned population (100% company coverage there, by construction).
+This is a schema-SEMANTICS change (a nullability rule changed), so
+CHUNK_SCHEMA_VERSION increments 1 -> 2 per this module's own evolution
+policy (project_plan/PHASE2_CHUNK_METADATA_SCHEMA.md) - never a silent
+reinterpretation. Historical v1 chunk_uids (the frozen 162,357-row Task
+1.2/2.9 dev-corpus audit, and every Phase 3 ablation-table chunk built
+from it) are unaffected: every one of those call sites pins
+`chunk_schema_version=1` as its own literal, independent of this
+module's "current" default, and none of them ever had a NULL `company`
+value in the first place. No other field's nullability changed.
 """
 
 from __future__ import annotations
@@ -30,7 +46,7 @@ from typing import Sequence
 
 import pyarrow as pa
 
-CHUNK_SCHEMA_VERSION = 1
+CHUNK_SCHEMA_VERSION = 2  # v1 -> v2 (Task 4.2): company became nullable
 
 # Deliberately small (Section 21) - do not add chart/image/pdf/other
 # without an actual current requirement.
@@ -87,8 +103,10 @@ CANONICAL_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec("cik", pa.int64(), False,
               "SEC Central Index Key - canonical integer, never a zero-padded string.",
               (int,)),
-    FieldSpec("company", pa.string(), False,
-              "Display company name. Never used as identity (names change/vary) - identity is cik/document_id/accession.",
+    FieldSpec("company", pa.string(), True,
+              "Display company name. Never used as identity (names change/vary) - identity is cik/document_id/accession. "
+              "NULL (schema v2+) where no authoritative name source exists - e.g. an EDGAR-CORPUS CIK with no XBRL "
+              "submissions match (Task 4.1's approved policy) - never fabricated/guessed.",
               (str,)),
     FieldSpec("form_type", pa.string(), False,
               "SEC filing type (e.g. \"10-K\") - never silently normalized from an amendment or other form.",

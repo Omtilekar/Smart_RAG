@@ -156,6 +156,25 @@ class StoragePaths:
         chunker implementation's job."""
         return self.artifacts_root / "chunks" / safe_component(chunk_config_hash)
 
+    def chunks_dir_full(self, phase_4_1_config_hash: str, chunk_config_hash: str) -> Path:
+        """Task 4.2 - full-corpus production chunk output, keyed by BOTH
+        the Task 4.1 normalization-input identity and the Task 3.2 chunk
+        semantic identity. Deliberately a different root (`chunks_full/`,
+        not `chunks/`) from `chunks_dir()`'s existing dev/Phase 3 ablation
+        artifacts (which key on chunk_config_hash alone) - the full
+        91,086-document corpus must never collide with or be mistaken for
+        the 1,500/1,493-document development chunk artifact that already
+        lives at `chunks_dir(chunk_config_hash)` for this exact same
+        chunk_config_hash (Task 3.2's winner is reused unchanged, not
+        recomputed - see project_plan/PHASE4_FULL_CORPUS_CHUNKING.md)."""
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(phase_4_1_config_hash, "phase_4_1_config_hash")
+        validate_sha256(chunk_config_hash, "chunk_config_hash")
+        return (
+            self.artifacts_root / "chunks_full"
+            / safe_component(phase_4_1_config_hash) / safe_component(chunk_config_hash)
+        )
+
     def index_dir(self, chunk_config_hash: str, embedding_model: str) -> Path:
         """Identity is (chunk_config_hash, embedding_model) together - the
         same chunks may be embedded with several models in Phase 3, so

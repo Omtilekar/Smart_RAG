@@ -57,10 +57,21 @@ _DOC_RE = re.compile(r"^---\n(?P<fm>.*?)\n---\n(?P<rest>.*)\Z", re.DOTALL)
 _SECTION_HEADING_RE = re.compile(r"^## (Item [0-9A-Za-z]+)$", re.MULTILINE)
 
 
-def parse_normalized_document(markdown_text: str) -> tuple[dict, str]:
-    """Splits a Task 1.2 normalized Markdown document into (frontmatter
+def parse_normalized_document(
+    markdown_text: str, frontmatter_keys: tuple[str, ...] = FRONTMATTER_KEYS,
+) -> tuple[dict, str]:
+    """Splits a Task 1.2/4.1 normalized Markdown document into (frontmatter
     fields, body text). Exact inverse of edgar_markdown.render_document():
     body is recovered byte-for-byte, not re-derived or re-stripped.
+
+    `frontmatter_keys` defaults to Task 1.2's original FRONTMATTER_KEYS
+    (dev corpus, 9 keys incl. development_manifest_sha256); Task 4.2 passes
+    `src.normalize.edgar_markdown.FULL_CORPUS_FRONTMATTER_KEYS` (8 keys, no
+    dev-manifest hash) to parse Task 4.1's full-corpus documents instead -
+    every existing call site keeps its exact prior behavior unchanged. A
+    bare `null` value (Task 4.1's nullable `company`) parses to Python
+    `None`, matching `src.normalize.edgar_markdown.render_frontmatter()`'s
+    own encoding of it.
 
     Raises ValueError on any structural mismatch - malformed Markdown is
     never silently chunked as raw text (Task 1.3 Step 23)."""
@@ -80,15 +91,17 @@ def parse_normalized_document(markdown_text: str) -> tuple[dict, str]:
         key, _, raw_value = line.partition(":")
         key = key.strip()
         raw_value = raw_value.strip()
-        if raw_value.startswith('"'):
+        if raw_value == "null":
+            fields[key] = None
+        elif raw_value.startswith('"'):
             fields[key] = json.loads(raw_value)
         else:
             fields[key] = int(raw_value)
 
-    missing = set(FRONTMATTER_KEYS) - set(fields)
+    missing = set(frontmatter_keys) - set(fields)
     if missing:
         raise ValueError(f"missing frontmatter fields: {sorted(missing)}")
-    extra = set(fields) - set(FRONTMATTER_KEYS)
+    extra = set(fields) - set(frontmatter_keys)
     if extra:
         raise ValueError(f"unexpected frontmatter fields: {sorted(extra)}")
     return fields, body

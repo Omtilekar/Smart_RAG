@@ -56,6 +56,12 @@ def git_sha() -> str | None:
         return None
 
 
+HISTORICAL_CHUNK_SCHEMA_VERSION = 1  # this audit's own frozen historical version -
+# pinned as a literal, never ms.CHUNK_SCHEMA_VERSION's "current" default, so a
+# future schema-semantics bump (e.g. Task 4.2's v1 -> v2) can never silently
+# reinterpret this already-frozen Task 2.9 audit under a different version.
+
+
 def audit_phase1() -> dict:
     table = pq.read_table(PHASE1_CHUNKS_PATH)
     rows = table.to_pylist()
@@ -64,12 +70,12 @@ def audit_phase1() -> dict:
     for row in rows:
         local_id = ms.build_chunk_local_id(row["ordinal"])
         uid = ms.build_chunk_uid(
-            chunk_schema_version=ms.CHUNK_SCHEMA_VERSION, source="edgar_corpus",
+            chunk_schema_version=HISTORICAL_CHUNK_SCHEMA_VERSION, source="edgar_corpus",
             document_id=row["document_id"], chunk_config_hash=row["chunk_config_hash"],
             chunk_local_id=local_id,
         )
         records.append({
-            "chunk_schema_version": ms.CHUNK_SCHEMA_VERSION,
+            "chunk_schema_version": HISTORICAL_CHUNK_SCHEMA_VERSION,
             "chunk_uid": uid,
             "chunk_local_id": local_id,
             "document_id": row["document_id"],
@@ -170,7 +176,7 @@ def audit_primary_sample(con) -> dict:
         canonical_content_type = "prose" if node["content_type"] == "narrative" else "table"
         local_id = ms.build_chunk_local_id(node["source_order"], section_id=node["section_id"])
         uid = ms.build_chunk_uid(
-            chunk_schema_version=ms.CHUNK_SCHEMA_VERSION, source="primary",
+            chunk_schema_version=HISTORICAL_CHUNK_SCHEMA_VERSION, source="primary",
             document_id=PRIMARY_SAMPLE_DOCUMENT_ID, chunk_config_hash=AUDIT_DEMO_CHUNK_CONFIG_HASH,
             chunk_local_id=local_id,
         )
@@ -181,7 +187,7 @@ def audit_primary_sample(con) -> dict:
         approx_token_count = max(1, len(node["text"].split()))
 
         records.append({
-            "chunk_schema_version": ms.CHUNK_SCHEMA_VERSION,
+            "chunk_schema_version": HISTORICAL_CHUNK_SCHEMA_VERSION,
             "chunk_uid": uid,
             "chunk_local_id": local_id,
             "document_id": PRIMARY_SAMPLE_DOCUMENT_ID,
@@ -252,7 +258,9 @@ def main() -> None:
         raise SystemExit("STOP: cross-source chunk_uid collision detected")
 
     summary = {
-        "chunk_schema_version": ms.CHUNK_SCHEMA_VERSION,
+        # matches every individual record's own "chunk_schema_version" above -
+        # this audit's historical data was built under v1, pinned as a literal.
+        "chunk_schema_version": HISTORICAL_CHUNK_SCHEMA_VERSION,
         "canonical_fields": [
             {"name": f.name, "type": str(f.pa_type), "nullable": f.nullable, "description": f.description}
             for f in ms.CANONICAL_FIELDS

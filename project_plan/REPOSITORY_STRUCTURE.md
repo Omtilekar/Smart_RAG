@@ -29,7 +29,13 @@ SEC-RAG/
 │   ├── chunk/           # IMPLEMENTED (Task 1.3) — fixed-window tokenized chunks -> Parquet;
 │   │                     # metadata_schema.py (Task 2.9) — canonical chunk record
 │   │                     # schema (chunk_uid/chunk_local_id identity, field
-│   │                     # types/nullability/enums), no new chunking pipeline
+│   │                     # types/nullability/enums), no new chunking pipeline;
+│   │                     # Task 4.2 bumped CHUNK_SCHEMA_VERSION 1->2 (company
+│   │                     # became nullable) and generalized fixed_window.py's
+│   │                     # parse_normalized_document() with an optional
+│   │                     # frontmatter_keys param + YAML null handling (every
+│   │                     # existing call site unchanged - see
+│   │                     # project_plan/PHASE4_FULL_CORPUS_CHUNKING.md)
 │   ├── embeddings/      # IMPLEMENTED (Task 1.4) — BAAI/bge-small-en-v1.5 wrapper, batch GPU embedding
 │   ├── index/           # IMPLEMENTED (Task 1.5) — exact-cosine LanceDB vector index
 │   ├── retrieval/       # IMPLEMENTED (Task 1.6) — baseline natural-language vector retriever
@@ -86,7 +92,12 @@ SEC-RAG/
 │                         # referenced Phase 1 artifact identity),
 │                         # phase_4_1_full_corpus_normalization.json (Task 4.1,
 │                         # frozen full-corpus frontmatter/company-name-policy/
-│                         # checkpoint contract + phase_4_1_config_hash)
+│                         # checkpoint contract + phase_4_1_config_hash),
+│                         # phase_4_2_full_corpus_chunking.json (Task 4.2,
+│                         # frozen full-corpus build identity - input Task 4.1
+│                         # identities, chunk_schema_version, the reused
+│                         # chunk_config_hash, tokenizer, shard policy,
+│                         # Parquet compression - + phase_4_2_build_config_hash)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -181,7 +192,15 @@ SEC-RAG/
 │                         # `--pilot`/`--run [--limit N]`/`--status`/
 │                         # `--verify-sample` resumable full-EDGAR-CORPUS
 │                         # normalization driver; see
-│                         # project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md)
+│                         # project_plan/PHASE4_FULL_CORPUS_NORMALIZATION.md);
+│                         # chunk_full_corpus.py (Task 4.2, `--plan`/`--pilot`/
+│                         # `--run [--limit N]`/`--status`/`--verify-sample`
+│                         # resumable full-corpus sharded-Parquet chunking
+│                         # driver, reusing src/chunk/fixed_window.py's
+│                         # tokenizer/window/offset logic and
+│                         # src/chunk/metadata_schema.py's canonical schema
+│                         # unmodified; see
+│                         # project_plan/PHASE4_FULL_CORPUS_CHUNKING.md)
 ├── results/             # planned: small committed metrics/experiment summaries;
 │                         # results/eval_runs/<run_id>.json — one immutable
 │                         # git-tracked evaluation-run record per execution

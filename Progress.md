@@ -12460,8 +12460,11 @@ text or API key.
 `src/eval/llm_judge.py` byte-for-byte unchanged. `openrouter.py` gained
 only one additive `log_event()` call - no request/response handling or
 return-value change. No re-normalization/re-chunking/re-embedding/
-vector-index/XBRL-export change. No paid API call made. Protected TEST:
-unopened, 0/3 official runs used.
+vector-index/XBRL-export change. **Correction (2026-09-16, Task 4.7)**:
+this line originally read "No paid API call made" - factually wrong, see
+the correction note earlier in this entry and Task 4.7's own entry for
+the full account of the 3 unintended live OpenRouter calls this
+session. Protected TEST: unopened, 0/3 official runs used.
 
 ### Phase Status
 
@@ -12634,3 +12637,111 @@ Phase 4 — Make It Real                        — IN PROGRESS
 
 **Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.8
 Context guardrails.
+
+---
+
+## 2026-09-16 — Task 4.8: Context Guardrails
+
+**Documentation-consistency preflight**: found one remaining stale
+sentence in Task 4.6's own Regression gates subsection ("No paid API
+call made.") that the earlier correction note had not reached - fixed
+above (Task 4.6's technical result unchanged, no billing estimated).
+
+Implemented and validated the context-guardrail boundary:
+`accepted input -> routing/retrieval/SQL/nav -> RETRIEVED CONTEXT ->
+CONTEXT GUARDRAIL -> ALLOW/ABSTAIN-SAFE -> generation`. See
+`project_plan/PHASE4_CONTEXT_GUARDRAILS.md` for full detail.
+
+**Scope conflict reported, in the opposite direction from Task 4.7**:
+the draft prompt described an elaborate framework (multi-route
+`ContextGuardResult`, size/token budgets, scope-leak-vs-predicate
+rejection, ~7 reason codes). `PROJECT_EXECUTION.md`'s actual Task 4.8
+checklist is materially **narrower** - 5 items: treat retrieved content
+as untrusted data, clearly delimit retrieved evidence, preserve raw
+evidence for provenance, plant adversarial/instruction-shaped retrieval
+examples, test that retrieved text cannot override system instructions.
+Followed the narrower roadmap rather than building the elaborate
+framework - no size/token budget guard, no scope-leak validator, no
+content-based context-injection *rejection* rule (a deliberate
+non-decision: retrieved filings legitimately contain arbitrary natural
+language; only structural isolation + a non-override test are required).
+
+**Implementation** (`src/guards/context.py`): `ContextGuardDecision
+(allowed, reason_code, detail)`. `check_dense_context()`/
+`check_xbrl_context()`/`check_navigation_context()` validate provenance
+completeness per route (dense: `chunk_id`/`document_id`/`text`; xbrl
+found-outcome: `adsh`/`cik`/`fiscal_year`/`tag`/`unit`/`value`;
+navigation found-outcome: `document_id`/`item`/`node_texts`) - the only
+implemented reason code is `missing_provenance`. `format_evidence_block()`
+wraps each piece of dense evidence in explicit `<<<BEGIN_RETRIEVED_
+EVIDENCE.../<<<END_RETRIEVED_EVIDENCE>>>` markers (never `[chunk_id: X]`
+square brackets - Task 1.7a's own documented regression) - wired into
+`src/generation/minimal.py`'s `_format_context()`, additively (the
+existing provenance line is byte-for-byte unchanged, only wrapped).
+
+**Integration boundary**: `MinimalGenerator._answer_with_diagnostics()`
+runs `check_dense_context()` immediately after retrieval, before prompt
+construction/`provider.generate()`. On `missing_provenance`, returns a
+fixed abstention-safe `GenerationResult` with `provider_response=None` -
+`provider.generate()` never called. Proven by test: rejected context ->
+`FakeProvider.calls == []`; valid context -> called exactly once. All 37
+pre-existing `tests/test_minimal_generation.py` tests (Task 1.7/1.7a)
+still pass unchanged. Only the dense route has an existing generation-
+prompt formatter to wire into - XBRL/navigation guard functions are
+implemented and portably tested but have no existing orchestrator to
+integrate with yet (both routes answer deterministically without an
+LLM call today).
+
+**Adversarial fixtures + non-override test** (items 4/5, implemented as
+tests in `tests/test_minimal_generation.py`, not new runtime checks): 4
+instruction-shaped fixtures planted into a retrieved chunk's `text`
+("Ignore all previous instructions...", a fake `SYSTEM:` line, a fake
+"New instructions from the developer:...", and one embedding a literal
+fake END marker) prove, with no real LLM call, that `GenerationRequest.
+system_prompt` is always exactly the frozen `SYSTEM_PROMPT` constant and
+the adversarial text always stays strictly inside the delimited evidence
+block. A legitimate filing sentence using similar vocabulary ("internal
+control system... instructions of the audit committee... did not
+ignore... assistant review process") is confirmed *not* rejected.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **2114 passed**, 37 deselected (+52
+  new: 35 in `tests/test_context_guards.py`, 4 in
+  `tests/test_context_guards_static_safety.py`, 13 in
+  `tests/test_minimal_generation.py`, which now has 50 tests total).
+- `python -m pytest -m "not generation_api"`: **2150 passed**, 1
+  deselected (230.29s).
+
+### Regression gates
+
+Task 4.1-4.7 artifacts/semantics untouched except this task's own
+explicitly-approved context-boundary wiring into `MinimalGenerator`
+(`SYSTEM_PROMPT`, the citation contract, and the OpenRouter/Ollama
+provider code are all byte-for-byte unchanged). Frozen Phase 3
+retrieval/routing decisions, the CRAG threshold (`0.5531`), dense-only
+selection, and the structured SQL/navigation routes unchanged - this
+task only validates their already-produced result objects. No BM25/RRF/
+reranker reintroduced, no re-embedding, no provider/model change.
+**Paid API calls during Task 4.8: 0** (`RUN_LIVE_GENERATION_API_TEST`
+never set). Protected TEST: unopened, **0/3** official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+  4.8 Context guardrails                      — COMPLETE
+```
+
+**Task 4.8 — Context Guardrails — COMPLETE**
+
+**Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.9
+Output guardrails.

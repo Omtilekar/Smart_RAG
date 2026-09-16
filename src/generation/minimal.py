@@ -12,10 +12,21 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
+from src.guards.context import check_dense_context, format_evidence_block
+
 from .citations import parse_citations
 from .provider import GenerationProvider, GenerationRequest, ProviderResponse
 
 RETRIEVAL_K = 5
+
+# Task 4.8 - the context guard's fixed abstention-safe outcome. Never a
+# provider call, never a fabricated citation - matches this project's
+# existing abstention shape (empty citations + a plain insufficiency
+# statement), just triggered by the context guard instead of the model.
+CONTEXT_GUARD_ABSTENTION_MESSAGE = (
+    "The retrieved context did not pass the context-safety check and "
+    "cannot be used to answer this question."
+)
 
 # Minimal grounded prompt contract (Task 1.7 Step 14) - deliberately no
 # chain-of-thought, no tool/browsing instructions.
@@ -62,23 +73,31 @@ def _validate_question(question) -> None:
 
 
 def _format_context(retrieved_results) -> str:
-    """One block per retrieved chunk: the exact chunk_id the model must
-    cite verbatim, light provenance for grounding, then the chunk text.
+    """One clearly-delimited block per retrieved chunk (Task 4.8 -
+    "clearly delimit retrieved evidence", src.guards.context.
+    format_evidence_block()): the exact chunk_id the model must cite
+    verbatim, light provenance for grounding, then the chunk text,
+    wrapped in explicit BEGIN/END boundary markers so retrieved
+    (untrusted) content can never be confused with instructions or with
+    a different chunk's boundary - even if the chunk's own text contains
+    phrases shaped like markers or instructions.
 
-    Deliberately does NOT wrap "Chunk ID:" in square brackets here - an
+    Deliberately does NOT wrap "Chunk ID:" in square brackets - an
     earlier version used "[chunk_id: X]" as the label, and the live smoke
     test (Task 1.7) showed the model imitating that exact bracketed label
     shape as its citation (e.g. "[chunk_id: 1425627_2018.htm::chunk9]")
     instead of the instructed bare "[X]" form. Removing brackets from the
     context label measurably reduced this - verified by re-running the
-    same live smoke questions after this change."""
-    blocks = []
-    for r in retrieved_results:
-        blocks.append(
-            f"Chunk ID: {r.chunk_id}\n"
-            f"Company: {r.company} | Fiscal Year: {r.fiscal_year} | Document: {r.document_id}\n"
-            f"{r.text}"
+    same live smoke questions after this change - and
+    format_evidence_block()'s own boundary markers were deliberately
+    chosen to avoid reintroducing that exact shape."""
+    blocks = [
+        format_evidence_block(
+            chunk_id=r.chunk_id, company=r.company, fiscal_year=r.fiscal_year,
+            document_id=r.document_id, text=r.text,
         )
+        for r in retrieved_results
+    ]
     return "\n\n".join(blocks)
 
 
@@ -95,17 +114,28 @@ class MinimalGenerator:
         result, _provider_response, _retrieval_ms = self._answer_with_diagnostics(question)
         return result
 
-    def _answer_with_diagnostics(self, question: str) -> tuple[GenerationResult, ProviderResponse, float]:
-        """Same as answer(), but also returns the raw ProviderResponse and
-        retrieval latency (ms) for smoke-diagnostic reporting. Not part of
-        the public Phase 1 answer contract - callers needing provenance
-        (scripts/smoke_generation.py) use this directly; ordinary callers
-        use answer()."""
+    def _answer_with_diagnostics(self, question: str) -> tuple[GenerationResult, ProviderResponse | None, float]:
+        """Same as answer(), but also returns the raw ProviderResponse
+        (None if the Task 4.8 context guard rejected the retrieved
+        evidence - see below) and retrieval latency (ms) for
+        smoke-diagnostic reporting. Not part of the public Phase 1 answer
+        contract - callers needing provenance (scripts/smoke_generation.py)
+        use this directly; ordinary callers use answer()."""
         _validate_question(question)
 
         t0 = time.perf_counter()
         retrieved = self._retriever.retrieve(question, k=RETRIEVAL_K)
         retrieval_ms = (time.perf_counter() - t0) * 1000
+
+        # Task 4.8 - the context guard: AFTER evidence acquisition, BEFORE
+        # provider.generate(...). Never expected to reject with the real
+        # frozen index (chunk_id/document_id/text are NOT NULL there,
+        # Task 1.4/1.5's own schema) - this is defense-in-depth, tested
+        # with synthetic malformed fixtures, not a live production path.
+        context_decision = check_dense_context(retrieved)
+        if not context_decision.allowed:
+            result = GenerationResult(answer=CONTEXT_GUARD_ABSTENTION_MESSAGE, citations=[])
+            return result, None, retrieval_ms
 
         user_prompt = f"Question: {question}\n\nContext:\n{_format_context(retrieved)}"
         request = GenerationRequest(system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt, temperature=0.0)

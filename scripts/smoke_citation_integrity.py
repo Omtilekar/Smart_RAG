@@ -112,6 +112,20 @@ def main() -> int:
 
     for q in questions:
         gen_result, provider_response, _retrieval_ms = generator._answer_with_diagnostics(q["question"])
+        if provider_response is None:
+            # Task 4.8 - the context guard rejected this question's
+            # retrieved evidence before any provider call was made. Never
+            # expected with the real frozen index (chunk_id/document_id/
+            # text are NOT NULL there); handled defensively rather than
+            # crashing on a None dereference below.
+            case_records.append({
+                "case_id": q["id"], "question": q["question"], "expected_behavior": q["expected_behavior"],
+                "answer": gen_result.answer, "parsed_citations": gen_result.citations,
+                "case_status": "SKIPPED_CONTEXT_GUARD_REJECTED", "failure_reasons": [],
+                "requested_provider": "openrouter", "requested_model": model, "response_reported_model": None,
+            })
+            print(f"SKIPPED {q['id']}: context guard rejected retrieved evidence")
+            continue
         response_model = provider_response.response_model or response_model
 
         supplied = recorder.last_results

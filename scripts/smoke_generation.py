@@ -92,6 +92,18 @@ def main() -> int:
         gen_result, provider_response, retrieval_ms = generator._answer_with_diagnostics(q)
         total_ms = (time.perf_counter() - t0) * 1000
 
+        if provider_response is None:
+            # Task 4.8 - the context guard rejected this question's
+            # retrieved evidence before any provider call was made. Never
+            # expected with the real frozen index (chunk_id/document_id/
+            # text are NOT NULL there), but handled defensively rather
+            # than crashing on a None dereference below.
+            log_event(log, logging.WARNING, "generation_smoke_context_guard_rejected", question_preview=q[:60])
+            print(f"\nQ: {q}")
+            print(f"A: {gen_result.answer} (context guard rejected - no provider call made)")
+            results.append({"question": q, "answer": gen_result.answer, "citations": gen_result.citations, "abstained": True})
+            continue
+
         retrieval_latencies.append(retrieval_ms)
         provider_latencies.append(provider_response.latency_ms)
         total_latencies.append(total_ms)

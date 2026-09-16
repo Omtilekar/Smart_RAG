@@ -1,0 +1,56 @@
+{
+  "task": "Phase 4 Task 4.8 - Context Guardrails",
+  "status": "COMPLETE",
+  "base_commit": "e08d48eb20204d6a7abd3c79a1e8141ec87e7a54",
+  "authoritative_requirement_source": "project_plan/PROJECT_EXECUTION.md #4.8",
+  "scope_conflict_reported": "Draft task prompt described an elaborate framework (multi-route ContextGuardResult, size/token budgets, scope-leak-vs-predicate rejection, ~7 reason codes, partial-filtering policy). PROJECT_EXECUTION.md's actual checklist is materially narrower: 5 items (treat content as untrusted data, clearly delimit evidence, preserve provenance, plant adversarial fixtures, test text cannot override system instructions). Followed the narrower authoritative roadmap rather than building the elaborate framework - the opposite direction of Task 4.7's conflict (there the roadmap was broader).",
+  "authoritative_checklist": [
+    "treat_retrieved_content_as_untrusted_data",
+    "clearly_delimit_retrieved_evidence",
+    "preserve_raw_evidence_for_provenance",
+    "plant_adversarial_instruction_shaped_retrieval_examples",
+    "test_retrieved_text_cannot_override_system_instructions"
+  ],
+  "implemented_context_types": ["dense_retrieval", "structured_xbrl", "tree_navigation"],
+  "reason_codes": ["missing_provenance"],
+  "configured_thresholds": "none - no numeric threshold required by the authoritative checklist",
+  "integration_point": "src/generation/minimal.py MinimalGenerator._answer_with_diagnostics() - immediately after retrieval, before prompt construction/provider.generate(); dense route only (the only route with an existing generation-prompt formatter in this codebase)",
+  "evidence_delimiters": {
+    "begin_marker": "<<<BEGIN_RETRIEVED_EVIDENCE chunk_id='...'>>>",
+    "end_marker": "<<<END_RETRIEVED_EVIDENCE>>>",
+    "avoids_bracketed_chunk_id_regression": "Task 1.7a found the model imitating a '[chunk_id: X]' label as its own citation - the new delimiters never use that shape"
+  },
+  "deterministic_behavior": true,
+  "no_context_injection_content_rejection_rule": "deliberate non-decision - retrieved filing text legitimately contains arbitrary natural language; the checklist requires structural isolation + a non-override test, not content-based rejection",
+  "portable_test_results": {
+    "tests_test_context_guards_py": 35,
+    "tests_test_context_guards_static_safety_py": 4,
+    "tests_test_minimal_generation_py_new": 13,
+    "tests_test_minimal_generation_py_total": 50,
+    "portable_suite_total": "2114 passed, 37 deselected (scripts/dev.py test --portable)"
+  },
+  "non_generation_regression_result": "python -m pytest -m \"not generation_api\": 2150 passed, 1 deselected (230.29s)",
+  "integration_check_result": "PASS - missing_provenance dense context never invokes the injected FakeProvider (calls stay empty), fixed abstention-safe GenerationResult returned instead; valid dense context invokes the provider exactly once; all 37 pre-existing tests/test_minimal_generation.py tests (Task 1.7/1.7a) still pass with the new delimited format and context-guard step in place",
+  "paid_api_calls_task_4_8": 0,
+  "llm_calls_in_guard": 0,
+  "protected_test_usage": "0/3",
+  "files_modified": [
+    "src/guards/context.py",
+    "src/generation/minimal.py",
+    "scripts/smoke_generation.py",
+    "scripts/smoke_citation_integrity.py",
+    "tests/test_context_guards.py",
+    "tests/test_context_guards_static_safety.py",
+    "tests/test_minimal_generation.py",
+    "project_plan/PHASE4_CONTEXT_GUARDRAILS.md",
+    "project_plan/REPOSITORY_STRUCTURE.md",
+    "Progress.md"
+  ],
+  "known_limitations": [
+    "No context-size/token-budget enforcement - not in the authoritative checklist, no existing frozen budget to reuse",
+    "No scope-leak-vs-predicate validation (e.g. chunk CIK matches resolved CIK) - not in the authoritative checklist; this task does not redesign retrieval",
+    "No content-based context-injection rejection rule - deliberate, documented non-decision",
+    "Delimiting/integration proven end-to-end for the dense route only - XBRL/navigation guard functions are portably tested in isolation, no existing orchestrator to wire into yet",
+    "Adversarial-fixture tests prove structural request-construction isolation, not real LLM injection-resistance (would require a paid call, disallowed for this task)"
+  ]
+}

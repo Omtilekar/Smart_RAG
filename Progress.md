@@ -12858,3 +12858,140 @@ Phase 4 — Make It Real                        — IN PROGRESS
 
 **Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.10
 FastAPI service.
+
+---
+
+## 2026-09-16 — Task 4.10: FastAPI Service
+
+Exposed the already-frozen production pipeline (input guard -> routing
+-> dense or structured answer -> context/output guards -> release)
+through a small, typed HTTP API: `GET /health`, `GET /status`,
+`POST /query`. See `project_plan/PHASE4_FASTAPI_SERVICE.md` for full
+detail.
+
+**Authoritative requirement** - `PROJECT_EXECUTION.md`'s 3-item Task 4.10
+checklist (keep retrieval/generation logic outside FastAPI / define
+request-response models / return citations and useful metadata) is
+materially narrower than an elaborate draft prompt covering CORS/auth/
+rate-limit/concurrency-testing/OpenAPI-contract-testing scope - followed
+the narrower roadmap, same pattern as Tasks 4.8/4.9. Endpoint names
+match the roadmap's own literal suggestion (`/health`, `/status`,
+`POST /query`), not the draft's `/ready` naming.
+
+**Two explicit user decisions (2026-09-16)**:
+
+```text
+guard-rejection HTTP status:   200 with a typed refusal body
+                             (status="rejected", reason_code set) for
+                             EVERY guard layer, structural or content-
+                             policy - the roadmap says nothing about
+                             status codes and this task's own prompt
+                             flags it as a must-not-guess choice
+dense route's index:           Phase 1 dev-corpus LanceDB index
+                             (162,357 rows, BGE-small) - the same
+                             index/retriever every prior task (1.6-4.9)
+                             actually tested against
+```
+
+**Real, confirmed architectural gap found and reported, not silently
+patched**: `src.retrieval.baseline.BaselineRetriever`/`RetrievalResult`
+hardcode a 17-column schema (`chunk_id`, `source_filename`,
+`normalizer_version`, `normalization_build_sha256`,
+`development_manifest_sha256`, ...) that does not exist on the real
+10,487,096-row Task 4.4 production index (`chunk_uid` instead of
+`chunk_id`; several dev-only provenance fields dropped entirely by
+Task 4.1's full-corpus frontmatter change). No task ever built a
+schema-adapting retriever for the full-corpus index - verified directly
+that pointing `BaselineRetriever` at the real production table would
+raise `KeyError` immediately. Building one now would be new,
+previously-untested retrieval-adjacent code, outside this task's "thin
+API layer" scope - the user chose to wire the dense route to the dev
+index instead and document this clearly as the task's most important
+limitation.
+
+**Route coverage** (documented, not overclaimed): `xbrl_fact` structured
+route (`classify_intent()` + `XbrlFactIndex.lookup()`, both unchanged)
+is wired. Tree-navigation is **not** wired - `classify_intent()`'s own
+6-intent taxonomy has no navigation intent at all, and
+`extract_item_reference()` was never integrated into it, so there is no
+live routing decision for it anywhere in this codebase (wiring one now
+would mean inventing new routing logic). `numeric_derived`/`cross_entity`
+have a real, precedented text->answer composition pattern
+(`scripts/run_phase3_derived.py` already does exactly this), but were
+deliberately not wired - the "Frozen Production Stack" section names
+only "structured SQL/XBRL route," not those two, so wiring them would be
+a scope expansion beyond the roadmap's own 3-item checklist. Every other
+`classify_intent()` outcome falls back to `MinimalGenerator.answer()`
+(dense retrieval+generation, Task 4.8/4.9 guards already inside).
+
+**Implementation**: `src/api/service.py`'s `handle_query()` - the one
+new orchestration facade, explicitly authorized by the roadmap ("may add
+a narrow service/facade only if required") - composes Task 4.7's input
+guard, Task 3.8's router, Task 3.10's structured lookup, and Task
+1.7/4.8/4.9's dense pipeline; zero retrieval/routing/SQL/generation/
+citation/guardrail logic reimplemented. `src/api/dependencies.py`
+constructs real production dependencies lazily (only inside the app's
+`lifespan`, never at import time) - including a NEW
+`build_production_gazetteer()` querying `data/xbrl.duckdb`'s
+`submissions` table, which Task 3.8's own frozen config already names as
+"a production router would instead resolve against the full SEC
+company/CIK submissions list." `src/api/app.py`'s `create_app()` factory
+wires the three endpoints, exception handlers (`GenerationError` -> 503,
+unexpected -> 500, no traceback/message leak), and request-lifecycle
+logging.
+
+**Guard-rejection status semantics**: only the input guard (run directly
+in `handle_query()`, before routing) produces `status="rejected"`. A
+Task 4.8/4.9 guard rejection inside the dense route is NOT re-labeled
+"rejected" - `MinimalGenerator.answer()`'s existing public contract
+already represents that as an ordinary abstention-shaped answer, and
+this facade does not invent a second exposure of internal guard
+mechanics. Proven by test using a REAL `MinimalGenerator` (not a fake)
+that both context- and output-guard-triggered abstentions surface as
+`status="answered"` with the guard's existing fixed message.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **2208 passed**, 38 deselected (+54
+  new: 11 in `tests/test_api_service.py`, 32 in `tests/test_api_app.py`,
+  4 in `tests/test_api_dependencies.py`, 7 in
+  `tests/test_api_static_safety.py`).
+- `python -m pytest -m "not generation_api"`: **2245 passed**, 1
+  deselected (277.18s).
+- Local integration (`local_data`-marked, `tests/test_api_local_
+  integration.py`): **PASS** - real BGE model + real 162,357-row dev
+  index + real `xbrl.duckdb`, fake provider only, 29.4s (dominated by
+  model load), zero API credits spent.
+
+### Regression gates
+
+Task 4.1-4.5 artifacts untouched. Task 4.6 provider/model semantics
+unchanged (`get_generation_provider()` reused unmodified). Task 4.7/4.8/
+4.9 guard modules untouched - only imported/composed. Frozen Phase 3
+routing/retrieval decisions, the CRAG threshold (`0.5531`), dense-only
+selection unchanged. No BM25/RRF/reranker reintroduced, no re-embedding,
+no provider/model change. **Paid API calls during Task 4.10: 0**
+(`RUN_LIVE_GENERATION_API_TEST` never set; `scripts/smoke_generation.py`
+not run). Protected TEST: unopened, **0/3** official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+  4.8 Context guardrails                      — COMPLETE
+  4.9 Output guardrails                       — COMPLETE
+  4.10 FastAPI service                        — COMPLETE
+```
+
+**Task 4.10 — FastAPI Service — COMPLETE**
+
+**Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.11
+Deployment.

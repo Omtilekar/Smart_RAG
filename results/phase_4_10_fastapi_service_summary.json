@@ -1,0 +1,74 @@
+{
+  "task": "Phase 4 Task 4.10 - FastAPI Service",
+  "status": "COMPLETE",
+  "base_commit": "4e5b461f5ec8e475737800f5626436192f4981f2",
+  "authoritative_requirement_source": "project_plan/PROJECT_EXECUTION.md #4.10",
+  "authoritative_checklist": [
+    "keep_retrieval_generation_logic_outside_fastapi",
+    "define_request_response_models",
+    "return_citations_and_useful_metadata"
+  ],
+  "endpoints": ["GET /health", "GET /status", "POST /query"],
+  "explicit_user_decisions_2026_09_16": {
+    "guard_rejection_http_status": "200 with typed refusal body (status='rejected', reason_code set) for every guard layer - not 4xx/5xx",
+    "dense_route_index": "Phase 1 dev-corpus LanceDB index (162,357 rows, BGE-small) - BaselineRetriever is incompatible with the real 10,487,096-row production index's schema (chunk_uid vs chunk_id, dropped provenance fields); no adapter exists"
+  },
+  "request_response_contract": {
+    "request": {"question": "str"},
+    "response": {"status": "answered|rejected", "answer": "str|None", "citations": "list[str]",
+                 "route": "dense|structured_xbrl|None", "reason_code": "str|None", "request_id": "str"}
+  },
+  "guard_to_http_mapping": {
+    "input_guard_rejection": "200, status=rejected, reason_code set",
+    "context_guard_rejection_inside_dense_route": "200, status=answered, fixed abstention message, citations=[] (not re-labeled rejected - MinimalGenerator's own public contract)",
+    "output_guard_rejection_inside_dense_route": "200, status=answered, fixed abstention message, citations=[]",
+    "generation_error": "503, bounded JSON message, no exception text",
+    "unexpected_exception": "500, bounded JSON message, no traceback/exception text",
+    "pydantic_schema_validation_failure": "422 (FastAPI default)"
+  },
+  "route_coverage": {
+    "dense": "wired - Phase 1 dev-corpus index, full Task 4.8/4.9 guard stack via MinimalGenerator",
+    "structured_xbrl": "wired - classify_intent() + XbrlFactIndex.lookup(), xbrl_fact intent only",
+    "tree_navigation": "not wired - no live routing decision exists anywhere in the codebase for this route",
+    "numeric_derived_cross_entity": "not wired - real composition pattern exists in scripts/run_phase3_derived.py but deliberately deferred, roadmap names only structured SQL/XBRL"
+  },
+  "citation_contract": "dense route: [chunk_id]-shaped strings (Task 1.7 frozen identity); structured_xbrl route: SEC accession numbers (adsh) - a different identity space, distinguishable via the route field",
+  "orchestration_facade": "src/api/service.py handle_query() - explicitly authorized by the roadmap's own 'may add a narrow service/facade' allowance; zero retrieval/routing/SQL/generation/citation/guardrail logic reimplemented",
+  "startup_lifespan_design": "create_app(dependencies=None) - real dependencies built lazily inside FastAPI lifespan only when dependencies=None; fakes injected directly for all portable tests; importing src.api.app or calling create_app() never loads BGE/LanceDB/duckdb",
+  "deterministic_behavior": true,
+  "portable_test_results": {
+    "tests_test_api_service_py": 11,
+    "tests_test_api_app_py": 32,
+    "tests_test_api_dependencies_py": 4,
+    "tests_test_api_static_safety_py": 7,
+    "portable_suite_total": "2208 passed, 38 deselected (scripts/dev.py test --portable)"
+  },
+  "non_generation_regression_result": "python -m pytest -m \"not generation_api\": 2245 passed, 1 deselected (277.18s)",
+  "local_integration_result": "PASS - real BGE model + real 162,357-row dev-corpus LanceDB index + real xbrl.duckdb, fake generation provider only; proved full HTTP -> service -> retrieval -> generation wiring, 29.4s wall time (dominated by model load), zero API credits spent",
+  "paid_api_calls_task_4_10": 0,
+  "llm_calls_in_api_layer": 0,
+  "protected_test_usage": "0/3",
+  "files_modified": [
+    "src/api/schemas.py",
+    "src/api/service.py",
+    "src/api/dependencies.py",
+    "src/api/app.py",
+    "tests/test_api_service.py",
+    "tests/test_api_app.py",
+    "tests/test_api_dependencies.py",
+    "tests/test_api_static_safety.py",
+    "tests/test_api_local_integration.py",
+    "project_plan/PHASE4_FASTAPI_SERVICE.md",
+    "project_plan/REPOSITORY_STRUCTURE.md",
+    "project_plan/DEVELOPER_COMMANDS.md",
+    "Progress.md"
+  ],
+  "known_limitations": [
+    "Dense route serves the 162,357-row Phase 1 dev-corpus index, not the real 10,487,096-row Task 4.4 production index - a schema-adapting retriever does not exist and was explicitly not built in this task",
+    "Tree-navigation route not wired - no live routing decision exists for it anywhere in this codebase",
+    "numeric_derived/cross_entity structured sub-routes not wired - a real composition pattern exists but was deliberately deferred to keep scope proportionate to the roadmap's own 3-item checklist",
+    "No CORS/authentication/rate limiting - not required by the authoritative checklist",
+    "No deployment - Task 4.11 owns that",
+    "No concurrency/load testing - not required by the authoritative checklist"
+  ]
+}

@@ -119,3 +119,22 @@ python -m src.cli.phase1 evaluate
 See `project_plan/PHASE1_END_TO_END.md` for the full command contract,
 configuration, and the Phase 1 exit-criteria evidence these two commands
 produced.
+
+## Related: the FastAPI service (`src/api/app.py`, Task 4.10)
+
+Also not a `dev.py` subcommand — a production HTTP service, run via
+`uvicorn` directly:
+
+```bash
+python -m uvicorn src.api.app:create_app --factory --host 0.0.0.0 --port 8000
+```
+
+Development-only, with auto-reload (never used in the command above -
+`--reload` must never be enabled for a production run):
+
+```bash
+python -m uvicorn src.api.app:create_app --factory --reload
+```
+
+See `project_plan/PHASE4_FASTAPI_SERVICE.md` for the full endpoint
+contract, guard integration, and route coverage.

@@ -1,0 +1,21 @@
+{
+  "xbrl_serving_schema_version": 1,
+  "source": "data/xbrl.duckdb",
+  "eval_tag_registry_version": 1,
+  "eval_tag_registry_hash": "a230373e2a788423026142beb93c5c454a291f23468d46cfb40f5692e48b8070",
+  "facts_scope": "tag IN (enabled eval_tags.yaml tags)",
+  "partition_schemes": {
+    "facts_by_tag": [
+      "tag"
+    ],
+    "facts_by_cik_fiscal_year": [
+      "cik",
+      "fiscal_year"
+    ],
+    "submissions_by_cik": [
+      "cik"
+    ]
+  },
+  "parquet_format": "duckdb COPY ... (FORMAT PARQUET, PARTITION_BY (...))",
+  "xbrl_serving_config_hash": "b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a"
+}

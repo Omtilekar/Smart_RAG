@@ -60,6 +60,10 @@ artifacts/                     # GENERATED, git-ignored, created on demand
 │                               # on Windows, where LanceDB's own internal fragment filenames
 │                               # (chunks.lance/data/<~52-char-name>.lance) pushed the full-two-
 │                               # 64-char-hash path past the ~260-character MAX_PATH limit
+├── xbrl_serving/<xbrl_serving_config_hash>/<artifact>/   # Task 4.5 - partitioned-Parquet
+│                               # re-export of the frozen data/xbrl.duckdb facts/submissions
+│                               # tables (facts_by_tag, facts_by_cik_fiscal_year,
+│                               # submissions_by_cik) - data/xbrl.duckdb itself untouched
 ├── eval/<eval_version>/
 └── cache/                     # not yet exposed by a helper - see below
 
@@ -115,6 +119,11 @@ storage.embeddings_dir_full(phase_4_1_config_hash, chunk_config_hash,   # Task 4
                                                               # full-corpus embedding artifact
 storage.index_dir_full(phase_4_1_config_hash, chunk_config_hash,       # Task 4.4 - full-corpus
                         embedding_model, embedding_model_revision)      # LanceDB index output
+storage.xbrl_serving_dir(xbrl_serving_config_hash, artifact)           # Task 4.5 - partitioned-
+                                                              # Parquet XBRL serving export
+                                                              # (artifact = "facts_by_tag" /
+                                                              # "facts_by_cik_fiscal_year" /
+                                                              # "submissions_by_cik")
 storage.eval_dir(eval_version)
 
 # existence checks (frozen inputs; type/existence only, no content validation)

@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0",
+  "created_at_utc": "2026-09-16T00:39:23Z",
+  "git_sha": "ac719345118662d0a0adf0098035e34f2f90227e",
+  "xbrl_serving_config_hash": "b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a",
+  "enabled_tags": [
+    "Assets",
+    "Liabilities",
+    "StockholdersEquity",
+    "CashAndCashEquivalentsAtCarryingValue",
+    "Revenues",
+    "ResearchAndDevelopmentExpense",
+    "NetIncomeLoss",
+    "OperatingIncomeLoss",
+    "CostOfRevenue",
+    "GrossProfit",
+    "RevenueFromContractWithCustomerExcludingAssessedTax",
+    "OperatingExpenses",
+    "EarningsPerShareBasic",
+    "EarningsPerShareDiluted",
+    "IncomeTaxExpenseBenefit"
+  ],
+  "eval_tag_registry_hash": "a230373e2a788423026142beb93c5c454a291f23468d46cfb40f5692e48b8070",
+  "source_facts_row_count": 15852990,
+  "source_submissions_row_count": 218166,
+  "facts_by_tag": {
+    "reused": true,
+    "row_count": 15852990,
+    "fingerprint": 146234926186231951097706587,
+    "dir": "artifacts/xbrl_serving/b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a/facts_by_tag"
+  },
+  "facts_by_cik_fiscal_year": {
+    "reused": true,
+    "row_count": 15852990,
+    "fingerprint": 146234926186231951097706587,
+    "batches": null,
+    "dir": "artifacts/xbrl_serving/b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a/facts_by_cik_fiscal_year"
+  },
+  "submissions_by_cik": {
+    "reused": true,
+    "row_count": 218166,
+    "fingerprint": 2009882103500140471382179,
+    "dir": "artifacts/xbrl_serving/b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a/submissions_by_cik"
+  },
+  "sizes_bytes": {
+    "facts_by_tag_bytes": 431480842,
+    "facts_by_cik_fiscal_year_bytes": 338350744,
+    "submissions_by_cik_bytes": 25223624
+  },
+  "build_runtime_seconds": 63.88,
+  "partition_pruning_correctness": {
+    "by_tag": [
+      {
+        "tag": "Assets",
+        "match": true,
+        "live": [
+          1001030,
+          9232834379509182276019925
+        ],
+        "parquet": [
+          1001030,
+          9232834379509182276019925
+        ]
+      },
+      {
+        "tag": "EarningsPerShareBasic",
+        "match": true,
+        "live": [
+          614700,
+          5670246734757908029418114
+        ],
+        "parquet": [
+          614700,
+          5670246734757908029418114
+        ]
+      },
+      {
+        "tag": "IncomeTaxExpenseBenefit",
+        "match": true,
+        "live": [
+          850493,
+          7848188344276639600914675
+        ],
+        "parquet": [
+          850493,
+          7848188344276639600914675
+        ]
+      },
+      {
+        "tag": "OperatingExpenses",
+        "match": true,
+        "live": [
+          425933,
+          3928408362826966973666483
+        ],
+        "parquet": [
+          425933,
+          3928408362826966973666483
+        ]
+      },
+      {
+        "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "match": true,
+        "live": [
+          2383954,
+          21998005685465538627357505
+        ],
+        "parquet": [
+          2383954,
+          21998005685465538627357505
+        ]
+      }
+    ],
+    "by_cik_fiscal_year": [
+      {
+        "cik": 1750,
+        "fiscal_year": 2016,
+        "match": true,
+        "live": [
+          79,
+          668845320982315378316
+        ],
+        "parquet": [
+          79,
+          668845320982315378316
+        ]
+      },
+      {
+        "cik": 862861,
+        "fiscal_year": 2019,
+        "match": true,
+        "live": [
+          281,
+          2574746133483877029112
+        ],
+        "parquet": [
+          281,
+          2574746133483877029112
+        ]
+      },
+      {
+        "cik": 1138723,
+        "fiscal_year": 2020,
+        "match": true,
+        "live": [
+          460,
+          4082770409976069111115
+        ],
+        "parquet": [
+          460,
+          4082770409976069111115
+        ]
+      },
+      {
+        "cik": 1452477,
+        "fiscal_year": 2023,
+        "match": true,
+        "live": [
+          218,
+          1962934753981248211191
+        ],
+        "parquet": [
+          218,
+          1962934753981248211191
+        ]
+      },
+      {
+        "cik": 1638287,
+        "fiscal_year": 2016,
+        "match": true,
+        "live": [
+          86,
+          741299465287873192485
+        ],
+        "parquet": [
+          86,
+          741299465287873192485
+        ]
+      }
+    ]
+  },
+  "latency_diagnostic": {
+    "label": "Phase 4.5 smoke diagnostic - not a production benchmark",
+    "by_tag_query": {
+      "samples": [
+        {
+          "tag": "Assets",
+          "live_duckdb_ms": 515.5369999993127,
+          "parquet_by_tag_ms": 11.169200006406754,
+          "parquet_by_cik_fiscal_year_ms": 24150.3173999954
+        },
+        {
+          "tag": "EarningsPerShareBasic",
+          "live_duckdb_ms": 454.11170000443235,
+          "parquet_by_tag_ms": 8.71030002599582,
+          "parquet_by_cik_fiscal_year_ms": 22255.208799993852
+        },
+        {
+          "tag": "IncomeTaxExpenseBenefit",
+          "live_duckdb_ms": 503.72830001288094,
+          "parquet_by_tag_ms": 14.55079999868758,
+          "parquet_by_cik_fiscal_year_ms": 22296.185499988496
+        },
+        {
+          "tag": "OperatingExpenses",
+          "live_duckdb_ms": 403.68620000663213,
+          "parquet_by_tag_ms": 8.869300014339387,
+          "parquet_by_cik_fiscal_year_ms": 21150.182899989886
+        },
+        {
+          "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+          "live_duckdb_ms": 894.205000018701,
+          "parquet_by_tag_ms": 22.431199991842732,
+          "parquet_by_cik_fiscal_year_ms": 20140.1875000156
+        }
+      ],
+      "live_duckdb": {
+        "n": 5,
+        "p50_ms": 503.73,
+        "min_ms": 403.69,
+        "max_ms": 894.21
+      },
+      "parquet_by_tag": {
+        "n": 5,
+        "p50_ms": 11.17,
+        "min_ms": 8.71,
+        "max_ms": 22.43
+      },
+      "parquet_by_cik_fiscal_year (wrong layout for this query)": {
+        "n": 5,
+        "p50_ms": 22255.21,
+        "min_ms": 20140.19,
+        "max_ms": 24150.32
+      }
+    },
+    "by_cik_fiscal_year_query": {
+      "samples": [
+        {
+          "cik": 1750,
+          "fiscal_year": 2016,
+          "live_duckdb_ms": 161.94389999145642,
+          "parquet_by_cik_fiscal_year_ms": 9805.94469999778,
+          "parquet_by_tag_ms": 85.35989999654703
+        },
+        {
+          "cik": 862861,
+          "fiscal_year": 2019,
+          "live_duckdb_ms": 134.44130000425503,
+          "parquet_by_cik_fiscal_year_ms": 10259.171400015475,
+          "parquet_by_tag_ms": 168.13980002189055
+        },
+        {
+          "cik": 1138723,
+          "fiscal_year": 2020,
+          "live_duckdb_ms": 88.83369999239221,
+          "parquet_by_cik_fiscal_year_ms": 9163.285100017674,
+          "parquet_by_tag_ms": 165.05149999284185
+        },
+        {
+          "cik": 1452477,
+          "fiscal_year": 2023,
+          "live_duckdb_ms": 65.12949999887496,
+          "parquet_by_cik_fiscal_year_ms": 9099.07930000918,
+          "parquet_by_tag_ms": 118.78129999968223
+        },
+        {
+          "cik": 1638287,
+          "fiscal_year": 2016,
+          "live_duckdb_ms": 105.11100001167506,
+          "parquet_by_cik_fiscal_year_ms": 9027.427199995145,
+          "parquet_by_tag_ms": 104.09549999167211
+        }
+      ],
+      "live_duckdb": {
+        "n": 5,
+        "p50_ms": 105.11,
+        "min_ms": 65.13,
+        "max_ms": 161.94
+      },
+      "parquet_by_cik_fiscal_year": {
+        "n": 5,
+        "p50_ms": 9163.29,
+        "min_ms": 9027.43,
+        "max_ms": 10259.17
+      },
+      "parquet_by_tag (wrong layout for this query)": {
+        "n": 5,
+        "p50_ms": 118.78,
+        "min_ms": 85.36,
+        "max_ms": 168.14
+      }
+    }
+  }
+}

@@ -113,7 +113,11 @@ SEC-RAG/
 │                         # phase_4_4_full_corpus_vector_index.json (Task 4.4,
 │                         # frozen full-corpus index identity - Task 4.1/4.2
 │                         # identities, embedding/index identity hashes,
-│                         # scalar-index/no-ANN/no-quantization/no-FTS policy)
+│                         # scalar-index/no-ANN/no-quantization/no-FTS policy),
+│                         # phase_4_5_xbrl_serving_export.json (Task 4.5,
+│                         # frozen XBRL serving-export identity - eval-tag-
+│                         # registry hash, facts row-scope rule, partition
+│                         # schemes for all 3 exported artifacts)
 ├── tests/               # implemented: Phase 0 foundation suite (Task 0.8),
 │                         # see project_plan/TESTING.md
 ├── scripts/             # implemented: dev.py (Task 0.9), serving_spike.py (Task 0.10),
@@ -223,7 +227,16 @@ SEC-RAG/
 │                         # re-verification, exact-cosine ingestion, scalar
 │                         # cik/fiscal_year index build, self-retrieval/
 │                         # search-latency validation; see
-│                         # project_plan/PHASE4_FULL_CORPUS_VECTOR_INDEX.md)
+│                         # project_plan/PHASE4_FULL_CORPUS_VECTOR_INDEX.md);
+│                         # export_xbrl_serving.py (Task 4.5, partitioned-
+│                         # Parquet re-export of the 15-enabled-tag subset of
+│                         # data/xbrl.duckdb's facts table - by tag and by
+│                         # (cik, fiscal_year) - plus submissions by cik;
+│                         # CIK-batched/checkpointed for the high-cardinality
+│                         # layout, full-corpus fingerprint validation,
+│                         # partition-pruning correctness + latency
+│                         # benchmarking; see
+│                         # project_plan/PHASE4_XBRL_SERVING_REPRESENTATION.md)
 ├── results/             # planned: small committed metrics/experiment summaries;
 │                         # results/eval_runs/<run_id>.json — one immutable
 │                         # git-tracked evaluation-run record per execution

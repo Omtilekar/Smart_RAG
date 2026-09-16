@@ -266,6 +266,25 @@ class StoragePaths:
             / safe_component(embedding_model)
         )
 
+    def xbrl_serving_dir(self, xbrl_serving_config_hash: str, artifact: str) -> Path:
+        """Task 4.5 - a serving-appropriate, partitioned-Parquet re-export
+        of a subset of the frozen `data/xbrl.duckdb` `facts`/`submissions`
+        tables. `data/xbrl.duckdb` itself is untouched and remains the
+        offline-analysis source of truth (per PROJECT_EXECUTION.md's Task
+        4.5 wording) - this is a purely additive, physical I/O
+        reorganization for production query patterns, never a semantic
+        recomputation (no eligibility filtering/dedup from
+        `src.eval.truth_contract.eligible_facts()` is baked in here).
+        `artifact` names one specific partitioned export (e.g.
+        "facts_by_tag", "facts_by_cik_fiscal_year", "submissions_by_cik") -
+        validated the same way every other path component is."""
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(xbrl_serving_config_hash, "xbrl_serving_config_hash")
+        return (
+            self.artifacts_root / "xbrl_serving"
+            / safe_component(xbrl_serving_config_hash) / safe_component(artifact)
+        )
+
     def eval_dir(self, eval_version: str) -> Path:
         return self.artifacts_root / "eval" / safe_component(eval_version)
 

@@ -12262,3 +12262,123 @@ Phase 4 — Make It Real                        — IN PROGRESS
 ```
 
 **Next roadmap task:** 4.5 XBRL serving representation.
+
+---
+
+## 2026-09-16 — Task 4.5: XBRL Serving Representation
+
+Exported a serving-appropriate, partitioned-Parquet re-export of
+`data/xbrl.duckdb`'s `facts`/`submissions` tables. `data/xbrl.duckdb`
+itself untouched throughout - purely additive, read-only-of-source
+physical I/O reorganization, never a semantic recomputation (no
+eligibility/dedup logic from `src.eval.truth_contract.eligible_facts()`
+baked in). See `project_plan/PHASE4_XBRL_SERVING_REPRESENTATION.md` for
+full detail.
+
+**Measured query pattern, not assumed**: `PROJECT_EXECUTION.md`'s generic
+checklist says "partition based on measured query patterns such as
+CIK/year," but inspecting the real code showed Task 3.10's
+`XbrlFactIndex` actually queries `WHERE tag IN (...)` once per registry
+tag (15 tags) and serves all `(cik, fiscal_year)` lookups from an
+in-memory index - `cik`/`fiscal_year` never appear in a SQL WHERE clause
+in production. Both a `tag`-partitioned and a `(cik, fiscal_year)`-
+partitioned export were built and benchmarked, rather than silently
+picking one to match the roadmap's example wording.
+
+```text
+scope: facts rows where tag IN (15 enabled configs/eval_tags.yaml tags) -
+       "serving-appropriate" means scoped to the one real consumer, not
+       a mirror of all 291,429 raw XBRL tags
+source_facts_row_count:       15,852,990  (17.5% of 90,685,753 total)
+source_submissions_row_count:    218,166  (full table, no tag column)
+xbrl_serving_config_hash: b9c628766c0ac48ef2e6206128862856221443ee03c976ffe1655b2003b05c7a
+  (bound to eval_tag_registry_hash - Task 2.2's compute_registry_hash(),
+  reused not recomputed - so a future tag-registry change never silently
+  reuses a stale export)
+
+3 partitioned artifacts, same underlying facts rows for the first two:
+  facts_by_tag              PARTITION_BY (tag)               15 partitions
+  facts_by_cik_fiscal_year  PARTITION_BY (cik, fiscal_year)   64,457 partitions
+  submissions_by_cik        PARTITION_BY (cik)                10,757 partitions
+```
+
+**Two real OOM failures, empirically fixed**: a single `COPY ...
+PARTITION_BY (cik, fiscal_year)` over 64,457 partitions failed twice
+(`24.9 GiB/25.0 GiB used`, then `7.4 GiB/7.4 GiB used` even after
+`preserve_insertion_order=false`/`memory_limit='8GB'`). Real fix:
+`export_facts_by_cik_fiscal_year_batched()` splits the export into 44
+sequential 250-CIK batches (verified first on a disposable synthetic
+table that multiple sequential `COPY ... PARTITION_BY` calls into the
+same directory combine correctly), with a config/source-identity-bound
+`_export_state.json` checkpoint mirroring Task 4.1/4.2/4.4's resumable
+pattern.
+
+**Full-corpus fingerprint validation (not sampled)**: `count(*) +
+sum(hash((<all columns>)))` for all 3 exports exactly matches the live
+source. **Partition-pruning correctness**: 5 tag keys + 5
+`(cik, fiscal_year)` keys, all match the live DuckDB table exactly.
+
+**Validation bug found and fixed mid-task**: the first version of the
+`(cik, fiscal_year)` correctness check compared the 15-tag-scoped export
+against an *unscoped* live query (all 291,429 tags) - a real
+apples-to-oranges false mismatch (caught immediately: the export's own
+full-corpus fingerprint already matched perfectly). Fixed by scoping the
+live baseline query to the same 15 tags; a regression test now guards
+this exact mistake.
+
+**Search-latency diagnostic (Phase 4.5 smoke - not a production
+benchmark, 5 queries per shape)**:
+
+```text
+BY-TAG query (the real measured Task 3.10 pattern):
+  live DuckDB:                    p50   503.7 ms
+  facts_by_tag (matching):        p50    11.2 ms   (~45x faster)
+  facts_by_cik_fiscal_year (wrong layout): p50 22,255.2 ms  (~44x slower than live)
+
+BY-(CIK, FISCAL_YEAR) query (roadmap's example pattern):
+  live DuckDB:                    p50   105.1 ms
+  facts_by_cik_fiscal_year (matching): p50 9,163.3 ms  (~87x SLOWER than live - negative result)
+  facts_by_tag (wrong layout):    p50   118.8 ms   (competitive with live)
+```
+
+**Negative result recorded, not discarded** (same convention as Phase
+3's RRF-hybrid/reranking negative results): the high-cardinality
+`facts_by_cik_fiscal_year` layout is dramatically *slower* than the
+unpartitioned live DuckDB table for its own designed query, apparently
+because enumerating 64,457 partition directories at query-plan time
+dominates on this machine/filesystem. `facts_by_tag` shows the opposite:
+an unambiguous ~45x win for the pattern production code actually uses.
+Neither `XbrlFactIndex` nor `eligible_facts()` was rewired to consume
+either export - that remains a future decision informed by, not made by,
+this task's benchmark.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: all portable tests pass (+12 new in
+  `tests/test_phase_4_5_xbrl_serving_export.py`, tiny synthetic
+  in-memory DuckDB tables only, incl. a regression test for the
+  unscoped-live-query validation bug above).
+- 1 new `local_data`-marked test: row-count parity against the real
+  export (not a benchmark re-run).
+
+### Regression gates
+
+`data/xbrl.duckdb` opened read-only for every query in this task; no
+write connection ever created. No change to `src.eval.truth_contract`,
+`src.eval.tag_registry`, or `src.sql.xbrl_lookup`. No re-normalization/
+re-chunking/re-embedding/vector-index change. No GPU used. No paid
+API/LLM call. Protected TEST: unopened, 0/3 official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+```
+
+**Next roadmap task:** 4.6 Generation production interface.

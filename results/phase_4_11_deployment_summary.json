@@ -1,0 +1,103 @@
+{
+  "task": "Phase 4 Task 4.11 - Deployment",
+  "status": "PARTIAL_DEFERRED",
+  "status_meaning": "container packaging + local Docker validation + infra-as-code preparation COMPLETE; real cloud provisioning explicitly deferred by user decision - no AWS account/region/VPC/budget available, no live AWS credentials in the working session. PROJECT_EXECUTION.md's own Phase 4 'if short on time' clause explicitly allows deferring 4.11 with a documented deployment design.",
+  "authoritative_requirement_source": "project_plan/PROJECT_EXECUTION.md #4.11",
+  "authoritative_checklist": [
+    "deploy_to_selected_compute_target",
+    "configure_object_storage_where_required",
+    "configure_secrets_safely",
+    "configure_logging",
+    "test_cold_warm_behavior",
+    "test_system_availability_independently_of_development_machine"
+  ],
+  "checklist_result": {
+    "deploy_to_selected_compute_target": "NOT DONE (cloud) - container built and locally validated for the frozen CPU Fargate target; no real Fargate task exists",
+    "configure_object_storage_where_required": "N/A for this deferred pass - no cloud object/file storage provisioned; artifact-delivery strategy documented, EFS identified as leading candidate, not implemented",
+    "configure_secrets_safely": "DONE at the design/IaC level - infra/terraform/main.tf reads OPENROUTER_API_KEY via a secret ARN reference, never plaintext; no secret value committed anywhere",
+    "configure_logging": "DONE at the design level - unchanged stderr/stdout structured logging (Task 0.6), infra/terraform/main.tf wires an awslogs CloudWatch driver for when a real deployment happens",
+    "test_cold_warm_behavior": "PARTIAL - local container cold-start (image start to ready) measured at ~12-15s (CPU embedding-model load dominates); no real Fargate cold-start measured",
+    "test_system_availability_independently_of_development_machine": "NOT DONE - explicitly deferred, the one bullet this pass does not satisfy"
+  },
+  "explicit_user_decisions_2026_09_16": {
+    "deployment_scope": "local-only, defer cloud provisioning (recommended option chosen)",
+    "iac_tool": "Terraform (chosen for the prepared-but-not-applied skeleton)",
+    "device_hardcoding_fix": "authorized - src/api/dependencies.py's build_production_dependencies() changed from hardcoded load_model(device=\"cuda\") to load_model(device=resolve_device(settings.device)), a real bug discovered during this task that would have crashed a CPU-only container at startup"
+  },
+  "deployment_mode": "development-index-smoke (local container only)",
+  "target": "AWS Fargate (CPU-only, continuously warm) - frozen Phase 4 serving decision (project_plan/SERVING_FEASIBILITY.md); not yet provisioned",
+  "container_image": {
+    "tag": "sec-rag-api:task-4-11",
+    "digest": "sha256:72fd23e204e887557a7f9df0e655e4deaaa9718b8ca92e080a1dcbdd94589541",
+    "size_bytes": 4370000000,
+    "size_human": "4.07 GB",
+    "base": "python:3.11-slim",
+    "cpu_only": true,
+    "entrypoint": "python -m uvicorn src.api.app:create_app --factory --host 0.0.0.0 --port 8000 --workers 1"
+  },
+  "artifact_mode": "development-index-smoke",
+  "dense_index_identity": {
+    "chunk_config_hash": "f1dc04d4b748a0f27cd80acb993b258b9f4dbaebe0093b34475d23fc1ab52bcd",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "row_count": 162357,
+    "is_full_corpus_production_index": false,
+    "note": "NOT the 10,487,096-row Task 4.4 full-corpus production index - unchanged Task 4.10 limitation, no schema-adapting retriever exists"
+  },
+  "structured_serving_artifact_identity": {
+    "source": "data/xbrl.duckdb",
+    "size_bytes": 7011053568,
+    "status": "frozen, unchanged, queried directly (no schema gap)"
+  },
+  "health_status_validation": {
+    "GET /health": "200 {\"status\":\"ok\"}",
+    "GET /status": "200, ready=true, dense_index_row_count=162357, embedding_model_loaded=true, dense_index_open=true, xbrl_connection_open=true, generation_provider_configured=true",
+    "POST /query (synthetic, non-paid, structured_xbrl route)": "200, status=answered, route=structured_xbrl, citations=[\"0001193125-16-738725\"], zero generation calls"
+  },
+  "cloud_resources_created": false,
+  "deployment_revision": null,
+  "paid_generation_api_calls_task_4_11": 0,
+  "protected_test_usage": "0/3",
+  "real_finding_bind_mount_mmap": "Bind-mounting xbrl.duckdb directly from the Windows host into the Linux container caused DuckDB IOException ('Cannot allocate memory') on open, despite the same file being freely readable via plain file I/O through the identical bind mount and 15.1 GB being available to the Docker Desktop VM - isolated to DuckDB's memory-mapped access pattern hitting a Docker-Desktop-for-Windows bind-mount limitation. Copying the file into a native Docker volume fixed it immediately. Documented as evidence favoring EFS (not a literal bind mount) for a real cloud deployment.",
+  "regression_gates": {
+    "doctor": "PASS",
+    "portable_before_this_task": "2208 passed, 38 deselected",
+    "portable_after_this_task": "2223 passed, 38 deselected, 33.28s (2208 baseline + 15 new: 2 in test_api_dependencies.py, 13 in test_deployment_artifacts.py)",
+    "not_generation_api_full_suite_after_this_task": "2260 passed, 1 deselected, 355.59s",
+    "crag_threshold_unchanged": "0.5531",
+    "dense_only_retrieval_unchanged": true,
+    "no_bm25_rrf_reintroduced": true,
+    "no_reranker_reintroduced": true,
+    "no_re_embedding": true,
+    "no_provider_model_change": true
+  },
+  "tests": {
+    "tests_test_api_dependencies_py_new": 2,
+    "tests_test_deployment_artifacts_py_new": 13,
+    "total_new_tests_this_task": 15
+  },
+  "rollback_teardown_status": "N/A - no cloud resources were created, so there is nothing to roll back or tear down. Local container/volumes used for validation were stopped and removed (docker stop/rm, docker volume rm) after the smoke checks completed.",
+  "files_modified": [
+    "src/api/dependencies.py",
+    "tests/test_api_dependencies.py",
+    "tests/test_deployment_artifacts.py",
+    "Dockerfile",
+    ".dockerignore",
+    "requirements-cpu.txt",
+    "infra/terraform/README.md",
+    "infra/terraform/variables.tf",
+    "infra/terraform/main.tf",
+    ".gitignore",
+    "project_plan/PHASE4_DEPLOYMENT.md",
+    "results/phase_4_11_deployment_summary.json"
+  ],
+  "known_limitations": [
+    "No real cloud deployment exists - AWS account/region/VPC/ECR/ECS cluster/secrets-ARN/IAM roles/budget authorization were all unspecified and explicitly deferred rather than guessed",
+    "Dense route still serves the 162,357-row development index, not the full-corpus production index - unchanged from Task 4.10",
+    "Full-corpus dense index (47.6 GB) artifact-delivery mechanism (EFS/S3) was never designed or implemented - out of scope for this deferred pass",
+    "Image is 4.07 GB - not trimmed to the API's actual dependency subset (docling/pdfplumber/scikit-learn/pandas/scipy are present but unused by the deployed service); documented as a future optimization, not attempted here to avoid inventing an untested dependency-subsetting strategy",
+    "No load balancer, autoscaling policy, or CI/CD wiring defined in infra/terraform/",
+    "Cold/warm behavior measured only on local Docker Desktop, not real Fargate - not a production latency claim",
+    "Terraform configuration is syntax-validated (terraform validate) but never planned or applied against a real account"
+  ],
+  "next_roadmap_task": "4.12 Observability (project_plan/PROJECT_EXECUTION.md) - NOT started"
+}

@@ -71,6 +71,13 @@ env/
 # ---- Local tooling state ----
 .claude/
 
+# ---- Terraform (Task 4.11 - infra/terraform/ skeleton, never applied) ----
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+
 # ---- Results: keep small, public result files; do not ignore the whole directory ----
 results/*
 !results/.gitkeep

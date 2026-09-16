@@ -1,0 +1,24 @@
+# Task 4.11 - CPU-only PyTorch installation for the deployed FastAPI
+# service container. Mirrors requirements-gpu.txt's install-order contract
+# (torch first, before requirements.txt, so sentence-transformers/
+# transformers' generic `torch` dependency never lets pip silently swap in
+# a different build) but targets the CPU wheel index instead of CUDA.
+#
+# This file exists because requirements-gpu.txt is explicitly a CUDA-only
+# install (validated against a real NVIDIA GPU, see its own header) and
+# the frozen Phase 4 serving decision is continuously-warm CPU Fargate
+# (project_plan/SERVING_FEASIBILITY.md) - a CPU container must not inherit
+# a multi-GB CUDA runtime it cannot use. Only the deployed dense route's
+# query-time embedding model (BAAI/bge-small-en-v1.5, src/embeddings/bge.py)
+# runs inference in the service; no GPU inference happens inside the
+# container.
+#
+# Same torch version as requirements-gpu.txt (2.13.0), CPU build.
+#
+# Install with (container build only - never mixed with requirements-gpu.txt
+# in the same environment):
+#   python -m pip install -r requirements-cpu.txt
+#   python -m pip install -r requirements.txt
+--index-url https://download.pytorch.org/whl/cpu
+
+torch==2.13.0

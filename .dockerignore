@@ -1,0 +1,36 @@
+# Task 4.11 - keep the build context (and therefore the image) honest and
+# small. Large/frozen/dev-only content is never sent to the Docker daemon.
+
+.git/
+.venv/
+.tmp/
+.env
+.env.*
+!.env.example
+
+data/
+artifacts/
+logs/
+results/
+
+tests/
+prompts/
+project_plan/
+
+*.log
+phase1_data_audit.log
+stage*_*.log
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.tfstate
+*.tfstate.*
+.terraform/
+
+claude_settings_local_phase3.json
+phase3_loop_supervisor.ps1

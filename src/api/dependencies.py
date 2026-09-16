@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import duckdb
 
-from src.config import Settings, get_settings
+from src.config import Settings, get_settings, resolve_device
 from src.embeddings.bge import load_model
 from src.eval.tag_registry import get_registry
 from src.generation.factory import get_generation_provider
@@ -125,7 +125,7 @@ def build_production_dependencies(settings: Settings | None = None) -> Productio
     db = open_database(db_path)
     table = open_chunk_table(db)
 
-    embed_model = load_model(device="cuda")
+    embed_model = load_model(device=resolve_device(settings.device))
     retriever = BaselineRetriever(model=embed_model, table=table)
     provider = get_generation_provider(settings)
     generator = MinimalGenerator(retriever, provider)

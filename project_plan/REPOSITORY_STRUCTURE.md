@@ -328,8 +328,14 @@ file never got mistaken for a completed feature ahead of time.
   public (`.csv`/`.json`/`.md`). The directory itself is tracked
   (`results/.gitkeep`); its contents are ignored by default except those
   three extensions — see `.gitignore`.
-- **`infra/`** — deployment/infrastructure definitions (Phase 4.11). Empty
-  as of Task 0.3.
+- **`infra/`** — deployment/infrastructure definitions. As of Task 4.11:
+  `infra/terraform/` — parameterized ECR/ECS-Fargate Terraform skeleton
+  (`main.tf`, `variables.tf`, `README.md`), syntax-validated but **never
+  applied** — no real AWS resource exists. See
+  `project_plan/PHASE4_DEPLOYMENT.md`. Repo root also gained `Dockerfile`,
+  `.dockerignore`, and `requirements-cpu.txt` (CPU-only torch, for the
+  deployed container — the frozen Fargate target is CPU-only, distinct
+  from `requirements-gpu.txt`'s CUDA build).
 - **`artifacts/`, `logs/`** — runtime-generated locations for build
   artifacts and (future) log files. Task 0.6 established the application
   logging convention (`src/logging_utils.py`) as console/stderr-only —
@@ -346,7 +352,7 @@ file never got mistaken for a completed feature ahead of time.
 
 ```text
 src/                    (including the empty __init__.py placeholders above)
-infra/                  (currently just .gitkeep)
+infra/                  (Task 4.11: infra/terraform/ skeleton, not applied)
 configs/                (serving_spike.json, Task 0.10; otherwise just .gitkeep)
 scripts/                (implemented — dev.py Task 0.9, serving_spike.py Task 0.10)
 tests/                  (implemented — conftest.py + 10 test_*.py, Tasks 0.8/0.10)

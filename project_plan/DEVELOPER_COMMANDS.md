@@ -24,10 +24,32 @@ with.
 |---|---|---|
 | `doctor` | environment/setup health (read-only, offline) | required-foundation checks (Python version, venv, `pip check`, core imports, `src.config`/`src.storage` load) must pass; local data / CUDA are reported as informational only — their absence never fails `doctor` |
 | `test` | full `pytest` suite | delegates to `python -m pytest`, preserves its exit code exactly |
+| `test -m "not generation_api"` | full suite minus the live-network test | recommended over plain `test` on any machine with real OpenRouter credentials in `.env` — see caveat below |
 | `test --portable` | the public-clone-safe subset | `python -m pytest -m "not local_data and not gpu and not model"` — the exact Task 0.8 portable marker expression, not duplicated logic |
 | `data` | frozen data-path validation | invoked explicitly, so missing input is a **failure** here (unlike `doctor`) — checks `is_dir()`/`is_file()` only, never scans/counts/downloads |
 | `gpu` | PyTorch/CUDA kernel validation | invoked explicitly, so missing or broken CUDA is a **failure** — runs one real 512×512 CUDA matmul, never silently falls back to CPU; does *not* load the embedding model (that's `smoke`'s job, to keep this check fast) |
 | `smoke` | local-capability smoke tests | `python -m pytest -m "local_data or gpu or model"` — delegates to the same marked tests `test`/`test --portable` already use |
+
+**Known caveat, flagged 2026-09-16, not fixed here (Task 4.7)**: plain
+`test` (no filter) collects `generation_api`-marked tests too - by
+original Task 1.7 design, credentials merely needing to exist in `.env`
+was assumed to be a rare, deliberate developer state. In practice, once
+a machine has real `OPENROUTER_API_KEY`/`GENERATION_MODEL` configured
+for routine local generation work, plain `test` silently makes a real,
+live, credentialed network call every time - `python-dotenv` populates
+`os.environ` from `.env` as a side effect of importing `src.config`
+anywhere in the run, so this isn't visible from the command line at
+all. This caused 3 unintended live OpenRouter calls during Task 4.7's
+own regression testing (see
+`project_plan/PHASE4_INPUT_GUARDRAILS.md`'s "Unintended live API calls"
+section). The one test this affects
+(`tests/test_openrouter_live_smoke.py`) now requires a separate,
+explicit `RUN_LIVE_GENERATION_API_TEST=1` opt-in in addition to the
+credentials, closing the immediate hazard. Whether `dev.py test` itself
+should default to excluding `generation_api` (making the explicit `-m
+"not generation_api"` form above the implicit default) is a broader
+project-policy change, not made unilaterally here — left for a later
+developer-command cleanup task.
 
 ## Typical workflow
 

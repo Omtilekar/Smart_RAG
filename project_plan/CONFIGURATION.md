@@ -30,6 +30,7 @@ tiny) — new code should consume `get_settings()`; `common.py`'s direct
 | `GENERATION_MODEL` | (none) | No | Optional until Phase 1 generation is implemented |
 | `LOG_LEVEL` | `INFO` | No | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` — consumed by `src/logging_utils.py`, see `project_plan/LOGGING.md` |
 | `SEC_USER_AGENT` | (none) | Only for SEC network access | Public contact identity SEC requires in the User-Agent header — not a secret, but keep your real one out of tracked files |
+| `INPUT_GUARD_MAX_LENGTH` | `2000` | No | Task 4.7 — max characters an input-guardrail-checked question may contain; must be a positive integer (`ConfigError` otherwise). See `project_plan/PHASE4_INPUT_GUARDRAILS.md` |
 
 Nothing is required just to import `src.config` or call `get_settings()` —
 every field has a safe default or resolves to `None`. A field becomes

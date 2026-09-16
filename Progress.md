@@ -12402,12 +12402,23 @@ could not be edited in this session (both `Read` and `cat` are denied
 by the sandbox's permission rules for any `.env*` path) - the user
 should set these two values in their own `.env`.
 
-**No live paid API call was made**: `OPENROUTER_API_KEY` is unset in
-this environment (checked via `os.environ`, never by reading `.env`
-directly), so there was no key to call with, and a new paid call would
-not be made without explicit authorization regardless. The existing
-`generation_api`-marked live test (Task 1.7) is unchanged and will run
-for real once a key is configured.
+**No live paid API call was made** *(correction, added 2026-09-16
+during Task 4.7 — this statement was factually wrong)*: at the time
+this entry was written, `OPENROUTER_API_KEY` was checked via a bare
+`python -c "os.environ.get(...)"` that never triggers `python-dotenv` -
+a false negative. The user's `.env` already had a real
+`OPENROUTER_API_KEY` and `GENERATION_MODEL=openai/gpt-oss-20b`
+configured, which only becomes visible once something imports
+`src.config` (triggering `load_dotenv()`). As a result, 3 unintended
+live OpenRouter API calls occurred later in this session, during Task
+4.7's regression testing, when the full (non-`--portable`) test suite
+was run while these credentials were present and
+`tests/test_openrouter_live_smoke.py` (`generation_api`-marked) was not
+excluded from it. No billing amount is claimed or estimated. See Task
+4.7's entry below for the full account and the resulting test-policy
+change. This correction does not change Task 4.6's technical result
+(the frozen model selection, the new local provider, the config-driven
+factory all stand as recorded).
 
 **New local/offline provider** (`src/generation/ollama_provider.py`,
 `OllamaProvider`): reuses Task 2.13's already-verified Ollama HTTP
@@ -12470,3 +12481,156 @@ Phase 4 — Make It Real                        — IN PROGRESS
 `prompts/phase_4/task_4.5_loop_complete_tasks_4.5_and_4.6.md`'s mission
 ("complete exactly these two Production RAG roadmap tasks... do not
 continue beyond Task 4.6"), the loop stops here.
+
+---
+
+## 2026-09-16 — Task 4.7: Input Guardrails
+
+Implemented and validated the production input-guardrail boundary:
+`USER INPUT -> INPUT GUARDRAIL -> ALLOW or REJECT -> only allowed input
+continues to routing/retrieval/generation`. Deterministic, local, no
+network/model/LLM call anywhere in the guard module (statically
+verified). See `project_plan/PHASE4_INPUT_GUARDRAILS.md` for full detail.
+
+**Scope conflict reported, not silently resolved**: the draft task
+prompt described a narrower scope (structural validation + optional
+injection detection). `PROJECT_EXECUTION.md`'s actual Task 4.7 checklist
+is materially broader — six items: request length limits, scope
+enforcement, advice detection/refusal, PII checks appropriate to the SEC
+use case, injection-pattern handling, rate limiting strategy. Followed
+the authoritative roadmap per its own instruction.
+
+**Four explicit user decisions (2026-09-16)**, none defined anywhere in
+the repository beforehand — resolved before writing guard code rather
+than invented:
+
+```text
+max input length:        2,000 characters (generous vs. Qwen3's 32,768-
+                          token embedding limit; small enough to bound abuse)
+PII tooling:              regex-only (SSN/credit-card/email/phone) - Presidio
+                          (PROJECT_SPEC.md's named tool) documented as the
+                          eventual target, not adopted (new heavy dependency)
+scope enforcement:        loose deny-list - reject only inputs with ZERO
+                          financial/SEC-domain signal (Task 3.8's router's
+                          own out-of-scope rule is too strict - it would
+                          reject Task 1.7's own smoke question "What are
+                          the main risk factors described in this filing?")
+rate limiting:            document the strategy only - PROJECT_SPEC.md
+                          assigns this to infrastructure ("API Gateway"),
+                          and this task explicitly forbids building FastAPI
+```
+
+**Implementation** (`src/guards/input.py`): `check_input(question, *,
+max_length)` / `check_input_with_settings()` return a frozen
+`GuardDecision(allowed, reason_code, detail)`. Order (first violation
+wins): `invalid_type -> empty_input -> input_too_long ->
+disallowed_control_character -> prompt_injection_detected ->
+advice_request_detected -> pii_detected -> out_of_scope`.
+`prompt_injection_detected`/`advice_request_detected` reuse
+`src.router.rules`'s frozen keyword lists directly (two new public
+read-only aliases, `INJECTION_KEYWORDS`/`ADVICE_KEYWORDS`, added -
+`classify_intent()`'s own behavior is byte-for-byte unchanged) rather
+than maintaining a second, independently-decided keyword set.
+
+**Integration boundary**: wired into `src/cli/phase1.py`'s
+`cmd_answer()` - the one existing pre-FastAPI production request
+boundary this project has - as the first step, before generator
+construction (embedding model load + LanceDB open) or any
+`generator.answer()` call. Proven by test: 7 rejection-category
+fixtures never invoke the injected generator or `_construct_generator`;
+3 acceptance fixtures invoke the generator exactly once with the
+unchanged original question string (including surrounding whitespace).
+
+**Configuration**: new `Settings.input_guard_max_length` (`src/config.py`),
+env var `INPUT_GUARD_MAX_LENGTH`, default `2000`, validated at load time.
+`.env.example` not edited (same sandbox permission block as Task 4.6).
+
+---
+
+### Incident: 3 unintended live OpenRouter API calls, found and fixed mid-task
+
+While running this task's own regression suite (`scripts/dev.py test`,
+no filter), discovered that `OPENROUTER_API_KEY`/`GENERATION_MODEL` were
+already real values in the user's `.env` (for legitimate local
+generation work) - invisible to a bare `python -c
+"os.environ.get(...)"` check (never triggers `python-dotenv`) but
+populated into `os.environ` the moment anything imports `src.config`.
+`tests/test_openrouter_live_smoke.py` (`generation_api`-marked) is
+excluded from `--portable` but not from plain `dev.py test`/`pytest`
+with no filter - so **3 real, live, credentialed OpenRouter calls to
+`openai/gpt-oss-20b` occurred** across this session (1 during Task 4.6's
+own regression check, 2 during Task 4.7's), none deliberate. No dollar
+amount is claimed or estimated.
+
+User decision on discovery: correct the false "no paid call was made"
+claims in Task 4.6's `Progress.md`/doc entries (done above, technical
+result unchanged), continue Task 4.7 with zero further paid calls,
+tighten `generation_api` so it never runs on credentials alone, and (if
+changing `dev.py test`'s generic behavior is a broader policy change)
+use an explicit Task-4.7-scoped regression command instead of silently
+redesigning it.
+
+**Fix applied**: `tests/test_openrouter_live_smoke.py` now requires a
+separate, explicit `RUN_LIVE_GENERATION_API_TEST=1` opt-in in addition
+to the credentials - merely having a key configured is no longer
+sufficient. Verified directly: with real credentials present and the
+opt-in var unset, the test now SKIPPED (previously it PASSED, i.e. made
+the real call). `project_plan/DEVELOPER_COMMANDS.md` documents the
+caveat and recommends `test -m "not generation_api"` on any machine with
+real credentials, without silently changing `dev.py test`'s own default
+behavior (flagged for a later developer-command cleanup task, per
+explicit user decision, not redesigned here). Every regression command
+run after this fix explicitly excluded `generation_api`.
+
+**Paid API calls during Task 4.7 after this fix: 0.**
+
+---
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **2062 passed**, 37 deselected (+78
+  new: 57 in `tests/test_input_guards.py`, 4 in
+  `tests/test_input_guards_static_safety.py` (AST-verified no forbidden
+  import/network call/random/time dependency), 13 in
+  `tests/test_input_guard_integration.py`, 6 new in `tests/test_config.py`
+  for `INPUT_GUARD_MAX_LENGTH`; 5 pre-existing `tests/test_phase1_cli.py`
+  fixture strings updated from a placeholder `"question"` - now
+  legitimately `out_of_scope` - to real financial questions).
+- `python -m pytest -m "not generation_api"` (used instead of plain
+  `dev.py test` per the incident fix above): **2098 passed**, 1
+  deselected (248.24s).
+- `python -m pytest -m generation_api`: **1 skipped** (opt-in var unset -
+  confirms the fix holds).
+
+### Regression gates
+
+Task 4.1-4.5 artifacts (`artifacts/normalized_full/`, `chunks_full/`,
+`embeddings_full/`, `indexes_full/`, `xbrl_serving/`) untouched - never
+opened by this task. Task 4.6 generation semantics unchanged
+(`src/generation/*` itself untouched) except this task's own
+explicitly-approved input-boundary wiring into `cmd_answer()`. Frozen
+Phase 3 retrieval decisions, the CRAG threshold, and
+`classify_intent()`'s behavior unchanged - the new keyword aliases are
+read-only references to the same private tuples. No BM25/RRF/reranker
+reintroduced, no re-embedding, no generation-provider/model change. No
+LLM used anywhere in the guard. Protected TEST: unopened, **0/3**
+official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+```
+
+**Task 4.7 — Input Guardrails — COMPLETE**
+
+**Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.8
+Context guardrails.

@@ -1,0 +1,84 @@
+{
+  "task": "Phase 4 Task 4.7 - Input Guardrails",
+  "status": "COMPLETE",
+  "base_commit": "e2e006847e63e3c34cf01cd0f4ec5350ef7b47fa",
+  "authoritative_requirement_source": "project_plan/PROJECT_EXECUTION.md #4.7",
+  "scope_conflict_reported": "Draft task prompt described a narrower scope (structural validation + optional injection detection only); PROJECT_EXECUTION.md's actual checklist requires 6 categories (request length limits, scope enforcement, advice detection/refusal, PII checks, injection-pattern handling, rate limiting strategy). Followed the authoritative roadmap per its own instruction to report rather than silently reconcile.",
+  "guard_categories_implemented": [
+    "request_length_limit",
+    "scope_enforcement",
+    "advice_detection_refusal",
+    "pii_checks",
+    "injection_pattern_handling"
+  ],
+  "guard_categories_documented_not_implemented": {
+    "rate_limiting_strategy": "delegated_to_api_gateway - PROJECT_SPEC.md assigns this to infrastructure; no FastAPI/serving-layer request boundary exists yet for an in-process limiter to sit behind (explicit non-goal of this task)."
+  },
+  "explicit_user_decisions_2026_09_16": {
+    "max_input_length_chars": 2000,
+    "pii_tooling": "regex_only (SSN, credit card, email, phone) - Presidio documented as spec's eventual target, not adopted",
+    "scope_enforcement_policy": "loose_deny_list - reject only inputs with zero financial/SEC-domain signal",
+    "rate_limiting_handling": "document_strategy_only"
+  },
+  "configured_thresholds": {
+    "input_guard_max_length_default": 2000,
+    "input_guard_max_length_env_var": "INPUT_GUARD_MAX_LENGTH"
+  },
+  "reason_codes": [
+    "invalid_type", "empty_input", "input_too_long", "disallowed_control_character",
+    "prompt_injection_detected", "advice_request_detected", "pii_detected", "out_of_scope"
+  ],
+  "reused_frozen_keyword_sources": {
+    "injection_keywords": "src.router.rules.INJECTION_KEYWORDS (Task 3.8, public alias added)",
+    "advice_keywords": "src.router.rules.ADVICE_KEYWORDS (Task 3.8, public alias added)"
+  },
+  "integration_point": "src/cli/phase1.py cmd_answer() - first step, before generator construction (embedding model load + LanceDB open) or any generator.answer() call",
+  "portable_test_results": {
+    "tests_test_input_guards_py": 57,
+    "tests_test_input_guards_static_safety_py": 4,
+    "tests_test_input_guard_integration_py": 13,
+    "tests_test_config_py_new": 6,
+    "tests_test_phase1_cli_py": 14,
+    "portable_suite_total": "2062 passed, 37 deselected (scripts/dev.py test --portable)"
+  },
+  "full_test_results": "python -m pytest -m \"not generation_api\": 2098 passed, 1 deselected (248.24s) - used instead of plain 'python scripts/dev.py test' after the live-API incident below",
+  "integration_check_result": "PASS - 7 rejection-category fixtures proven to never invoke the injected generator or _construct_generator (embedding/LanceDB load path); 3 acceptance fixtures proven to invoke the injected generator exactly once with the unchanged original question string",
+  "incident_unintended_live_api_calls": {
+    "occurred": true,
+    "count": 3,
+    "when": "during this session's regression testing (1 during Task 4.6, 2 during Task 4.7), before the fix below",
+    "cause": "OPENROUTER_API_KEY/GENERATION_MODEL were already real values in the user's .env (for legitimate local generation work); python-dotenv populates os.environ as a side effect of importing src.config, and tests/test_openrouter_live_smoke.py (generation_api-marked) was not excluded from plain 'dev.py test'/'pytest' with no filter",
+    "billing_amount": "not claimed or estimated",
+    "fix": "tests/test_openrouter_live_smoke.py now requires an explicit, separate RUN_LIVE_GENERATION_API_TEST=1 opt-in in addition to credentials; verified the test SKIPPED with real credentials present and the opt-in unset",
+    "paid_api_calls_after_fix": 0,
+    "see": "project_plan/PHASE4_INPUT_GUARDRAILS.md 'Unintended live API calls' section"
+  },
+  "paid_api_calls_during_task_4_7_after_fix": 0,
+  "llm_calls_in_guard": 0,
+  "protected_test_usage": "0/3",
+  "files_modified": [
+    "src/guards/input.py",
+    "src/router/rules.py",
+    "src/config.py",
+    "src/cli/phase1.py",
+    "tests/test_input_guards.py",
+    "tests/test_input_guards_static_safety.py",
+    "tests/test_input_guard_integration.py",
+    "tests/test_config.py",
+    "tests/test_phase1_cli.py",
+    "tests/test_openrouter_live_smoke.py",
+    "project_plan/PHASE4_INPUT_GUARDRAILS.md",
+    "project_plan/CONFIGURATION.md",
+    "project_plan/REPOSITORY_STRUCTURE.md",
+    "project_plan/DEVELOPER_COMMANDS.md",
+    "project_plan/PHASE4_GENERATION_PRODUCTION_INTERFACE.md",
+    "Progress.md"
+  ],
+  "known_limitations": [
+    "PII detection is regex-only (SSN/credit-card/email/phone) - no name/address/broader-locale coverage; Presidio remains a documented future upgrade",
+    "Scope enforcement is a keyword/pattern deny-list, not a semantic classifier - accepted tradeoff favors false negatives over false positives",
+    "Injection/advice detection is deterministic keyword matching, not a learned classifier - not a claimed comprehensive security boundary",
+    "No in-process rate limiter - documented strategy only, pending the FastAPI/API-Gateway layer (Task 4.10)",
+    "Guard wired into the CLI's cmd_answer() only - Task 4.10's FastAPI service will need its own call to check_input_with_settings() at its own request boundary"
+  ]
+}

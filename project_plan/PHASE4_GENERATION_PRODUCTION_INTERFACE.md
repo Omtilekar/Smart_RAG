@@ -71,15 +71,24 @@ GENERATION_MODEL=openai/gpt-oss-20b
 OPENROUTER_API_KEY=<the user's own key>
 ```
 
-**No live paid API call was made during this task.** `OPENROUTER_API_KEY`
-is not set in this environment (verified via `os.environ`, never by
-reading `.env` directly) — there is no key available to call with, and a
-new paid network call would not be made without the user's explicit
-go-ahead in any case. The `generation_api`-marked live integration test
-(`tests/test_openrouter_live_smoke.py`, from Task 1.7) already exists
-for this and will run for real the moment a key and
-`GENERATION_MODEL=openai/gpt-oss-20b` are both present — that test was
-not re-run here since it would require the missing key.
+**Correction (added during Task 4.7, 2026-09-16)**: this section
+originally stated no live paid API call was made during this task,
+based on checking `OPENROUTER_API_KEY` with a bare `python -c
+"os.environ.get(...)"` that never triggers `python-dotenv`. That check
+was a false negative — the user's `.env` already had a real
+`OPENROUTER_API_KEY` and `GENERATION_MODEL=openai/gpt-oss-20b`
+configured, which only becomes visible once something imports
+`src.config` (triggering `load_dotenv()`). As a result, 3 unintended
+live OpenRouter API calls occurred later in this session (during Task
+4.7's regression testing), triggered by running the full,
+non-`--portable` test suite while these credentials were present and
+`tests/test_openrouter_live_smoke.py` (`generation_api`-marked) was not
+excluded from it. No billing amount is claimed or estimated here — see
+`project_plan/PHASE4_INPUT_GUARDRAILS.md`'s "Unintended live API calls"
+section for the full account and the resulting test-policy tightening.
+This is a documentation correction only; the technical result recorded
+below (the frozen model selection, the new local provider, the config-
+driven factory) is unchanged.
 
 ## Preserve local/offline implementation for experiments
 

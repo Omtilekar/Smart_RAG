@@ -64,6 +64,15 @@ _DERIVED_KEYWORDS: tuple[str, ...] = (
     "year over year", "increase from", "decrease from", "grew from", "grow from",
 )
 
+# Public read-only aliases for the two keyword tuples above - Task 4.7's
+# input guardrail (src.guards.input) reuses these exact frozen lists
+# rather than maintaining a second, independently-decided keyword set
+# ("do not create two competing guardrail APIs"). The private names
+# remain this module's own source-of-truth; classify_intent()'s behavior
+# is unchanged.
+INJECTION_KEYWORDS: tuple[str, ...] = _INJECTION_KEYWORDS
+ADVICE_KEYWORDS: tuple[str, ...] = _ADVICE_KEYWORDS
+
 
 @dataclass(frozen=True)
 class RoutingDecision:
@@ -174,4 +183,5 @@ def classify_intent(question: str, *, gazetteer: CompanyGazetteer, registry: Tag
 __all__ = [
     "INTENTS", "RoutingDecision", "CompanyGazetteer",
     "extract_fiscal_years", "extract_form_type", "resolve_xbrl_concept", "classify_intent",
+    "INJECTION_KEYWORDS", "ADVICE_KEYWORDS",
 ]

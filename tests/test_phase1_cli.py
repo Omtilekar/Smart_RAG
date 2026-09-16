@@ -86,7 +86,7 @@ def test_answer_prints_answer_and_citations(capsys):
 
 def test_zero_citations_shown_explicitly(capsys):
     gen = FakeGenerator(result=FakeResult(answer="The context does not contain enough information.", citations=[]))
-    cli.cmd_answer("unanswerable question", generator=gen)
+    cli.cmd_answer("What was the unanswerable financial question about revenue?", generator=gen)
     out = capsys.readouterr().out
     assert "Citations:" in out
     assert "(none)" in out
@@ -94,14 +94,14 @@ def test_zero_citations_shown_explicitly(capsys):
 
 def test_vectors_and_context_not_printed(capsys):
     gen = FakeGenerator(result=FakeResult(answer="Answer text.", citations=["doc.htm::chunk0"]))
-    cli.cmd_answer("question", generator=gen)
+    cli.cmd_answer("What was the company's revenue?", generator=gen)
     out = capsys.readouterr().out
     assert "vector" not in out.lower()
 
 
 def test_provider_error_becomes_nonzero_safe_failure(capsys):
     gen = FakeGenerator(error=GenerationError("simulated provider failure"))
-    rc = cli.cmd_answer("question", generator=gen)
+    rc = cli.cmd_answer("What was the company's revenue?", generator=gen)
     assert rc != 0
     err = capsys.readouterr().err
     assert "simulated provider failure" in err
@@ -110,7 +110,7 @@ def test_provider_error_becomes_nonzero_safe_failure(capsys):
 def test_no_api_key_in_output(capsys, monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-totally-fake-test-key-do-not-leak")
     gen = FakeGenerator()
-    cli.cmd_answer("question", generator=gen)
+    cli.cmd_answer("What was the company's revenue?", generator=gen)
     captured = capsys.readouterr()
     assert "sk-or-v1-totally-fake-test-key-do-not-leak" not in captured.out
     assert "sk-or-v1-totally-fake-test-key-do-not-leak" not in captured.err

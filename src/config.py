@@ -28,6 +28,15 @@ _VALID_APP_ENVS = {"development", "test", "production"}
 _VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 _VALID_DEVICES = {"auto", "cuda", "cpu"}
 
+# Task 4.7 - input-guardrail request-length hard limit. PROJECT_SPEC.md's
+# "## 8. Guardrails" table names "Length cap | Hard limit" but no concrete
+# number anywhere in the repository - 2000 was an explicit user decision
+# (2026-09-16), not invented silently: generous for a real financial
+# question, far under Qwen3-Embedding-0.6B's 32,768-token max_seq_length
+# (src.embeddings.model_registry.QWEN3_EMBEDDING), small enough to bound
+# abuse/spam input.
+DEFAULT_INPUT_GUARD_MAX_LENGTH = 2000
+
 # Repo root = parent of src/ (this file lives at src/config.py).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -51,6 +60,8 @@ class Settings:
     log_level: str
 
     sec_user_agent: str | None
+
+    input_guard_max_length: int
 
 
 def _require_choice(name: str, value: str, choices: set[str]) -> str:
@@ -88,6 +99,21 @@ def load_settings() -> Settings:
 
     sec_user_agent = os.getenv("SEC_USER_AGENT", "").strip() or None
 
+    input_guard_max_length_raw = os.getenv("INPUT_GUARD_MAX_LENGTH", "").strip()
+    if input_guard_max_length_raw:
+        try:
+            input_guard_max_length = int(input_guard_max_length_raw)
+        except ValueError:
+            raise ConfigError(
+                f"INPUT_GUARD_MAX_LENGTH={input_guard_max_length_raw!r} is invalid. Expected a positive integer."
+            ) from None
+        if input_guard_max_length <= 0:
+            raise ConfigError(
+                f"INPUT_GUARD_MAX_LENGTH={input_guard_max_length} is invalid. Expected a positive integer."
+            )
+    else:
+        input_guard_max_length = DEFAULT_INPUT_GUARD_MAX_LENGTH
+
     return Settings(
         app_env=app_env,
         repo_root=_REPO_ROOT,
@@ -98,6 +124,7 @@ def load_settings() -> Settings:
         generation_model=generation_model,
         log_level=log_level,
         sec_user_agent=sec_user_agent,
+        input_guard_max_length=input_guard_max_length,
     )
 
 

@@ -8,6 +8,7 @@ from src.config import ConfigError, get_settings
 _ENV_VARS = (
     "APP_ENV", "LOG_LEVEL", "DEVICE", "EMBEDDING_MODEL",
     "GENERATION_PROVIDER", "GENERATION_MODEL", "STORAGE_ROOT", "SEC_USER_AGENT",
+    "INPUT_GUARD_MAX_LENGTH",
 )
 
 
@@ -29,6 +30,7 @@ def test_defaults_load_without_any_env_override(monkeypatch):
     assert s.generation_provider is None
     assert s.generation_model is None
     assert s.sec_user_agent is None
+    assert s.input_guard_max_length == 2000
 
 
 def test_storage_root_default_is_repo_relative(monkeypatch):
@@ -62,13 +64,25 @@ def test_env_overrides_are_respected(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize(
     "var,bad_value",
-    [("APP_ENV", "banana"), ("LOG_LEVEL", "LOUD"), ("DEVICE", "tpu")],
+    [
+        ("APP_ENV", "banana"), ("LOG_LEVEL", "LOUD"), ("DEVICE", "tpu"),
+        ("INPUT_GUARD_MAX_LENGTH", "not-a-number"),
+        ("INPUT_GUARD_MAX_LENGTH", "0"),
+        ("INPUT_GUARD_MAX_LENGTH", "-5"),
+    ],
 )
 def test_invalid_values_raise_config_error(monkeypatch, var, bad_value):
     monkeypatch.setenv(var, bad_value)
     get_settings.cache_clear()
     with pytest.raises(ConfigError):
         get_settings()
+
+
+def test_input_guard_max_length_env_override(monkeypatch):
+    monkeypatch.setenv("INPUT_GUARD_MAX_LENGTH", "500")
+    get_settings.cache_clear()
+    s = get_settings()
+    assert s.input_guard_max_length == 500
 
 
 def test_get_settings_is_cached_until_cleared(monkeypatch):

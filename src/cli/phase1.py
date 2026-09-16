@@ -32,6 +32,7 @@ from src.retrieval.baseline import BaselineRetriever  # noqa: E402
 from src.generation.openrouter import OpenRouterProvider, API_KEY_ENV_VAR  # noqa: E402
 from src.generation.provider import GenerationError  # noqa: E402
 from src.generation.minimal import MinimalGenerator  # noqa: E402
+from src.guards.input import check_input_with_settings  # noqa: E402
 from src.eval.citation_integrity import (  # noqa: E402
     RecordingRetriever,
     LanceDBResolvers,
@@ -75,8 +76,15 @@ def cmd_answer(question: str, *, generator=None, dump_context_path: str | None =
     provider call) so the exact supplied top-5 chunk IDs for this same
     generation call can be written out for mechanical citation-integrity
     verification (used for Task 1.11's own one-time live demo check)."""
-    if not isinstance(question, str) or not question.strip():
-        print("error: --question must not be empty or whitespace-only", file=sys.stderr)
+    # Task 4.7 - the input-guardrail boundary. Runs before ANY downstream
+    # work (generator construction included - that loads the embedding
+    # model and opens LanceDB) so a rejected question never reaches
+    # routing/retrieval/generation. Supersedes the old inline
+    # type/empty-only check - GuardDecision.reason_code now covers that
+    # case (and five more) with a stable, machine-readable code.
+    decision = check_input_with_settings(question)
+    if not decision.allowed:
+        print(f"error: input rejected ({decision.reason_code}): {decision.detail}", file=sys.stderr)
         return 2
 
     recorder = None

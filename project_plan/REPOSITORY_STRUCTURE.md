@@ -73,7 +73,10 @@ SEC-RAG/
 │   ├── router/          # planned responsibility: query classification, path selection
 │   ├── rerank/          # planned responsibility: cross-encoder reranking
 │   ├── crag/            # planned responsibility: retrieval confidence / corrective decisions
-│   ├── guards/          # planned responsibility: input/context/output protections
+│   ├── guards/          # IMPLEMENTED (partial, Task 4.7) — input.py: deterministic
+│   │                     # input-guardrail boundary (length/scope/advice/PII/injection
+│   │                     # checks, rate-limiting strategy documented not implemented);
+│   │                     # context/output guardrails still planned (Phase 4.8–4.9)
 │   ├── api/             # planned responsibility: FastAPI-facing layer
 │   └── cli/             # IMPLEMENTED (Task 1.11) — phase1.py, the Phase 1
 │                         # local end-to-end CLI (answer / evaluate); no
@@ -284,7 +287,7 @@ intentionally omitted from the tree above.
 | `crag/` | **implemented** | `confidence.py` — `compute_confidence_features()`, `should_refuse()`, `classify_outcome()`, and `calibrate_threshold_youden_j()` (deterministic non-parametric threshold sweep) (Task 3.7), see `project_plan/PHASE3_CRAG_CONFIDENCE_GRADING.md` |
 | `sql/` | **implemented** | `xbrl_lookup.py` — `XbrlFactIndex`, a `(tag,cik,fiscal_year) -> facts` index built from Task 2.1/2.2's frozen `eligible_facts()` (one query per tag, never per question); `.lookup()` returns `found`/`not_found`/`ambiguous`/`unsupported_tag` (Task 3.10), see `project_plan/PHASE3_XBRL_SQL_PATH.md`; `derived.py` — `compute_difference()`/`compute_greater_than()`, deterministic arithmetic over pairs of `XbrlLookupResult` operands (Task 3.11), see `project_plan/PHASE3_DERIVED_CALCULATIONS.md` |
 | `nav/` | **implemented** | `section_navigation.py` — `extract_item_reference()` (text-only canonical-Item extraction, reuses Task 2.8's `_CANONICAL_ITEMS`), `resolve_filing_document_id()` (found/filing_not_found/ambiguous_filing via the frozen `submissions` table), `navigate_to_section()` (loads exactly one Task 2.8 parsed document, filters to the requested `section_id`) (Task 3.12), see `project_plan/PHASE3_TREE_SECTION_NAVIGATION.md` |
-| `guards/` | structure only | Input/context/output guardrails (Phase 4.7–4.9) |
+| `guards/` | **partial** | `input.py` — deterministic input-guardrail boundary (`check_input()`/`check_input_with_settings()`, `GuardDecision`, `REASON_CODES`): request-length cap, scope enforcement, advice detection, PII regex checks, injection-pattern detection (reuses `src.router.rules.INJECTION_KEYWORDS`/`ADVICE_KEYWORDS`), rate-limiting strategy documented (not implemented — delegated to a future API Gateway) (Task 4.7), see `project_plan/PHASE4_INPUT_GUARDRAILS.md`; context/output guardrails not yet implemented (Phase 4.8–4.9) |
 | `api/` | structure only | FastAPI service (Phase 4.10) |
 | `cli/` | **implemented** | `phase1.py` — one-command demo (`answer`) and smoke-eval entry point (`evaluate`) (Task 1.11), see `project_plan/PHASE1_END_TO_END.md`; no FastAPI/production API |
 

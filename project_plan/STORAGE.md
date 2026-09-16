@@ -48,7 +48,18 @@ artifacts/                     # GENERATED, git-ignored, created on demand
 ├── normalized_full/<phase_4_1_config_hash>/   # Task 4.1 - full 91,086-doc build
 ├── chunks/<chunk_config_hash>/
 ├── chunks_full/<phase_4_1_config_hash>/<chunk_config_hash>/   # Task 4.2 - full-corpus sharded chunk build
+├── embeddings_full/<phase_4_1_config_hash>/<chunk_config_hash>/<model>_<rev8>/   # Task 4.3 -
+│                               # frozen full-corpus embedding artifact (assembled outside this
+│                               # module's own path convention - downloaded from Google Drive and
+│                               # placed manually; embeddings_dir_full() reproduces the layout)
 ├── indexes/<chunk_config_hash>/<embedding_model_key>/
+├── indexes_full/<phase_4_1_config_hash[:16]>/<chunk_config_hash[:16]>/<model>_<rev8>/   # Task 4.4 -
+│                               # full-corpus LanceDB index. Hashes truncated to 16 hex chars in
+│                               # the DIRECTORY NAME ONLY (full 64-char hashes are still what gets
+│                               # recorded in the build config/summary JSON) - empirically required
+│                               # on Windows, where LanceDB's own internal fragment filenames
+│                               # (chunks.lance/data/<~52-char-name>.lance) pushed the full-two-
+│                               # 64-char-hash path past the ~260-character MAX_PATH limit
 ├── eval/<eval_version>/
 └── cache/                     # not yet exposed by a helper - see below
 
@@ -99,6 +110,11 @@ storage.chunks_dir_full(phase_4_1_config_hash, chunk_config_hash)   # Task 4.2 -
                                                               # dev/Phase 3 ablation artifact for the
                                                               # exact same chunk_config_hash
 storage.index_dir(chunk_config_hash, embedding_model)
+storage.embeddings_dir_full(phase_4_1_config_hash, chunk_config_hash,   # Task 4.3 - read-only
+                             embedding_model, embedding_model_revision)  # accessor for the frozen
+                                                              # full-corpus embedding artifact
+storage.index_dir_full(phase_4_1_config_hash, chunk_config_hash,       # Task 4.4 - full-corpus
+                        embedding_model, embedding_model_revision)      # LanceDB index output
 storage.eval_dir(eval_version)
 
 # existence checks (frozen inputs; type/existence only, no content validation)

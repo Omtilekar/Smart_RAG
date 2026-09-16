@@ -83,6 +83,18 @@ def safe_component(value: str) -> str:
     return normalized
 
 
+def embedding_model_short_dir(embedding_model: str, embedding_model_revision: str) -> str:
+    """Task 4.3's own local full-corpus artifact-root naming convention:
+    the model repository's final path segment, lowercased, plus the first
+    8 hex characters of its HF revision (e.g. "Qwen/Qwen3-Embedding-0.6B"
+    @ "97b0c614..." -> "qwen3-embedding-0.6b_97b0c614"). Reproduced
+    verbatim (never reinvented) so Task 4.4's full-corpus index directory
+    sits next to Task 4.3's already-existing embedding directory under the
+    same human-readable name."""
+    last_segment = embedding_model.rstrip("/").split("/")[-1]
+    return safe_component(f"{last_segment.lower()}_{embedding_model_revision[:8]}")
+
+
 @dataclass(frozen=True)
 class StoragePaths:
     repo_root: Path
@@ -173,6 +185,60 @@ class StoragePaths:
         return (
             self.artifacts_root / "chunks_full"
             / safe_component(phase_4_1_config_hash) / safe_component(chunk_config_hash)
+        )
+
+    def embeddings_dir_full(self, phase_4_1_config_hash: str, chunk_config_hash: str,
+                             embedding_model: str, embedding_model_revision: str) -> Path:
+        """Task 4.3 - frozen full-corpus embedding artifact root (54 sharded
+        Parquet files under embeddings/worker_0//worker_1/, plus final/
+        embedding_manifest.json + validation_summary.json). This artifact
+        was assembled outside storage.py's own path convention (downloaded
+        from Google Drive and placed manually per the Task 4.3 prompt), so
+        this accessor only reproduces the existing on-disk layout for later
+        callers (Task 4.4) - it never creates or moves anything, and the
+        artifact underneath is read-only from this module's perspective."""
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(phase_4_1_config_hash, "phase_4_1_config_hash")
+        validate_sha256(chunk_config_hash, "chunk_config_hash")
+        model_dir = embedding_model_short_dir(embedding_model, embedding_model_revision)
+        return (
+            self.artifacts_root / "embeddings_full"
+            / safe_component(phase_4_1_config_hash) / safe_component(chunk_config_hash) / model_dir
+        )
+
+    def index_dir_full(self, phase_4_1_config_hash: str, chunk_config_hash: str,
+                        embedding_model: str, embedding_model_revision: str) -> Path:
+        """Task 4.4 - full-corpus production LanceDB index output.
+        Deliberately a distinct root (`indexes_full/`, not `indexes/`),
+        keyed by BOTH the Task 4.1 normalization-input identity and the
+        Task 3.2 chunk semantic identity - mirroring `chunks_dir_full()`'s
+        rationale exactly: `chunk_config_hash` alone
+        (ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06) is
+        the SAME value Phase 3 already used for its own 323,971-row
+        dev-corpus index at `index_dir(chunk_config_hash, embedding_model)` -
+        reusing that path for the 10,487,096-row full-corpus index would
+        silently collide two differently-sized indexes into one directory.
+
+        Directory-name hashes are truncated to their first 16 hex
+        characters (64 bits - collision-proof for this project's actual
+        handful of configurations), unlike `chunks_dir_full()`'s full
+        64-character hashes. This is a physical-path-length workaround,
+        not a weaker identity: the full 64-character hashes are still what
+        gets recorded in the build config/summary JSON as this index's
+        real identity. Empirically required on Windows - LanceDB's own
+        internal fragment files (`chunks.lance/data/<~52-char-name>.lance`)
+        pushed the full-two-64-char-hash path past Windows' ~260-character
+        MAX_PATH limit (verified directly: the real build failed with
+        `LanceError(IO): ... os error 3` until this truncation was
+        applied), a failure mode `chunks_dir_full()`'s flat Parquet
+        shards never hit."""
+        from src.artifacts.versioning import validate_sha256
+        validate_sha256(phase_4_1_config_hash, "phase_4_1_config_hash")
+        validate_sha256(chunk_config_hash, "chunk_config_hash")
+        model_dir = embedding_model_short_dir(embedding_model, embedding_model_revision)
+        return (
+            self.artifacts_root / "indexes_full"
+            / safe_component(phase_4_1_config_hash[:16]) / safe_component(chunk_config_hash[:16]) / model_dir
         )
 
     def index_dir(self, chunk_config_hash: str, embedding_model: str) -> Path:

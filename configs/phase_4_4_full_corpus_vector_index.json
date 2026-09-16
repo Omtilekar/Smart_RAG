@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "phase_4_1_config_hash": "754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f",
+  "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+  "chunk_schema_version": 2,
+  "embedding_model": "Qwen/Qwen3-Embedding-0.6B",
+  "embedding_model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+  "embedding_dimension": 1024,
+  "vector_dtype": "float32",
+  "normalize_embeddings": true,
+  "database_backend": "lancedb",
+  "search_mode": "exact",
+  "distance_metric": "cosine",
+  "table_name": "chunks",
+  "column_policy": "all_24_columns",
+  "scalar_index_columns": [
+    "cik",
+    "fiscal_year"
+  ],
+  "scalar_index_type": "BTree",
+  "no_ann_index": true,
+  "no_quantization": true,
+  "no_fts_bm25_production_index": true,
+  "index_identity": {
+    "index_identity_version": 1,
+    "chunk_schema_version": 2,
+    "chunk_config_hash": "ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06",
+    "embedding_identity_hash": "de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe",
+    "distance_metric": "cosine",
+    "index_type": "exact_flat",
+    "table_name": "chunks"
+  },
+  "index_identity_hash": "158e6b0605ad483e882bef8611e7c3a3ecafc65100f246ab99e91578048d5501"
+}

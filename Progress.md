@@ -11993,3 +11993,272 @@ Phase 4 — Make It Real                        — IN PROGRESS
 ```
 
 **Next roadmap task:** 4.3 Full-corpus embedding.
+
+---
+
+## 2026-09-15 — Task 4.3: Full-Corpus Embedding
+
+Embedded all 10,487,096 Task 4.2 full-corpus chunks (54 shards,
+`part-00000.parquet`-`part-00053.parquet`, `chunk_config_hash=
+ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06`) with the
+frozen Phase 3 embedding winner, `Qwen/Qwen3-Embedding-0.6B` (HF revision
+`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`), 1024-dim, `float32` persisted
+vectors, `normalize_embeddings=True`, encoded as documents (no query
+prompt) via SentenceTransformers on CUDA. No model/chunking/normalization
+decision was reopened - a scale-out task per
+`prompts/phase_4/task_4.3_document_full_corpus_embedding_completion.md`.
+
+**Execution environment**: two Google Colab Pro accounts (NVIDIA A100
+each), sharing one Google Drive workspace
+(`/content/drive/MyDrive/RAG_Embeddings`). Colab compute ran the model in
+BF16; persisted vectors were converted/stored as `float32`. Per-shard
+pipeline: copy shard to local SSD -> stream rows -> embed on A100 -> write
+local embedding Parquet -> validate row count/schema/vector dim -> hash ->
+upload to Drive -> re-verify hash from Drive -> write `.done.json` only
+after verified upload -> delete local temp. This made restart/resume
+shard-atomic. Workers wrote to separate `embeddings/worker_0/` and
+`embeddings/worker_1/` trees with separate status dirs and no shared
+mutable progress file - initial split was deterministic (worker 0 = even
+shard IDs, worker 1 = odd), 27/27.
+
+**Implementation fix (schema nullability)**: early runs hit a PyArrow
+rejection - the writer schema declared `vector` non-null, but
+`append_column()` produced nullable field metadata, so PyArrow rejected
+the table. Fixed by rebuilding the output table explicitly against the
+frozen writer schema instead of relying on `append_column()`'s inferred
+metadata. No change to embedding semantics.
+
+**Resume/recovery history**: the run hit Colab session terminations and
+Drive interruptions. Recovery was shard-granular - completed outputs with
+a valid `.done.json` were kept; incomplete local shard files were
+discarded and recomputed; worker-1 `.done.json` markers found without a
+corresponding final output file were treated as stale/broken and
+recomputed. Worker 0 finished its 27 original even shards first; to cut
+recovery time, worker 0 then picked up worker 1's remaining unfinished
+odd shards. Final physical distribution is intentionally not 27/27
+(worker 0: 40 shards, worker 1: 14 shards, verified on disk) - `worker_0`/
+`worker_1` are operational provenance only, not a semantic partition.
+Shard ID is the canonical identity, and the final logical dataset is
+exactly one valid copy of shard IDs `00000`-`00053`.
+
+```text
+model:                    Qwen/Qwen3-Embedding-0.6B
+model_revision:           97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+embedding_dim:            1024
+persisted_dtype:          float32
+normalize_embeddings:     True
+phase_4_1_config_hash (upstream): 754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f
+chunk_config_hash (upstream):     ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06
+
+total embedding shards:   54  (part-00000 .. part-00053, all present, no dupes)
+total embeddings:         10,487,096  (matches Task 4.2 total chunk count exactly)
+final output size:        17.23 GiB
+final physical distribution: worker_0 = 40 shards, worker_1 = 14 shards
+                           (provenance only - shard ID is canonical identity)
+
+final integrity audit (every shard, not a sample):
+  unique shard IDs: 54, missing shards: [], duplicate shards: []
+  verified per shard: completion status, model identity, model revision,
+  embedding dim, Parquet row count, vector column existence/type,
+  chunk_uid presence, file size, SHA-256 (recomputed from the final
+  Drive copy for every embedding Parquet)
+  result: TASK 4.3 FINAL INTEGRITY AUDIT: PASS
+
+final manifest SHA-256 (recorded by the Task 4.3 audit):
+  a4d1421bb287ea6aa21398f1fca99f1e11650b7c0d49979077140bb17456fbc8
+
+Drive final manifest artifacts:
+  /content/drive/MyDrive/RAG_Embeddings/final/embedding_manifest.json
+  /content/drive/MyDrive/RAG_Embeddings/final/validation_summary.json
+```
+
+### Local frozen artifact location
+
+```text
+artifacts/embeddings_full/754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f/
+  ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06/
+  qwen3-embedding-0.6b_97b0c614/
+    embeddings/
+      worker_0/*.embeddings.parquet   (40 files)
+      worker_1/*.embeddings.parquet   (14 files)
+    final/
+      embedding_manifest.json
+      validation_summary.json
+```
+
+Downloaded from Google Drive and consolidated into the local project
+(git-ignored, ~18 GiB on disk). Verified present locally at documentation
+time: 54 total shard files (40 + 14) and both `final/` manifest files.
+
+### Regression gates
+
+No re-embedding, re-normalization, or re-chunking performed while
+documenting this task - Task 4.1/4.2 artifacts and hashes untouched
+(re-verified against the same frozen hashes recorded in their own
+sections above). No frozen model/revision/dimension/normalization/dtype
+decision changed. Task 4.4 was not started.
+
+### What Task 4.4 should consume
+
+The 54 `*.embeddings.parquet` shards under the local frozen artifact root
+above - each row carries the full Task 4.2 chunk record plus a required/
+non-null `vector: fixed_size_list<float32>[1024]` - keyed by
+`chunk_uid`. Treat `embedding_manifest.json` /
+`validation_summary.json` under `final/` as the canonical shard-metadata
+and provenance record; do not infer partitioning from `worker_0`/
+`worker_1` directory names.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+```
+
+**Next roadmap task:** 4.4 Full-corpus vector index.
+
+---
+
+## 2026-09-15 — Task 4.4: Full-Corpus Vector Index
+
+Built and validated the production-scale exact-cosine LanceDB vector
+index over Task 4.3's frozen 10,487,096-row full-corpus embedding
+artifact (`Qwen/Qwen3-Embedding-0.6B`, 1024-dim). Same search semantics
+as Task 1.5/Phase 3 (plain LanceDB table, exact/flat cosine, no ANN
+index) - `src.index.lancedb_index`'s `exact_cosine_search()`/
+`exact_cosine_search_filtered()` reused unmodified. A scale-out/
+index-build task, not a new retrieval-architecture experiment. See
+`project_plan/PHASE4_FULL_CORPUS_VECTOR_INDEX.md` for full detail.
+
+**Material conflict recorded, not silently resolved**: `PROJECT_EXECUTION.md`'s
+generic Phase 4.4 checklist ("Build FTS/BM25 index") predates Phase 3's
+actual results and conflicts with this task's explicit "no BM25/RRF
+hybrid" instruction. Phase 3's own frozen finding (Task 3.5: RRF hybrid
+was a **negative result**; dense-only selected, reconfirmed by Task
+3.14's serving re-check) resolves this: no production FTS/BM25 index was
+built. Likewise "apply quantization only if Phase 3 validated it"
+resolves to **none** - Phase 3 never validated a quantization strategy.
+
+```text
+input Task 4.1/4.2/4.3 identity (independently re-verified against the
+real local artifact, not trusted from prior Progress.md entries alone):
+  phase_4_1_config_hash:  754d9c898772c3326bfac21d7c508b37fd3dec6cb57320d081e024b0d653197f
+  chunk_config_hash:      ba99e2f7861c48bc66b1c3078341fa2305f9d3888df9a4d0ce03b91b58e32b06
+  chunk_schema_version:   2
+  model / revision:       Qwen/Qwen3-Embedding-0.6B / 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+  shard count / rows:     54 / 10,487,096
+
+  all 54 local embedding shards: SHA-256 recomputed and matched against
+  final/embedding_manifest.json - 0 mismatches, 0 missing/extra
+  embedding_manifest.json's own self-referential manifest_sha256 field
+  is NOT a raw file-byte hash - it is sha256(canonical_json(manifest
+  minus that field)), matching this project's semantic_hash() convention;
+  recomputed and verified == a4d1421bb287ea6aa21398f1fca99f1e11650b7c0d49979077140bb17456fbc8
+  full-corpus scan: 10,487,096 unique chunk_uid, 0 duplicates,
+  single-valued chunk_config_hash/chunk_schema_version
+
+table_name:               chunks
+column policy:            all 24 Task 4.2/4.3 columns retained
+embedding_identity_hash:  de63fd5c9047e7cd6ae8d45e747288cad864e6c81f020729b812a8ec20cec5fe
+index_identity_hash:      158e6b0605ad483e882bef8611e7c3a3ecafc65100f246ab99e91578048d5501
+
+vector/ANN indexes created: 0
+scalar indexes created:      cik, fiscal_year (BTree) - Task 3.9's two
+                             validated discriminative pre-filter dimensions
+database path:                artifacts/indexes_full/754d9c898772c332/ba99e2f7861c48bc/qwen3-embedding-0.6b_97b0c614/
+database size:                   51,130,625,535 bytes (~47.6 GiB) - larger
+                             than the 17.23 GiB source (Lance's own
+                             fragment encoding for this schema, not a
+                             duplicated write - verified directly)
+```
+
+**Windows MAX_PATH failure and fix (empirical)**: the first real build
+attempt failed (`LanceError(IO): ... os error 3`) because
+`index_dir_full()` originally stacked both full 64-character hashes, and
+LanceDB's own internal fragment filenames pushed the path past Windows'
+~260-character limit. Fixed by truncating each hash to 16 hex characters
+in the physical directory name only (full 64-character hashes still
+recorded in the build config/summary as the real identity). Verified the
+resulting path (179 chars for the longest observed internal filename)
+stays well under the limit; the empty broken scaffold was removed before
+retrying.
+
+**Genuine floating-point tie observed and documented**: an early
+48-sample self-retrieval pass found 2 cases where a chunk's own vector
+did not rank itself first. Independently confirmed both are real ties,
+not bugs: e.g. `chunk_uid=7df1d74b...` (document `66901_2000.txt`) and
+`chunk_uid=6872479b...` (document `65984_2000.txt`, an affiliated Entergy
+filing) share byte-identical chunk text (verbatim exhibit-index
+boilerplate), producing cosine distances tied at exactly float32 epsilon
+(`+-1.1920928955078125e-07`). Per this project's established convention
+("if a genuine vector tie occurs, document it rather than silently
+weakening the test" - Task 1.5 Step 27), `self_retrieval_check()` now
+counts the expected `chunk_uid` appearing among nearest neighbors tied
+within `1e-6` of the top distance as a pass, explicitly labeled
+`tied_duplicate_passes` - never silently absorbed into an undifferentiated
+pass count.
+
+```text
+self-retrieval (final logged run): 12/12 passed (2 shards' worth of
+                             deterministic samples across shard IDs
+                             0/10/20/30/40/53), self-distance range
+                             -1.19e-07 to 1.19e-07
+search diagnostic (Phase 4.4 smoke - not a production benchmark):
+  a single exact-flat query over the full 10,487,096 x 1024-dim table
+  measured directly at ~31-35s (disk-bound full-column scan; the
+  querying process's own RSS barely moved, confirming the cost is I/O-
+  side, not a Python memory blow-up) - contrast Task 3.14's 554.7ms p50
+  over 323,971 rows. Query counts were deliberately kept small (12
+  self-retrieval + 5 diagnostic, down from an initially-planned 48 + 10)
+  because of this per-query cost, after two earlier background build
+  attempts were killed by this shared dev machine's low-memory guard
+  (unrelated foreground application memory pressure, not a leak in this
+  code - verified directly) during a longer batch of queries.
+  p50=33,607.9ms p95=34,632.2ms (n=5, after 2 warm-up queries)
+```
+
+New `storage.py` accessors (additive): `embeddings_dir_full()` (read-only,
+reproduces Task 4.3's existing on-disk layout) and `index_dir_full()`
+(this task's new output root, deliberately distinct from `index_dir()` -
+`chunk_config_hash` alone is the same value Phase 3's dev-corpus index
+already uses, so reusing that path would silently collide two
+differently-sized indexes). New companion module
+`src/index/lancedb_index_full.py` (own 24-column schema/validation +
+scalar-index build, reusing `lancedb_index`'s search functions
+unmodified) - mirrors `src.index.lancedb_fts`'s existing
+companion-module pattern.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1956 passed**, 35 deselected (+17
+  new in `tests/test_phase_4_4_full_corpus_vector_index.py`, tiny
+  synthetic 24-column tables only).
+- `scripts/dev.py test` (full, incl. `local_data`/`gpu`/`model`-marked):
+  **1991 passed**, 0 failed (+1 `local_data`-marked structural-integrity
+  test against the real index - row count/schema/scalar indexes only,
+  deliberately not a real `exact_cosine_search()` call given its ~30s cost).
+
+### Regression gates
+
+Task 4.1/4.2/4.3 artifacts re-verified unchanged - this task only ever
+read `artifacts/normalized_full/`, `artifacts/chunks_full/`,
+`artifacts/embeddings_full/`, never wrote to them. No re-normalization,
+re-chunking, or re-embedding. No BM25/FTS production index, no reranker,
+no CRAG/router change. No GPU used (pure CPU/disk I/O - no embedding
+model loaded). No paid API/LLM call. Protected TEST: unopened, 0/3
+official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+```
+
+**Next roadmap task:** 4.5 XBRL serving representation.

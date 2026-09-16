@@ -28,12 +28,17 @@ established for API-style requests in src/ingest/common.py's `get()`.
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 
 import requests
 
+from src.logging_utils import get_logger, log_event
+
 from .provider import GenerationError, GenerationRequest, ProviderResponse
+
+log = get_logger(__name__)
 
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 API_KEY_ENV_VAR = "OPENROUTER_API_KEY"
@@ -112,6 +117,17 @@ class OpenRouterProvider:
             raise GenerationError("OpenRouter response missing choices[0].message.content") from None
 
         usage = data.get("usage") or {}
+
+        # Task 4.6 - "track token usage and request latency": one
+        # structured log line per call, never the prompt/answer text or
+        # the API key (log_event redacts secret-looking field names as a
+        # second layer of defense, but this line never passes one anyway).
+        log_event(
+            log, logging.INFO, "generation_provider_call",
+            provider="openrouter", requested_model=self._model, response_model=data.get("model"),
+            prompt_tokens=usage.get("prompt_tokens"), completion_tokens=usage.get("completion_tokens"),
+            total_tokens=usage.get("total_tokens"), latency_ms=round(latency_ms, 1),
+        )
 
         return ProviderResponse(
             text=text,

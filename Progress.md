@@ -12382,3 +12382,91 @@ Phase 4 — Make It Real                        — IN PROGRESS
 ```
 
 **Next roadmap task:** 4.6 Generation production interface.
+
+---
+
+## 2026-09-16 — Task 4.6: Generation Production Interface
+
+Finalized Task 1.7's provider-neutral `GenerationProvider` interface for
+production, froze the live generation model, added a zero-cost local
+provider for experiments, and confirmed token-usage/latency tracking.
+See `project_plan/PHASE4_GENERATION_PRODUCTION_INTERFACE.md` for full
+detail.
+
+**Frozen selection: `GENERATION_PROVIDER=openrouter`,
+`GENERATION_MODEL=openai/gpt-oss-20b`** - not a new choice, confirming
+what the project already used: Task 1.7a's citation-format smoke test
+already ran against this exact model, and Task 2.13's own docstring
+already calls it "the project's real generation model." `.env.example`
+could not be edited in this session (both `Read` and `cat` are denied
+by the sandbox's permission rules for any `.env*` path) - the user
+should set these two values in their own `.env`.
+
+**No live paid API call was made**: `OPENROUTER_API_KEY` is unset in
+this environment (checked via `os.environ`, never by reading `.env`
+directly), so there was no key to call with, and a new paid call would
+not be made without explicit authorization regardless. The existing
+`generation_api`-marked live test (Task 1.7) is unchanged and will run
+for real once a key is configured.
+
+**New local/offline provider** (`src/generation/ollama_provider.py`,
+`OllamaProvider`): reuses Task 2.13's already-verified Ollama HTTP
+conventions (`localhost:11434/api/chat`), defaults to `gpt-oss:20b` - the
+same underlying model as the frozen live selection, just served locally
+for free. Response shape (`prompt_eval_count`/`eval_count` for token
+counts) verified with a real local call before writing any code. Real,
+free validation performed: `pytest -m ollama` against the actual local
+server passed (6.68s warm / ~27s cold, ~20s of which was model load).
+
+**New config-driven factory** (`src/generation/factory.py`,
+`get_generation_provider()`): resolves `Settings.generation_provider`/
+`generation_model` into a concrete provider instance, raising
+`GenerationError` (never silently defaulting) if either is unset or the
+provider name is unrecognized - extends `scripts/smoke_generation.py`'s
+existing "never invent a model choice" policy to the provider name too.
+
+**Token usage / latency tracking**: `ProviderResponse` already carried
+these fields since Task 1.7; both `OpenRouterProvider` and the new
+`OllamaProvider` now additionally emit one structured `log_event()` line
+per call (`event=generation_provider_call provider=... requested_model=...
+prompt_tokens=... completion_tokens=... total_tokens=... latency_ms=...`)
+via the existing `src.logging_utils` convention - never the prompt/answer
+text or API key.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **1984 passed**, 37 deselected
+  (+17 new: 7 in `tests/test_generation_factory.py`, 10 portable in
+  `tests/test_ollama_provider.py`; +1 `ollama`-marked real local
+  integration test, passed).
+- No regression in `tests/test_openrouter_provider.py`/
+  `tests/test_minimal_generation.py` from the additive logging call.
+
+### Regression gates
+
+`src/generation/provider.py`, `minimal.py`, `citations.py`, and
+`src/eval/llm_judge.py` byte-for-byte unchanged. `openrouter.py` gained
+only one additive `log_event()` call - no request/response handling or
+return-value change. No re-normalization/re-chunking/re-embedding/
+vector-index/XBRL-export change. No paid API call made. Protected TEST:
+unopened, 0/3 official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+```
+
+**Next roadmap task:** 4.7 Input guardrails.
+
+**Controlled loop scope complete**: per
+`prompts/phase_4/task_4.5_loop_complete_tasks_4.5_and_4.6.md`'s mission
+("complete exactly these two Production RAG roadmap tasks... do not
+continue beyond Task 4.6"), the loop stops here.

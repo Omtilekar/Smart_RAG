@@ -244,7 +244,11 @@ live integration test (tests/test_openrouter_live_smoke.py,
 - Single API request per answer — no retries, no self-repair, no
   multi-candidate generation or voting.
 - OpenRouter is a *testing* provider only — the user has stated intent to
-  change it; no permanent generation model is frozen.
+  change it; no permanent generation model is frozen. **Superseded by
+  Task 4.6**: `openai/gpt-oss-20b` via OpenRouter is now the frozen
+  production selection (it was already the de facto model used by this
+  task's own Task 1.7a smoke test and by Task 2.13's judge-validation
+  design) — see `project_plan/PHASE4_GENERATION_PRODUCTION_INTERFACE.md`.
 - No citation-integrity verification yet — Task 1.7 asks for and parses
   citations but does not check they actually support their claims. Task
   1.8 owns that.

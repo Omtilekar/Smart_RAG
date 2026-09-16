@@ -1,0 +1,61 @@
+{
+  "task": "Phase 4 Task 4.9 - Output Guardrails",
+  "status": "COMPLETE",
+  "base_commit": "97bb234a0e418e453d9df3578146980a7b083986",
+  "authoritative_requirement_source": "project_plan/PROJECT_EXECUTION.md #4.9",
+  "authoritative_checklist": [
+    "verify_cited_chunk_ids_exist",
+    "verify_citations_refer_to_provided_evidence",
+    "add_groundedness_checks",
+    "validate_numeric_provenance_for_structured_answers",
+    "refuse_unsupported_financial_advice",
+    "avoid_unsupported_claims"
+  ],
+  "checklist_item_collapsing": {
+    "items_1_and_2": "one check - every citation must be among the chunk_ids supplied to this generation call, never checked against global corpus existence",
+    "items_3_and_6": "same citation-validity check applied to whatever citations are present; zero-citation answers are never blocked (see missing_citation_policy)",
+    "item_4": "check_structured_numeric_output is Task 4.8's check_xbrl_context() re-exported unchanged - no separate generation step exists for the structured route",
+    "item_5": "reuses src.router.rules.ADVICE_KEYWORDS verbatim, no new keyword set"
+  },
+  "missing_citation_policy": "no missing_citation reason code implemented - resolved from this task's own 'do not require a citation for a legitimate abstention unless the roadmap explicitly says otherwise' rule (roadmap does not) plus src.eval.citation_integrity.evaluate_citation_integrity's own precedent that abstention-expectation cannot be inferred from answer text alone",
+  "failure_policy": "reject the entire answer on any citation problem (unknown or malformed) - mirrors evaluate_citation_integrity's PASS-iff-zero-reasons precedent, never a partial strip-and-keep",
+  "implemented_checks": ["check_dense_output", "check_structured_numeric_output"],
+  "reason_codes": ["malformed_citation", "unknown_citation", "unsupported_advice"],
+  "reused_reason_code_from_task_4_8": "missing_provenance (via check_structured_numeric_output)",
+  "citation_contract_reused": "src.eval.citation_integrity.detect_citation_attempts() (Task 1.8) imported directly, not re-derived; src.generation.citations.parse_citations() (Task 1.7) unchanged",
+  "routes_integrated": {
+    "dense": "wired into MinimalGenerator._answer_with_diagnostics(), proven by test",
+    "structured_xbrl": "function implemented and portably tested, no existing generation orchestrator to wire into (same honest scoping as Task 4.8)",
+    "navigation": "not in scope - PROJECT_EXECUTION.md's Task 4.9 checklist does not mention navigation-route output validation"
+  },
+  "deterministic_behavior": true,
+  "known_limitation_advice_detection_gap": "ADVICE_KEYWORDS is phrased first-person ('should i buy') for user-question detection; second-person model output ('you should buy') is not caught - verified by test and documented, not hidden",
+  "portable_test_results": {
+    "tests_test_output_guards_py": 30,
+    "tests_test_output_guards_static_safety_py": 4,
+    "tests_test_minimal_generation_py_new": 6,
+    "tests_test_minimal_generation_py_total": 56,
+    "portable_suite_total": "2154 passed, 37 deselected (scripts/dev.py test --portable)"
+  },
+  "non_generation_regression_result": "python -m pytest -m \"not generation_api\": 2190 passed, 1 deselected (230.79s)",
+  "paid_api_calls_task_4_9": 0,
+  "llm_calls_in_guard": 0,
+  "protected_test_usage": "0/3",
+  "files_modified": [
+    "src/guards/output.py",
+    "src/generation/minimal.py",
+    "tests/test_output_guards.py",
+    "tests/test_output_guards_static_safety.py",
+    "tests/test_minimal_generation.py",
+    "project_plan/PHASE4_OUTPUT_GUARDRAILS.md",
+    "project_plan/REPOSITORY_STRUCTURE.md",
+    "Progress.md"
+  ],
+  "known_limitations": [
+    "No missing-citation/groundedness-on-absence check - deliberate, documented non-decision",
+    "Advice detection reuses a first-person keyword list; second-person model-output phrasing is not caught",
+    "Citation validity inherits detect_citation_attempts()'s existing scope (ASCII/fullwidth brackets with chunk-shaped content only)",
+    "Output guard integration proven for the dense route only - structured-route function has no existing orchestrator to wire into",
+    "Structural citation validity is a proxy for groundedness, not a factual-entailment guarantee - no LLM judge was used or is claimed"
+  ]
+}

@@ -12745,3 +12745,116 @@ Phase 4 — Make It Real                        — IN PROGRESS
 
 **Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.9
 Output guardrails.
+
+---
+
+## 2026-09-16 — Task 4.9: Output Guardrails
+
+Implemented and validated the final safety boundary: `provider.
+generate(...) -> ProviderResponse -> OUTPUT GUARD -> public
+GenerationResult / safe fallback`. See
+`project_plan/PHASE4_OUTPUT_GUARDRAILS.md` for full detail.
+
+**Authoritative requirement** - `PROJECT_EXECUTION.md`'s 6-item Task 4.9
+checklist (verify cited chunk IDs exist / verify citations refer to
+provided evidence / add groundedness checks / validate numeric
+provenance for structured answers / refuse unsupported financial advice
+/ avoid unsupported claims), collapsed into 4 deterministic checks
+(documented, not silently narrowed): items 1+2 -> one citation-vs-
+supplied-evidence check; items 3+6 -> the same check applied to whatever
+citations are present; item 4 -> Task 4.8's `check_xbrl_context()`
+re-exported unchanged (no separate generation step exists for the
+structured route); item 5 -> reuses `ADVICE_KEYWORDS` verbatim.
+
+**Why no "missing_citation" reason code**: resolved from existing
+precedent, not invented. This task's own "Abstention Semantics" rule
+("do not require a citation for a legitimate abstention unless the
+roadmap explicitly says otherwise" - it does not) plus
+`src.eval.citation_integrity.evaluate_citation_integrity()`'s own
+established design (its `missing_required_citation` check requires a
+caller-supplied `abstention_expected` ground-truth boolean, "never
+inferred here from the answer text") together mean: a live production
+guard has no way to know whether an unanswerable question is being
+correctly abstained from, so it never blocks solely for the absence of
+a citation.
+
+**Failure policy**: any citation problem (unknown or malformed) fails
+the WHOLE answer - reuses `evaluate_citation_integrity()`'s own
+"PASS iff zero failure reasons" precedent (Task 1.8) rather than
+inventing a new redact-vs-reject choice.
+
+**Implementation** (`src/guards/output.py`): `OutputGuardDecision
+(allowed, reason_code, detail)`. `check_dense_output(answer_text,
+citations, supplied_chunk_ids=...)` reuses `src.eval.citation_integrity.
+detect_citation_attempts()` (Task 1.8, imported directly) for malformed-
+marker detection and checks every citation against the chunk_ids
+actually supplied to that generation call (never global-corpus
+existence). `check_structured_numeric_output` is Task 4.8's
+`check_xbrl_context` re-exported verbatim. Reason codes:
+`malformed_citation`, `unknown_citation`, `unsupported_advice` (plus
+reused `missing_provenance` via the structured re-export).
+
+**Real, documented gap found and kept honest, not hidden**: reusing
+`ADVICE_KEYWORDS` (first-person, "should i buy...", designed for user
+questions) against model OUTPUT misses natural second-person advice
+phrasing ("you should buy this stock") - verified directly and covered
+by a dedicated test
+(`test_known_limitation_second_person_advice_phrasing_not_caught`)
+rather than silently expanding the keyword list (not authorized by the
+roadmap) or hiding the gap.
+
+**Integration boundary**: wired into `MinimalGenerator.
+_answer_with_diagnostics()` immediately after `provider.generate()` and
+citation parsing. On rejection, the public `GenerationResult` never
+contains the raw candidate text - but the real `ProviderResponse`
+(latency/tokens) is still returned to diagnostics, since the provider
+really was called ("Preserve Diagnostic Separation"). Proven by test:
+unknown/malformed/advice-laden outputs are all blocked while
+`provider.calls` shows exactly one invocation; valid cited answers and
+legitimate zero-citation abstentions pass through byte-for-byte
+unchanged. Only the dense route has a real integration point (same
+honest scoping as Task 4.8) - the structured-route function is
+implemented/tested but has no existing orchestrator to wire into.
+
+### Tests
+
+- `scripts/dev.py doctor`: PASS.
+- `scripts/dev.py test --portable`: **2154 passed**, 37 deselected (+40
+  new: 30 in `tests/test_output_guards.py`, 4 in
+  `tests/test_output_guards_static_safety.py`, 6 in
+  `tests/test_minimal_generation.py`, which now has 56 tests total).
+- `python -m pytest -m "not generation_api"`: **2190 passed**, 1
+  deselected (230.79s).
+
+### Regression gates
+
+Task 4.1-4.8 artifacts/semantics untouched except this task's own
+explicitly-approved output-boundary wiring into `MinimalGenerator` -
+`OpenRouterProvider`/`OllamaProvider` code, `src/guards/input.py`, and
+`src/guards/context.py` (only reused/re-exported) are all byte-for-byte
+unchanged. Frozen Phase 3 retrieval/routing decisions, the CRAG
+threshold (`0.5531`), dense-only selection unchanged. No BM25/RRF/
+reranker reintroduced, no re-embedding, no provider/model change.
+**Paid API calls during Task 4.9: 0** (`RUN_LIVE_GENERATION_API_TEST`
+never set; `scripts/smoke_generation.py` not run). Protected TEST:
+unopened, **0/3** official runs used.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+  4.8 Context guardrails                      — COMPLETE
+  4.9 Output guardrails                       — COMPLETE
+```
+
+**Task 4.9 — Output Guardrails — COMPLETE**
+
+**Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.10
+FastAPI service.

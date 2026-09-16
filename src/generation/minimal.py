@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass
 
 from src.guards.context import check_dense_context, format_evidence_block
+from src.guards.output import check_dense_output
 
 from .citations import parse_citations
 from .provider import GenerationProvider, GenerationRequest, ProviderResponse
@@ -26,6 +27,18 @@ RETRIEVAL_K = 5
 CONTEXT_GUARD_ABSTENTION_MESSAGE = (
     "The retrieved context did not pass the context-safety check and "
     "cannot be used to answer this question."
+)
+
+# Task 4.9 - the output guard's fixed abstention-safe outcome. The
+# provider WAS called here (unlike the context-guard case above) - its
+# real ProviderResponse (latency/token diagnostics) is still returned to
+# _answer_with_diagnostics()'s caller; only the public GenerationResult's
+# answer/citations are replaced, never the raw blocked text ("Preserve
+# Diagnostic Separation": internal diagnostics may keep provider
+# metadata, the public answer contract must not leak a blocked answer).
+OUTPUT_GUARD_ABSTENTION_MESSAGE = (
+    "The generated answer did not pass the output-safety check and "
+    "cannot be released."
 )
 
 # Minimal grounded prompt contract (Task 1.7 Step 14) - deliberately no
@@ -142,5 +155,17 @@ class MinimalGenerator:
         provider_response = self._provider.generate(request)
 
         citations = parse_citations(provider_response.text)
+
+        # Task 4.9 - the output guard: AFTER provider.generate(...) exists,
+        # BEFORE the answer is released through the public GenerationResult.
+        # The provider response itself (latency/token diagnostics) is still
+        # returned below even on rejection - only the public answer/citations
+        # are replaced, never the raw blocked text.
+        supplied_chunk_ids = {r.chunk_id for r in retrieved}
+        output_decision = check_dense_output(provider_response.text, citations, supplied_chunk_ids=supplied_chunk_ids)
+        if not output_decision.allowed:
+            result = GenerationResult(answer=OUTPUT_GUARD_ABSTENTION_MESSAGE, citations=[])
+            return result, provider_response, retrieval_ms
+
         result = GenerationResult(answer=provider_response.text, citations=citations)
         return result, provider_response, retrieval_ms

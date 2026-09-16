@@ -395,3 +395,62 @@ def test_valid_context_invokes_provider_exactly_once():
     gen = MinimalGenerator(FakeRetriever(), provider)
     gen.answer("What was revenue?")
     assert len(provider.calls) == 1
+
+
+# ------------------------------------------------------------ Task 4.9 output guard
+
+from src.generation.minimal import OUTPUT_GUARD_ABSTENTION_MESSAGE  # noqa: E402
+
+
+def test_unknown_citation_output_blocked_but_provider_still_called_once():
+    provider = FakeProvider(text="Revenue was $1M. [doc9.htm::chunk9]")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result, provider_response, _retrieval_ms = gen._answer_with_diagnostics("What was revenue?")
+
+    assert len(provider.calls) == 1
+    assert result.answer == OUTPUT_GUARD_ABSTENTION_MESSAGE
+    assert result.citations == []
+    # "Preserve Diagnostic Separation": the provider really was called, so
+    # its real ProviderResponse (latency/tokens) is still available to
+    # diagnostics - only the public GenerationResult is sanitized.
+    assert provider_response is not None
+    assert provider_response.text == "Revenue was $1M. [doc9.htm::chunk9]"
+
+
+def test_malformed_citation_output_blocked():
+    provider = FakeProvider(text="Revenue was $1M. 【doc0.htm::chunk0】")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result = gen.answer("What was revenue?")
+    assert result.answer == OUTPUT_GUARD_ABSTENTION_MESSAGE
+    assert result.citations == []
+
+
+def test_unsupported_advice_output_blocked():
+    provider = FakeProvider(text="This is a good time to invest in this company.")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result = gen.answer("What was revenue?")
+    assert result.answer == OUTPUT_GUARD_ABSTENTION_MESSAGE
+    assert result.citations == []
+
+
+def test_valid_cited_answer_passes_output_guard_unchanged():
+    provider = FakeProvider(text="Revenue was $1M. [doc0.htm::chunk0]")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result = gen.answer("What was revenue?")
+    assert result.answer == "Revenue was $1M. [doc0.htm::chunk0]"
+    assert result.citations == ["doc0.htm::chunk0"]
+
+
+def test_legitimate_zero_citation_abstention_passes_output_guard_unchanged():
+    provider = FakeProvider(text="The supplied context does not contain enough information to answer.")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result = gen.answer("What was revenue?")
+    assert result.answer == "The supplied context does not contain enough information to answer."
+    assert result.citations == []
+
+
+def test_blocked_output_never_leaks_raw_answer_through_public_result():
+    provider = FakeProvider(text="CONFIDENTIAL_MARKER_9999 [doc9.htm::chunk9]")
+    gen = MinimalGenerator(FakeRetriever(), provider)
+    result = gen.answer("What was revenue?")
+    assert "CONFIDENTIAL_MARKER_9999" not in result.answer

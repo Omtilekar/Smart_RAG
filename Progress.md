@@ -12995,3 +12995,105 @@ Phase 4 — Make It Real                        — IN PROGRESS
 
 **Next roadmap task (exact title from `PROJECT_EXECUTION.md`):** 4.11
 Deployment.
+
+## 2026-09-17 — Task 4.11 deployment preparation, then deferred by user decision
+
+**Deployment preparation (2026-09-16, preserved)**: built a CPU-only
+Docker image for the Task 4.10 FastAPI service (`Dockerfile`,
+`.dockerignore`, `requirements-cpu.txt`), validated it locally against
+real dependencies (`/health` 200, `/status` 200 with
+`dense_index_row_count: 162357`, and a non-paid synthetic
+`structured_xbrl` `/query` - zero OpenRouter calls), fixed a real bug
+found along the way (`build_production_dependencies()` hardcoded
+`load_model(device="cuda")`, invisible on this GPU dev box but fatal on
+a CPU-only Fargate container; now respects `settings.device` via
+`resolve_device()`), and prepared a parameterized, `terraform
+validate`-clean ECR + ECS Fargate skeleton (`infra/terraform/`) that was
+never applied. See `project_plan/PHASE4_DEPLOYMENT.md` and
+`results/phase_4_11_deployment_summary.json` (commit "Prepare Fargate
+deployment infrastructure"). No AWS resource was created, no image was
+pushed to ECR, no live cloud call was made.
+
+**Decision**: user decision (2026-09-17) - defer real AWS hosting until
+the local Production RAG application is production-ready: fully
+integrated with the full-corpus artifacts, thoroughly tested, and
+performance/reliability validated as a frozen release candidate.
+
+**Why**:
+
+- the known full-corpus dense-serving integration gap still exists -
+  `BaselineRetriever`/`RetrievalResult` hardcode the Phase 1 development
+  schema and cannot query the real Task 4.4 production index,
+- deploying now would operationalize a development-index-backed dense
+  route as if it were production-ready,
+- cloud spend is unnecessary while this and other application-level gaps
+  remain open,
+- the Docker/Terraform preparation above is preserved for later reuse,
+  not discarded.
+
+**Task 4.11 status**:
+
+```text
+Task 4.11 — Deployment — PARTIAL / DEFERRED BY USER DECISION
+
+Completed/preserved:
+- CPU-only container build + local Docker validation
+- Terraform/ECS-Fargate skeleton (validated, never applied)
+- deployment documentation/results (PHASE4_DEPLOYMENT.md, results JSON)
+
+Deferred:
+- ECR push for a final release image
+- terraform apply / live AWS infrastructure
+- ECS/Fargate live service
+- deployed health/status/restart/logging smoke validation
+```
+
+This is a sequencing decision, not abandonment of AWS - the intended
+final deployment target remains AWS ECS/Fargate, continuously warm
+compute, unless a later explicit decision changes it.
+`project_plan/PROJECT_EXECUTION.md`'s Task 4.11 section now records a
+**Pre-Deployment Local Production Readiness Gate** (Gates A-F: full-
+corpus dense serving integration, local end-to-end production
+integration, regression/integration testing, reliability/performance
+validation, final evaluation/readiness, release-candidate freeze) that
+must pass before the live/cloud portion of Task 4.11 resumes.
+
+**New immediate engineering priority**: full-corpus production
+dense-serving integration - make the FastAPI dense route consume the
+frozen 10,487,096-row Task 4.4 production index instead of the
+162,357-row Phase 1 development index. AWS deployment is explicitly NOT
+the next active task while this readiness gate is open.
+
+**AWS setup note**: AWS account access has been prepared and a non-root
+CLI/deployment identity configured locally; default deployment region
+selected is `us-east-1`. No final Production RAG ECS/Fargate service has
+been provisioned. No credentials, keys, or account identifiers are
+recorded here or anywhere else in this repository.
+
+**Protected TEST**: unopened, **0/3** official runs used - unchanged by
+this decision.
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+  4.8 Context guardrails                      — COMPLETE
+  4.9 Output guardrails                       — COMPLETE
+  4.10 FastAPI service                        — COMPLETE
+  4.11 Deployment                             — PARTIAL / DEFERRED BY USER DECISION
+```
+
+**Task 4.11 — Deployment — NOT COMPLETE (PARTIAL / DEFERRED BY USER
+DECISION).**
+
+**Next active engineering priority:** full-corpus production
+dense-serving integration (not yet an assigned roadmap task number - see
+`project_plan/PROJECT_EXECUTION.md`'s Task 4.11 readiness Gate A). AWS
+deployment does not resume until Gates A-F pass.

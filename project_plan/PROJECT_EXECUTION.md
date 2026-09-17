@@ -1146,6 +1146,17 @@ GET  /status
 
 ### 4.11 Deployment
 
+**Status (2026-09-17): PARTIAL / DEFERRED BY USER DECISION.** Deployment
+*preparation* (container, local validation, Terraform/ECS-Fargate
+skeleton) is complete and preserved - see
+`project_plan/PHASE4_DEPLOYMENT.md` and the "Prepare Fargate deployment
+infrastructure" commit. Real AWS hosting is explicitly postponed until
+the local production system passes the readiness gate below. This is a
+sequencing decision, not a change to the selected target - the intended
+final deployment target remains AWS ECS/Fargate, continuously warm
+compute, per the Phase 3 serving spike (`project_plan/
+SERVING_FEASIBILITY.md`).
+
 Using the Phase 3 serving spike:
 
 - [ ] deploy to the selected compute target,
@@ -1154,6 +1165,72 @@ Using the Phase 3 serving spike:
 - [ ] configure logging,
 - [ ] test cold/warm behavior,
 - [ ] test system availability independently of the development machine.
+
+Preparation already done toward the above (not yet applied to real AWS
+resources): CPU-only Docker image built and validated locally against
+real dependencies (`/health`, `/status`, a non-paid structured-XBRL
+`/query`); secrets-safe design (Secrets Manager/SSM ARN reference, never
+a plaintext value); logging unchanged (stdout/stderr, CloudWatch `awslogs`
+driver wired in the Terraform skeleton); a parameterized ECR + ECS
+Fargate Terraform configuration, `terraform validate`-clean, never
+applied. No AWS account/region/VPC/subnet/secrets-ARN/IAM input was
+available, so no real resource was created, no image was pushed to ECR,
+and no cold/warm behavior was measured on real Fargate.
+
+#### Pre-Deployment Local Production Readiness Gate
+
+Real/live AWS deployment (the checklist above) may resume only after
+every gate below passes. This gate exists because Task 4.10 intentionally
+wired the FastAPI dense route to the 162,357-row Phase 1 development
+LanceDB index (`BAAI/bge-small-en-v1.5`), not the frozen 10,487,096-row
+Task 4.4 production index (`Qwen/Qwen3-Embedding-0.6B`, 1024-dim,
+`chunk_uid` schema) - `BaselineRetriever`/`RetrievalResult` are
+incompatible with the production schema and no adapter exists yet. Do not
+pay for or operationalize cloud infrastructure while this and the other
+gaps below remain open.
+
+- [ ] **Gate A - Full-corpus dense serving integration.** Implement a
+  production-compatible retriever/adapter for the frozen Task 4.4 index;
+  consume the real 10,487,096-row index; use the frozen
+  Qwen/Qwen3-Embedding-0.6B query-embedding contract; preserve cosine
+  semantics, production provenance/citation identity, and required
+  metadata pre-filtering; remove the FastAPI dense route's dependency on
+  the 162,357-row development index; prove the API runs against the
+  production schema without fabricating development-only fields.
+- [ ] **Gate B - Local end-to-end production integration.** Validate the
+  full composition locally: input guard -> router -> production dense
+  retrieval OR structured XBRL path -> context guard where applicable ->
+  generation where applicable -> output guard -> FastAPI response.
+  Tree-navigation coverage follows the actual frozen router capability -
+  do not claim it is live if it is still not routable.
+- [ ] **Gate C - Regression / integration testing.** Clean
+  `python scripts/dev.py doctor`, `python scripts/dev.py test --portable`,
+  and `python -m pytest -m "not generation_api"`, plus production-index
+  integration tests and API integration tests using non-paid/fake
+  generation where possible. Live external generation stays explicit
+  opt-in only.
+- [ ] **Gate D - Reliability / performance validation.** Measured local
+  validation of the production release candidate: startup/readiness
+  behavior, production retrieval latency, memory/RSS, repeated requests,
+  bounded concurrency, provider failure handling, guardrail failure
+  paths, restart/reinitialization behavior, no artifact mutation, no
+  accidental network/paid calls in default test paths. No numeric pass
+  thresholds are frozen yet - a later explicit decision sets them if
+  needed.
+- [ ] **Gate E - Final evaluation / readiness.** Run the final approved
+  DEV/readiness evaluation; resolve material regressions rather than
+  hiding them; preserve the protected TEST policy (use it only under its
+  existing frozen 0/3 budget and whatever final-evaluation task
+  explicitly authorizes it - do not consume it merely because deployment
+  is approaching).
+- [ ] **Gate F - Release-candidate freeze.** Freeze the production
+  configuration and artifact identities/manifests; verify reproducible
+  setup; ensure documentation matches the running system; produce a local
+  release-candidate state suitable for containerization and deployment.
+
+Only after Gates A-F pass should the live/cloud execution portion of Task
+4.11 (ECR push, `terraform apply`, ECS/Fargate service, deployed
+health/status/non-paid smoke, logging/restart validation) resume.
 
 ### 4.12 Observability
 

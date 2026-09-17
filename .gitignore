@@ -70,6 +70,8 @@ env/
 
 # ---- Local tooling state ----
 .claude/
+phase3_loop_supervisor.ps1
+claude_settings_local_phase3.json
 
 # ---- Terraform (Task 4.11 - infra/terraform/ skeleton, never applied) ----
 .terraform/

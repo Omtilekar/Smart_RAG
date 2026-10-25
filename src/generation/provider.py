@@ -22,6 +22,12 @@ class GenerationRequest:
     system_prompt: str
     user_prompt: str
     temperature: float = 0.0
+    # Task 4.14a - number of leading characters of `user_prompt` that form
+    # the reusable evidence block (everything after it is the per-request
+    # question). 0 = no declared reusable prefix (legacy layout). The text
+    # itself is never altered by this field; adapters only use it to place
+    # a provider cache breakpoint.
+    cacheable_prefix_len: int = 0
 
 
 @dataclass(frozen=True)
@@ -39,6 +45,15 @@ class ProviderResponse:
     total_tokens: int | None
     temperature_requested: float
     latency_ms: float
+    # Task 4.14a - prompt-cache observability. All None/"none" unless the
+    # provider actually reported them (never estimated).
+    cache_strategy: str = "none"
+    cached_prompt_tokens: int | None = None
+    cache_write_tokens: int | None = None
+    cost_usd: float | None = None
+    # Ollama only: provider-reported prompt evaluation time. The one
+    # observable signal of local KV-prefix reuse (no token count exists).
+    prompt_eval_ms: float | None = None
 
 
 class GenerationError(Exception):

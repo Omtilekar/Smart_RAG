@@ -138,3 +138,106 @@ python -m uvicorn src.api.app:create_app --factory --reload
 
 See `project_plan/PHASE4_FASTAPI_SERVICE.md` for the full endpoint
 contract, guard integration, and route coverage.
+
+### Local project showcase + query UI (Task 4.12)
+
+The same command above also serves a local, zero-build project
+showcase/query UI (`src/api/static/`) at `/` - `/health`, `/status`,
+`/query`, `/docs`, and `/openapi.json` are all unaffected; the static
+mount is registered last, after every API route, so it can never shadow
+one.
+
+```bash
+python -m uvicorn src.api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/         - project showcase + "Ask the RAG" query UI
+http://127.0.0.1:8000/docs     - Swagger/OpenAPI (unchanged)
+http://127.0.0.1:8000/health   - liveness (unchanged)
+http://127.0.0.1:8000/status   - readiness + live config/cache snapshot
+```
+
+This is a local presentation layer only - it does not change the
+dense-index status: as of Task 4.A the live dense route serves the
+10,487,096-row Qwen3 production index (`DENSE_RETRIEVER_MODE=production`,
+the default; `dev` is an explicit opt-in); see
+`project_plan/PROJECT_EXECUTION.md`'s Task 4.11 readiness gate).
+
+### Exact retrieval cache smoke (Task 4.13)
+
+The live dense route uses an exact-query, process-local LRU+TTL retrieval
+cache around dense retrieval evidence only. It does not cache final
+answers, provider responses, prompts, guard decisions, or structured XBRL
+lookups.
+
+Run the non-protected local retrieval-only smoke/benchmark:
+
+```bash
+python scripts/smoke_retrieval_cache.py
+```
+
+The script loads the current local dev dense index, compares
+cache-disabled vs cache-enabled retrieval output for exact equality, and
+writes measured latency/counter output to:
+
+```text
+results/phase_4_13_retrieval_cache_smoke.json
+```
+
+No generation provider, paid API, AWS, or protected TEST access is used.
+
+### Retrieval security smoke (Task 4.14)
+
+The dense route now runs a deterministic retrieval-security guard after
+retrieval/cache and before context construction. The local smoke uses
+synthetic fixtures only and measures scanner overhead without model,
+index, generation-provider, AWS, or protected TEST access:
+
+```bash
+python scripts/smoke_retrieval_security.py
+```
+
+The script writes:
+
+```text
+results/phase_4_14_retrieval_security_smoke.json
+```
+
+It checks high-confidence poison blocking, malicious-context acceptance,
+missing-provenance blocking, clean quoted-example retention, false
+positive rate, duplicate collapse, and synthetic guard latency.
+
+### Prompt-caching benchmark (Task 4.14a)
+
+Compares the legacy prompt layout against the cache-friendly layout through
+the real generation path (guards + provider adapter) using synthetic SEC
+evidence. Default is the free local Ollama server; OpenRouter is refused
+unless `--allow-paid` is passed (billed calls).
+
+```bash
+python scripts/benchmark_prompt_cache.py --provider ollama --model gpt-oss:20b --repeats 3
+```
+
+Writes `results/phase_4_14a_prompt_cache_benchmark.json` and prints a
+markdown table. Metrics a provider does not report are `unavailable`. See
+`project_plan/PHASE4_PROMPT_CACHING.md`. Enable the feature itself with
+`PROMPT_CACHE_ENABLED=true`.
+
+### Production dense retriever smoke (Task 4.A)
+
+Loads the real Qwen3 encoder and the real 10,487,096-row index, times scoped
+and unscoped retrieval, then does one `/query` + `/status` round trip with a
+fake provider (no OpenRouter, no AWS, no protected TEST). The first unscoped
+queries take about 30 s each (exact scan over 10.5M vectors).
+
+```bash
+python scripts/smoke_production_dense.py
+```
+
+Writes `results/phase_4a_production_dense_smoke.json`. Select the dense
+retriever with `DENSE_RETRIEVER_MODE=production` (default) or `dev`
+(Phase 1 BGE index, explicit opt-in). Production mode fails closed and never
+falls back to dev. See `project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md`.

@@ -1,0 +1,43 @@
+{
+  "fixtures": {
+    "cases": 12,
+    "directory": "tests\\fixtures\\rag_poisoning"
+  },
+  "latency": {
+    "baseline_copy_p50_ms": 0.0001,
+    "baseline_copy_p95_ms": 0.0002,
+    "guarded_p50_ms": 0.1458,
+    "guarded_p95_ms": 0.1554,
+    "iterations": 500,
+    "overhead_p50_ms": 0.1457,
+    "overhead_p95_ms": 0.1552
+  },
+  "metrics": {
+    "cases": 12,
+    "clean_candidate_retention_rate": 1.0,
+    "clean_cases": 2,
+    "false_positive_rate": 0.0,
+    "high_confidence_poison_blocked_rate": 1.0,
+    "malicious_context_acceptance_rate": 0.0,
+    "missing_provenance_blocked_rate": 1.0,
+    "poison_cases": 10,
+    "poison_detection_recall": 1.0,
+    "poison_retrieval_acceptance_rate": 0.0
+  },
+  "protected_test_runs_used": "0/3",
+  "status": "PASS",
+  "task": "4.14",
+  "telemetry_after_fixture_eval": {
+    "all_context_blocked_count": 10,
+    "approved_candidates": 2,
+    "blocked_candidates": 12,
+    "candidate_count": 14,
+    "duplicate_candidates_collapsed": 2,
+    "invalid_source_count": 0,
+    "missing_provenance_count": 1,
+    "obfuscation_signal_count": 3,
+    "poison_signal_count": 12,
+    "scans": 12,
+    "suspicious_candidates": 0
+  }
+}

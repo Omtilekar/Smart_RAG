@@ -8,6 +8,14 @@ accepted user input -> routing/retrieval/structured lookup/tree navigation
 OUTCOME -> generation
 ```
 
+**Task 4.14 update (2026-09-18):** this document describes the narrower
+Task 4.8 provenance/delimiter boundary as originally implemented. The
+current dense runtime now also has an upstream retrieval-security layer
+(`src/security/retrieval_guard.py`) that filters high-confidence
+poisoned, suspicious, duplicate, and provenance-invalid dense candidates
+before this context guard and before prompt construction. See
+`project_plan/PHASE4_RETRIEVAL_SECURITY.md`.
+
 Separate from Task 4.7 (answers "was the input acceptable," before
 routing) and from a later output-guardrail task (answers "is the
 generated answer safe," after generation). This task answers only:

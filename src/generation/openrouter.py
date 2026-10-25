@@ -36,6 +36,10 @@ import requests
 
 from src.logging_utils import get_logger, log_event
 
+from .prompt_cache import (
+    DISABLED, PromptCacheConfig, PromptCacheMetrics, build_messages,
+    extract_openrouter_cache_usage, prefix_fingerprints, resolve_strategy,
+)
 from .provider import GenerationError, GenerationRequest, ProviderResponse
 
 log = get_logger(__name__)
@@ -64,10 +68,14 @@ class OpenRouterProvider:
     stored on the instance beyond the single request, never included in
     __repr__, never logged."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, prompt_cache: PromptCacheConfig = DISABLED,
+                 metrics: PromptCacheMetrics | None = None):
         if not model or not model.strip():
             raise ValueError("model must be a non-empty OpenRouter model ID")
         self._model = model
+        self._cache_strategy = resolve_strategy("openrouter", model, prompt_cache)
+        self._prompt_cache = prompt_cache
+        self.metrics = metrics if (metrics is not None and prompt_cache.metrics_enabled) else None
 
     def __repr__(self) -> str:
         return f"OpenRouterProvider(model={self._model!r})"
@@ -79,10 +87,7 @@ class OpenRouterProvider:
 
         payload = {
             "model": self._model,
-            "messages": [
-                {"role": "system", "content": request.system_prompt},
-                {"role": "user", "content": request.user_prompt},
-            ],
+            "messages": build_messages(request, self._cache_strategy),
             "temperature": request.temperature,
             "stream": False,
         }
@@ -117,6 +122,8 @@ class OpenRouterProvider:
             raise GenerationError("OpenRouter response missing choices[0].message.content") from None
 
         usage = data.get("usage") or {}
+        cache_usage = extract_openrouter_cache_usage(usage)
+        system_fp, prefix_fp = prefix_fingerprints(request)
 
         # Task 4.6 - "track token usage and request latency": one
         # structured log line per call, never the prompt/answer text or
@@ -127,7 +134,15 @@ class OpenRouterProvider:
             provider="openrouter", requested_model=self._model, response_model=data.get("model"),
             prompt_tokens=usage.get("prompt_tokens"), completion_tokens=usage.get("completion_tokens"),
             total_tokens=usage.get("total_tokens"), latency_ms=round(latency_ms, 1),
+            prompt_cache_enabled=self._prompt_cache.enabled, cache_strategy=self._cache_strategy,
+            cached_tokens=cache_usage.cached_tokens, cache_write_tokens=cache_usage.cache_write_tokens,
+            cost_usd=cache_usage.cost_usd, system_prompt_fp=system_fp, evidence_prefix_fp=prefix_fp,
         )
+        if self.metrics is not None:
+            self.metrics.record(
+                strategy=self._cache_strategy, input_tokens=usage.get("prompt_tokens"),
+                output_tokens=usage.get("completion_tokens"), usage=cache_usage,
+            )
 
         return ProviderResponse(
             text=text,
@@ -140,4 +155,8 @@ class OpenRouterProvider:
             total_tokens=usage.get("total_tokens"),
             temperature_requested=request.temperature,
             latency_ms=latency_ms,
+            cache_strategy=self._cache_strategy,
+            cached_prompt_tokens=cache_usage.cached_tokens,
+            cache_write_tokens=cache_usage.cache_write_tokens,
+            cost_usd=cache_usage.cost_usd,
         )

@@ -8,7 +8,9 @@ from src.config import ConfigError, get_settings
 _ENV_VARS = (
     "APP_ENV", "LOG_LEVEL", "DEVICE", "EMBEDDING_MODEL",
     "GENERATION_PROVIDER", "GENERATION_MODEL", "STORAGE_ROOT", "SEC_USER_AGENT",
-    "INPUT_GUARD_MAX_LENGTH",
+    "INPUT_GUARD_MAX_LENGTH", "RETRIEVAL_CACHE_ENABLED",
+    "RETRIEVAL_CACHE_MAX_ENTRIES", "RETRIEVAL_CACHE_TTL_SECONDS",
+    "RETRIEVAL_CACHE_SCHEMA_VERSION",
 )
 
 
@@ -31,6 +33,10 @@ def test_defaults_load_without_any_env_override(monkeypatch):
     assert s.generation_model is None
     assert s.sec_user_agent is None
     assert s.input_guard_max_length == 2000
+    assert s.retrieval_cache_enabled is True
+    assert s.retrieval_cache_max_entries == 512
+    assert s.retrieval_cache_ttl_seconds == 900
+    assert s.retrieval_cache_schema_version == "v1"
 
 
 def test_storage_root_default_is_repo_relative(monkeypatch):
@@ -69,6 +75,11 @@ def test_env_overrides_are_respected(monkeypatch, tmp_path):
         ("INPUT_GUARD_MAX_LENGTH", "not-a-number"),
         ("INPUT_GUARD_MAX_LENGTH", "0"),
         ("INPUT_GUARD_MAX_LENGTH", "-5"),
+        ("RETRIEVAL_CACHE_ENABLED", "sometimes"),
+        ("RETRIEVAL_CACHE_MAX_ENTRIES", "not-a-number"),
+        ("RETRIEVAL_CACHE_MAX_ENTRIES", "0"),
+        ("RETRIEVAL_CACHE_TTL_SECONDS", "-5"),
+        ("RETRIEVAL_CACHE_SCHEMA_VERSION", ""),
     ],
 )
 def test_invalid_values_raise_config_error(monkeypatch, var, bad_value):
@@ -83,6 +94,19 @@ def test_input_guard_max_length_env_override(monkeypatch):
     get_settings.cache_clear()
     s = get_settings()
     assert s.input_guard_max_length == 500
+
+
+def test_retrieval_cache_env_overrides(monkeypatch):
+    monkeypatch.setenv("RETRIEVAL_CACHE_ENABLED", "false")
+    monkeypatch.setenv("RETRIEVAL_CACHE_MAX_ENTRIES", "17")
+    monkeypatch.setenv("RETRIEVAL_CACHE_TTL_SECONDS", "45")
+    monkeypatch.setenv("RETRIEVAL_CACHE_SCHEMA_VERSION", "v2")
+    get_settings.cache_clear()
+    s = get_settings()
+    assert s.retrieval_cache_enabled is False
+    assert s.retrieval_cache_max_entries == 17
+    assert s.retrieval_cache_ttl_seconds == 45
+    assert s.retrieval_cache_schema_version == "v2"
 
 
 def test_get_settings_is_cached_until_cleared(monkeypatch):

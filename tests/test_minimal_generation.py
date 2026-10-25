@@ -308,39 +308,29 @@ ADVERSARIAL_FIXTURES = [
 
 
 @pytest.mark.parametrize("adversarial_text", ADVERSARIAL_FIXTURES)
-def test_planted_adversarial_evidence_does_not_change_system_prompt(adversarial_text):
-    """"Test that retrieved text cannot override system instructions"
-    (PROJECT_EXECUTION.md Task 4.8). No real LLM call is made or needed -
-    this is a structural proof: the retrieved (untrusted) text, however
-    instruction-shaped, can only ever land inside the delimited evidence
-    block of `user_prompt`. `system_prompt` is a separate, fixed field on
-    `GenerationRequest`, built from the frozen SYSTEM_PROMPT constant
-    only - retrieved text is never concatenated into it, so it cannot
-    "override" anything at the request-construction level, regardless of
-    what an LLM does with a request afterward (out of this task's scope -
-    no LLM call is made)."""
+def test_planted_adversarial_evidence_is_blocked_before_provider(adversarial_text):
+    """Task 4.14 strengthens Task 4.8's delimiter defense: direct
+    instruction-shaped retrieved text is filtered before prompt
+    construction, so no provider call is made."""
     poisoned = [_adversarial_result(adversarial_text)]
     provider = FakeProvider()
     gen = MinimalGenerator(FakeRetriever(results=poisoned), provider)
-    gen.answer("What was revenue?")
+    result = gen.answer("What was revenue?")
 
-    request = provider.calls[0]
-    assert request.system_prompt == SYSTEM_PROMPT
-    assert adversarial_text not in request.system_prompt
+    assert provider.calls == []
+    assert result.answer == CONTEXT_GUARD_ABSTENTION_MESSAGE
+    assert result.citations == []
 
 
 @pytest.mark.parametrize("adversarial_text", ADVERSARIAL_FIXTURES)
-def test_planted_adversarial_evidence_stays_inside_delimited_block(adversarial_text):
+def test_planted_adversarial_evidence_never_enters_user_prompt(adversarial_text):
     poisoned = [_adversarial_result(adversarial_text)]
     provider = FakeProvider()
     gen = MinimalGenerator(FakeRetriever(results=poisoned), provider)
-    gen.answer("What was revenue?")
+    result = gen.answer("What was revenue?")
 
-    prompt = provider.calls[0].user_prompt
-    begin_idx = prompt.index(EVIDENCE_BEGIN_MARKER)
-    last_end_idx = prompt.rindex(EVIDENCE_END_MARKER)
-    text_idx = prompt.index(adversarial_text)
-    assert begin_idx < text_idx < last_end_idx + len(EVIDENCE_END_MARKER)
+    assert provider.calls == []
+    assert result.answer == CONTEXT_GUARD_ABSTENTION_MESSAGE
 
 
 def test_legitimate_financial_text_with_similar_vocabulary_not_broadly_rejected():

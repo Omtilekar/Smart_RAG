@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from src.guards.context import check_dense_context, format_evidence_block
 from src.guards.output import check_dense_output
+from src.security import RetrievalSecurityGuard
 
 from .citations import parse_citations
 from .provider import GenerationProvider, GenerationRequest, ProviderResponse
@@ -69,6 +70,26 @@ SYSTEM_PROMPT = (
 )
 
 
+def build_user_prompt(question: str, context: str, *, cache_friendly: bool) -> tuple[str, int]:
+    """(user_prompt, cacheable_prefix_len).
+
+    Legacy layout (default, byte-identical to before Task 4.14a): question
+    first, evidence after - nothing after the first character is reusable
+    across different questions.
+
+    Cache-friendly layout: all reusable text first - the (stable) system
+    prompt, then the retrieved evidence block - and the question LAST, so
+    two questions over the same evidence share the longest possible
+    prefix. The evidence stays in the user message, delimited exactly as
+    before, and never moves into the system role. The returned prefix
+    length marks where the reusable evidence ends; it never changes the
+    text."""
+    if not cache_friendly:
+        return f"Question: {question}\n\nContext:\n{context}", 0
+    prefix = f"Context:\n{context}\n\n"
+    return f"{prefix}Question: {question}", len(prefix)
+
+
 @dataclass(frozen=True)
 class GenerationResult:
     """Public Phase 1 answer contract - deliberately minimal. Never
@@ -119,9 +140,20 @@ class MinimalGenerator:
     coupled to generation or retrieval; retrieval always uses k=5
     (RETRIEVAL_K) and the vector-only path - no reranking, no routing."""
 
-    def __init__(self, retriever, provider: GenerationProvider):
+    def __init__(self, retriever, provider: GenerationProvider, retrieval_security_guard: RetrievalSecurityGuard | None = None,
+                 *, cache_friendly_prompt: bool = False):
         self._retriever = retriever
         self._provider = provider
+        self._cache_friendly_prompt = cache_friendly_prompt
+        self._retrieval_security_guard = retrieval_security_guard or RetrievalSecurityGuard()
+
+    @property
+    def provider(self) -> GenerationProvider:
+        return self._provider
+
+    @property
+    def retrieval_security_guard(self) -> RetrievalSecurityGuard:
+        return self._retrieval_security_guard
 
     def answer(self, question: str) -> GenerationResult:
         result, _provider_response, _retrieval_ms = self._answer_with_diagnostics(question)
@@ -140,6 +172,17 @@ class MinimalGenerator:
         retrieved = self._retriever.retrieve(question, k=RETRIEVAL_K)
         retrieval_ms = (time.perf_counter() - t0) * 1000
 
+        # Task 4.14 - retrieval security: cache hits and cache misses both
+        # pass through this guard because it sits after retriever.retrieve()
+        # and before context construction. The cache stores raw retrieval
+        # evidence only; approved/suspicious/blocked decisions are never
+        # cached as a forever approval.
+        retrieval_security = self._retrieval_security_guard.filter(query=question, candidates=retrieved)
+        retrieved = retrieval_security.approved_candidates
+        if retrieval_security.summary.all_context_blocked:
+            result = GenerationResult(answer=CONTEXT_GUARD_ABSTENTION_MESSAGE, citations=[])
+            return result, None, retrieval_ms
+
         # Task 4.8 - the context guard: AFTER evidence acquisition, BEFORE
         # provider.generate(...). Never expected to reject with the real
         # frozen index (chunk_id/document_id/text are NOT NULL there,
@@ -150,8 +193,16 @@ class MinimalGenerator:
             result = GenerationResult(answer=CONTEXT_GUARD_ABSTENTION_MESSAGE, citations=[])
             return result, None, retrieval_ms
 
-        user_prompt = f"Question: {question}\n\nContext:\n{_format_context(retrieved)}"
-        request = GenerationRequest(system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt, temperature=0.0)
+        # Task 4.14a - runs strictly AFTER the retrieval-security and
+        # context guards, so only guard-approved evidence is ever laid out
+        # as a cacheable prefix.
+        user_prompt, prefix_len = build_user_prompt(
+            question, _format_context(retrieved), cache_friendly=self._cache_friendly_prompt,
+        )
+        request = GenerationRequest(
+            system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt, temperature=0.0,
+            cacheable_prefix_len=prefix_len,
+        )
         provider_response = self._provider.generate(request)
 
         citations = parse_citations(provider_response.text)

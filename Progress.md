@@ -13097,3 +13097,495 @@ DECISION).**
 dense-serving integration (not yet an assigned roadmap task number - see
 `project_plan/PROJECT_EXECUTION.md`'s Task 4.11 readiness Gate A). AWS
 deployment does not resume until Gates A-F pass.
+
+## 2026-09-17 — Task 4.12: Local RAG Web UI and Project Showcase
+
+Built a zero-build (no Node/npm) static project showcase and live query
+UI (`src/api/static/`: `index.html`, `styles.css`, `app.js`,
+`project-data.js`), mounted onto the existing Task 4.10 FastAPI service
+at `/` - a presentation/integration task, not a retrieval/model change.
+`/health`, `/status`, `/query`, `/docs`, `/openapi.json` are all
+byte-for-byte unchanged in contract; the static mount is registered
+last in `src/api/app.py`, after every API route, so Starlette's
+first-match routing can never let it shadow one (proven directly:
+`test_static_mount_does_not_shadow_health_status_query_or_docs`).
+
+**Design direction** (UI UX Pro Max plugin, `--design-system` query
+"AI research financial data engineering showcase dashboard"):
+Minimalism & Swiss Style, dark-first with a readable light variant
+(`prefers-color-scheme` + a manual toggle, both tested live), system
+font stack only (no CDN font import - the plugin's own Fira Code/Fira
+Sans suggestion was adapted to `ui-monospace`/`system-ui` equivalents
+specifically because this task forbids CDN dependencies). Chart
+guidance (`--domain chart`) confirmed bar charts + an adjacent visible
+data table as the accessible pattern for the experiment comparisons -
+implemented as plain CSS/SVG, no charting library.
+
+**Truthfulness pass - a real correction found and fixed before
+shipping**: an initial data-gathering pass (via a research subagent)
+assumed the live dense route was "the Phase 3-winning config at
+development scale." Direct verification against
+`src/api/dependencies.py`'s own constants and
+`results/phase_1_3_chunking_summary.json` showed this was wrong - the
+live route is actually the **original pre-ablation Task 1.3 baseline**
+(512-token window, `BAAI/bge-small-en-v1.5`), not the Phase 3 winner
+(256-token window, `Qwen/Qwen3-Embedding-0.6B`). The "Live runtime vs.
+production artifact" section states this precisely, not approximately.
+Separately, two chunking/embedding-ablation chart values were caught as
+self-fabricated placeholder numbers during review and replaced with the
+exact per-candidate metrics from `results/phase_3_2_chunking_ablation.json`
+and `results/phase_3_3_embedding_model_benchmark.json` - every number
+now shown was independently re-verified against its cited source file
+before shipping, including the finding that candidate B1 scored higher
+on `doc_recall@50` alone than the selected C0 config but was a practical
+tie once MRR/nDCG@10 confidence intervals were checked (shown honestly,
+not hidden).
+
+**Content sources**: `results/phase_*.json` (Phase 1-4 frozen summaries),
+`DATA_READINESS_REPORT.md`, `project_plan/PHASE3_EXIT_AUDIT.md`,
+`project_plan/PROJECT_EXECUTION.md`, `src/api/schemas.py`,
+`src/api/dependencies.py`. Every showcase metric carries a
+`source_path`/`source_key` pair in `project-data.js`; live values
+(readiness, generation provider/model, dense index row count) are
+fetched from `/status` at page load instead of being duplicated
+statically.
+
+**Query UI**: wired to the real `POST /query` contract (no guessed
+fields), Enter-to-send/Shift+Enter-for-newline, 4 example prompts that
+fill but never auto-submit, loading/error/empty states, duplicate-submit
+guard, copy-answer, clear/reset, and a provider note shown only when
+`/status` reports a configured external generation provider. A real bug
+was found and fixed during manual browser testing: the first render of
+a result cleared the entire result panel via `textContent = ""`,
+silently deleting the static "Copy answer" button on every subsequent
+answer - fixed by rendering into a dedicated inner `#result-content`
+node instead of the whole panel.
+
+**Manual smoke-tested live** (Docker-free, real `uvicorn` process, real
+dependencies, Chrome automation): `/`, `/health`, `/status`, `/docs`,
+`/openapi.json`, all static assets, theme toggle (light/dark, verified
+by screenshot), and one real non-paid `POST /query` end-to-end
+(`structured_xbrl` route, a real fact from `data/xbrl.duckdb` - zero
+OpenRouter calls). No JS console errors. Mobile/tablet breakpoints were
+authored deliberately (media queries at 900px/860px, `clamp()`
+typography, `auto-fit`/`minmax` grids) but could not be screenshotted at
+390px/1024px - the available browser-resize tool did not shrink the
+window in this environment after two attempts; verified by code review
+instead of a live screenshot.
+
+### Tests
+
+- `tests/test_static_ui.py` (new, 18 tests): static assets exist and
+  serve, `/docs`/`/openapi.json` unchanged (same 3-path set), `/health`/
+  `/status`/`/query` contracts unchanged with mocked dependencies, the
+  static mount never shadows an API path, no secrets/local paths in any
+  static file, no same-origin-violating absolute URLs, no `.innerHTML`
+  usage.
+- `scripts/dev.py test --portable`: **2,241 passed**, 38 deselected (+18
+  new).
+- `python -m pytest -m "not generation_api"`: **2,278 passed**, 1
+  deselected, 302.67s (+18 new).
+
+### Regression gates
+
+No retrieval/routing/embedding/generation/guardrail/evaluation code was
+touched. `src/api/app.py` gained only a `STATIC_DIR` constant and one
+`app.mount(...)` call at the very end of `create_app()`, after every
+existing route registration - `/health`/`/status`/`/query` request/
+response bodies are identical to Task 4.10's. CRAG threshold, dense-only
+selection, and every frozen Phase 3 decision remain untouched. **Paid
+generation API calls during Task 4.12: 0** (only the non-paid
+`structured_xbrl` route was exercised, both in tests and in the manual
+browser smoke test). **AWS actions: 0.** Protected TEST: unopened,
+**0/3** official runs used.
+
+### Files created
+
+```text
+src/api/static/index.html
+src/api/static/styles.css
+src/api/static/app.js
+src/api/static/project-data.js
+tests/test_static_ui.py
+```
+
+### Files modified
+
+```text
+src/api/app.py                        (STATIC_DIR + one app.mount call)
+project_plan/DEVELOPER_COMMANDS.md    (local showcase launch/URLs section)
+project_plan/REPOSITORY_STRUCTURE.md  (api/ package table row)
+```
+
+### Phase Status
+
+```text
+Phase 4 — Make It Real                        — IN PROGRESS
+  4.1 Full-corpus normalization               — COMPLETE
+  4.2 Full-corpus chunking                    — COMPLETE
+  4.3 Full-corpus embedding                   — COMPLETE
+  4.4 Full-corpus vector index                — COMPLETE
+  4.5 XBRL serving representation             — COMPLETE
+  4.6 Generation production interface         — COMPLETE
+  4.7 Input guardrails                        — COMPLETE
+  4.8 Context guardrails                      — COMPLETE
+  4.9 Output guardrails                       — COMPLETE
+  4.10 FastAPI service                        — COMPLETE
+  4.11 Deployment                             — PARTIAL / DEFERRED BY USER DECISION
+  4.12 Local RAG web UI and project showcase  — COMPLETE
+```
+
+**Task 4.12 — Local RAG Web UI and Project Showcase — COMPLETE.**
+
+This is a local presentation layer only - it does not change the
+production dense-integration gap. AWS deployment remains deferred until
+`project_plan/PROJECT_EXECUTION.md`'s Task 4.11 readiness Gates A-F
+pass; the next active engineering priority remains full-corpus
+production dense-serving integration (Gate A), not yet an assigned
+roadmap task number.
+
+## 2026-09-18 - Task 4.13: Exact Retrieval Cache
+
+Added a production-oriented exact dense-retrieval cache around the live
+FastAPI dense retriever. This is a serving/runtime optimization only:
+it does not change routing, retrieval ranking, guardrails, citation
+semantics, generation behavior, structured XBRL lookup behavior, frozen
+evaluation results, or protected TEST usage.
+
+**Cache design**: `src/retrieval/cache.py` adds `CachedRetriever` and
+`ExactRetrievalCache`, a process-local, thread-safe, bounded in-memory
+LRU cache with TTL expiration. Cached values are retrieval evidence only
+(ordered `RetrievalResult` objects and their metadata/provenance fields,
+defensively copied on store/read). The cache never stores or returns
+final generated answers, prompts, provider responses, guardrail
+decisions, citation-validation results, embeddings, or vectors.
+
+**Exact identity / invalidation**: cache keys are SHA-256 digests over a
+canonical JSON identity, not raw query strings. The identity includes the
+cache schema version, canonical query (NFC, trim, collapse whitespace
+only), route/retriever kind, `k`, metadata filters, BGE model identity,
+model revision, embedding dimension, chunk config hash, LanceDB table
+name/schema/artifact identity/row count, retrieval algorithm, similarity
+metric, and CRAG-threshold identity (`null` today because CRAG is not
+live-routed). This means the future migration from the current
+`BAAI/bge-small-en-v1.5` 162,357-row dev index to the frozen
+`Qwen/Qwen3-Embedding-0.6B` 10,487,096-row production index cannot reuse
+stale dev-index cache entries.
+
+**Wiring**: `src/api/dependencies.py` now constructs one
+`BaselineRetriever`, one `ExactRetrievalCache`, and wraps the retriever
+with `CachedRetriever` only when `RETRIEVAL_CACHE_ENABLED=true`.
+`MinimalGenerator` still receives a normal `.retrieve(question, k)`
+object, so a cache hit skips query embedding + LanceDB search while the
+existing downstream context guardrails, generation, citation parsing,
+and output guardrails still run on every request. The deterministic XBRL
+route is unchanged and not cached in this task.
+
+**Configuration**: new typed settings in `src/config.py`:
+
+```text
+RETRIEVAL_CACHE_ENABLED=true
+RETRIEVAL_CACHE_MAX_ENTRIES=512
+RETRIEVAL_CACHE_TTL_SECONDS=900
+RETRIEVAL_CACHE_SCHEMA_VERSION=v1
+```
+
+`.env.example` was updated with the same non-secret defaults/placeholders.
+
+**Status/observability**: `GET /status` additively exposes
+`retrieval_cache` aggregate stats (`enabled`, backend, entries,
+max_entries, TTL, hits, misses, evictions, expirations, stores,
+bypasses, hit rate). It does not expose raw query text, cached SEC text,
+vectors, prompts, provider responses, or final answers.
+
+**Why exact, not semantic**: semantic caching is deliberately deferred.
+It would return evidence for merely similar queries and introduce a new
+threshold/quality/safety decision that needs its own evaluation task.
+Task 4.13 keeps caching deterministic and artifact-invalidation-safe.
+
+**Local smoke / correctness gate**: `scripts/smoke_retrieval_cache.py`
+loads the current local dense dev index and uses only hand-written,
+non-protected retrieval-only smoke queries. It compares cache-disabled
+retrieval, cold cache-miss retrieval, and warm cache-hit retrieval for
+exact contract equality. Result file:
+`results/phase_4_13_retrieval_cache_smoke.json`.
+
+Measured on this machine:
+
+```text
+dense index rows:        162,357
+cache backend:           memory_lru_ttl
+retrieval equality:      true
+query 1 cold miss:       178.205 ms
+query 1 warm hit:        0.242 ms
+query 1 speedup:         735.778x
+query 2 cold miss:       151.429 ms
+query 2 warm hit:        0.168 ms
+query 2 speedup:         902.978x
+cache stats after smoke: hits=2, misses=2, stores=2, entries=2
+```
+
+**UI/docs**: the local project showcase now shows the cache as live,
+exact-query LRU+TTL, and in-process only. It does not label the cache as
+semantic or shared across workers and still shows the current production
+dense-index integration gap truthfully: live dense route =
+`BAAI/bge-small-en-v1.5` / 162,357 rows; frozen production artifact =
+`Qwen/Qwen3-Embedding-0.6B` / 10,487,096 rows / integration pending.
+
+**Files created**:
+
+```text
+src/retrieval/cache.py
+tests/test_retrieval_cache.py
+tests/test_api_retrieval_cache_integration.py
+scripts/smoke_retrieval_cache.py
+results/phase_4_13_retrieval_cache_smoke.json
+```
+
+**Files modified**:
+
+```text
+.env.example
+src/api/app.py
+src/api/dependencies.py
+src/api/schemas.py
+src/api/static/index.html
+src/api/static/project-data.js
+src/config.py
+tests/test_api_dependencies.py
+tests/test_config.py
+tests/test_static_ui.py
+project_plan/DEVELOPER_COMMANDS.md
+project_plan/PROJECT_EXECUTION.md
+project_plan/PHASE4_FASTAPI_SERVICE.md
+project_plan/REPOSITORY_STRUCTURE.md
+Progress.md
+```
+
+### Tests
+
+Preflight before implementation:
+
+```text
+.\.venv\Scripts\python.exe scripts/dev.py doctor              PASS
+.\.venv\Scripts\python.exe scripts/dev.py test --portable     2262 passed, 38 deselected
+.\.venv\Scripts\python.exe -m pytest -m "not generation_api"  2299 passed, 1 deselected
+```
+
+After implementation:
+
+```text
+.\.venv\Scripts\python.exe scripts/dev.py doctor
+  PASS
+
+.\.venv\Scripts\python.exe -m pytest tests/test_retrieval_cache.py tests/test_api_retrieval_cache_integration.py
+  16 passed, 1 warning
+
+.\.venv\Scripts\python.exe scripts/dev.py test --portable
+  2287 passed, 38 deselected, 1 warning
+
+.\.venv\Scripts\python.exe -m pytest -m "not generation_api"
+  2324 passed, 1 deselected, 1 warning
+
+.\.venv\Scripts\python.exe scripts/smoke_retrieval_cache.py
+  PASS, retrieval_contract_equal=true
+```
+
+One transient portable failure occurred during implementation because
+`src/api/app.py` used `snapshot.get("retrieval_cache")`; the existing AST
+static-safety test treats arbitrary `.get(...)` calls as network-shaped
+unless they are `app.get`/`state.get`. Fixed by using explicit key
+membership instead. Re-run passed.
+
+**Safety**: OpenRouter/generation API calls: 0. AWS access: 0. Protected
+TEST remains unopened, **0/3** official runs used. No full-corpus chunks,
+embeddings, or indexes were rebuilt.
+
+## 2026-10-14 - Task 4.14a: LLM Prompt-Prefix Caching
+
+Opt-in (`PROMPT_CACHE_ENABLED=false` by default) provider-aware prompt-prefix
+caching. Full account: `project_plan/PHASE4_PROMPT_CACHING.md`.
+
+- New `src/generation/prompt_cache.py`; `GenerationRequest.cacheable_prefix_len`
+  and cache fields on `ProviderResponse` (all defaulted, backward compatible);
+  OpenRouter/Ollama adapters take an optional `PromptCacheConfig`.
+- Cache-friendly layout (system -> evidence -> question) built after the
+  retrieval-security and context guards; legacy layout unchanged by default.
+- Measured locally (Ollama gpt-oss:20b, 3 repeats): same-evidence/new-question
+  prompt processing 3.7 s -> 0.22 s; exact repeats already hit in both
+  layouts; other company/period/context correctly miss.
+- Fixed `log_event()` redacting `*_tokens` usage fields.
+- Not verified: live OpenRouter cache hits (no paid call authorized);
+  answer quality of the evidence-before-question layout.
+- Tests: `tests/test_prompt_cache.py` 45 passed; full suite passed.
+
+**Safety**: OpenRouter/generation API calls: 0. AWS access: 0. Protected
+TEST remains unopened, **0/3** official runs used.
+
+### Phase Status
+
+```text
+Phase 4 - Make It Real                        - IN PROGRESS
+  4.1 Full-corpus normalization               - COMPLETE
+  4.2 Full-corpus chunking                    - COMPLETE
+  4.3 Full-corpus embedding                   - COMPLETE
+  4.4 Full-corpus vector index                - COMPLETE
+  4.5 XBRL serving representation             - COMPLETE
+  4.6 Generation production interface         - COMPLETE
+  4.7 Input guardrails                        - COMPLETE
+  4.8 Context guardrails                      - COMPLETE
+  4.9 Output guardrails                       - COMPLETE
+  4.10 FastAPI service                        - COMPLETE
+  4.11 Deployment                             - PARTIAL / DEFERRED BY USER DECISION
+  4.12 Local RAG web UI and project showcase  - COMPLETE
+  4.13 Exact retrieval cache                  - COMPLETE
+```
+
+**Task 4.13 - Exact Retrieval Cache - COMPLETE.**
+
+Next active engineering priority remains full-corpus production
+dense-serving integration (Gate A): build the production-compatible
+retriever/adapter for the frozen 10,487,096-row Qwen index, then rerun
+the local readiness gates before resuming AWS deployment.
+
+## 2026-10-25 - Task 4.A: Production Dense Retriever Integration (Gate A)
+
+Full account: `project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md`.
+
+```text
+BEFORE  live dense route: BAAI/bge-small-en-v1.5, 384-d, 162,357-row dev LanceDB, BaselineRetriever
+AFTER   live dense route: Qwen/Qwen3-Embedding-0.6B, 1024-d, 10,487,096-row production LanceDB,
+        ProductionDenseRetriever (revision 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3)
+```
+
+- New `src/retrieval/production.py`: explicit adapter from the 24-column `chunk_uid`
+  production schema to a result type with the attributes downstream code reads.
+  Canonical identity `chunk_uid`; citation id derived as `<document_id>::<chunk_local_id>`;
+  NULL `company` becomes `CIK <cik>`. Accepts `cik` / `fiscal_year` pre-filters (reuses
+  `build_predicate` and `exact_cosine_search_filtered`); the live router does not pass them yet.
+- `src/api/dependencies.py` + `src/config.py`: `DENSE_RETRIEVER_MODE` (`production` default,
+  `dev` explicit opt-in). Production loads Qwen3 only, opens one LanceDB handle, and validates
+  index identity, embedding identity, row count, 24 columns, 1024-d vector, no ANN, BTree
+  indexes, and a self-retrieval smoke. Any failure raises `DependencyInitializationError`;
+  there is no dev fallback.
+- Retrieval cache identity for production differs from dev in every identity field; a
+  regression test proves a cached dev result is never served after the switch.
+- Retrieval-security, context and output guards are unchanged and still in path (tests added).
+- `/status` reports `dense_retriever_mode=production`, Qwen3 model and revision, 1024-d,
+  `dense_index_row_count=10487096`, `artifact_status=production`; no paths or vectors.
+- UI (`src/api/static/`) now shows the production index as live and the BGE index as historical.
+
+Real local smoke (`scripts/smoke_production_dense.py`, `results/phase_4a_production_dense_smoke.json`):
+
+```text
+index open 1.4 s | table validation 0.014 s | startup smoke 0.15 s | Qwen3 load 9.8 s
+app startup 27.8 s | query embedding warm 45.5 ms | RSS after startup ~4.7 GB | GPU ~2.4 GB
+company+year scoped search: 61.5 ms first / 77.4 ms warm      company-only: 81.9 ms
+UNSCOPED search: 33.0 s and 33.3 s   (POST /query, fake provider: 32.6 s)
+```
+
+**Key finding:** unscoped exact search over 10.5M x 1024 vectors takes about 33 s (matches
+Task 4.4's own 33.6 s diagnostic). Scoped by company and year it is about 500x faster. Because
+the live router does not pass filters yet, every live dense question pays the full scan.
+Wiring the selected metadata pre-filter is now the top priority. CRAG stays disabled
+(the 0.5531 threshold was calibrated on the 323,971-chunk dev corpus; not verified at 10.5M).
+
+Known follow-ups: `Dockerfile` / `.dockerignore` still describe the dev index (deployment is
+deferred); `.env.example` was not updated (file access was blocked this session) and needs
+`DENSE_RETRIEVER_MODE`; prompts show `CIK <n>` because company names are NULL in the artifact.
+
+### Tests
+
+```text
+.\.venv\Scripts\python.exe scripts/dev.py doctor            PASS
+.\.venv\Scripts\python.exe scripts/dev.py test --portable   2384 passed, 38 deselected
+.\.venv\Scripts\python.exe -m pytest -m "not generation_api" 2418 passed, 1 skipped, 2 failed
+.\.venv\Scripts\python.exe -m pytest tests/test_production_retriever.py   36 passed
+```
+
+Preflight baseline before changes: portable 2348 passed, 38 deselected. The 2 failures
+(`test_phase3_trusted_baseline.py::...test_real_dev_scope_is_nonempty_and_frozen_shape`,
+`test_primary_html_parser.py::test_real_primary_document_structural_parsing`) are
+`ImportError: DLL load failed while importing testing: An Application Control policy has
+blocked this file` (pandas) - an environment block unrelated to this change; a third test hit
+the same block on one run and passed on rerun.
+
+**Safety**: OpenRouter/generation API calls: 0. AWS access: 0. Protected TEST remains
+unopened, **0/3** official runs used. No chunks, embeddings or indexes were rebuilt.
+
+### Phase Status
+
+```text
+Phase 4 - Make It Real                        - IN PROGRESS
+  4.1 - 4.10                                  - COMPLETE
+  4.11 Deployment                             - PARTIAL / DEFERRED BY USER DECISION
+  4.12 Local RAG web UI and project showcase  - COMPLETE
+  4.13 Exact retrieval cache                  - COMPLETE
+  4.14 Retrieval security                     - COMPLETE
+  4.14a Prompt-prefix caching                 - COMPLETE
+  4.A  Production dense retriever (Gate A)    - COMPLETE
+```
+
+Next active engineering priority: Gate B - route company/year filters into the production
+retriever (removes the ~33 s unscoped scan), then re-run the local readiness gates.
+
+## 2026-10-25 - Task 4.A1: Group 2 Release Prep (commit + push; Archify PENDING)
+
+Finalizes the completed Group 2 / Gate A work before any Group 3 work. Group 2 status
+remains **COMPLETE**.
+
+**Archify architecture refresh: PENDING - Archify unavailable in this Claude Code
+environment.** Only an install-state record exists under
+`AppData\Local\archify-skill` (no skill or CLI is callable from this session, and it is not
+in the skill list), so no Archify output was generated, modified, staged or deleted. The
+existing `.archify/` files (2026-10-14, pre-Task-4.A) were left exactly as they are and are
+not part of this commit. The refreshed diagram must be produced where Archify runs.
+
+Verified from code/runtime (not from docs): the live dense route is
+`ProductionDenseRetriever`, `Qwen/Qwen3-Embedding-0.6B` revision
+`97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`, 1024-d, 10,487,096 rows, production default,
+no BGE fallback. A real local service in production mode returned `/health` 200, `/docs`
+200, `/status` ready with `dense_retriever_mode=production`, `embedding_dimension=1024`,
+`dense_index_row_count=10487096`, `artifact_status=production`; the static UI, `/architecture`
+and `/architecture-diagram.html` served 200. No `/query` was sent (no provider call).
+
+Showcase audit (`src/api/static/`): live model, 1024-d, row count, legacy-BGE status
+(historical / explicit dev opt-in), CRAG not live, reranking rejected, tree navigation not
+live-routed and the ~33 s unscoped-search limitation were already consistent. Corrected one
+stale code comment in `project-data.js` that still said the service builds a
+`BaselineRetriever`.
+
+Cleanup: `Dockerfile` header and `project_plan/PHASE4_DEPLOYMENT.md` no longer claim the
+container serves the dev index by default; they state that the image cannot serve the
+production mode (no production index, no Qwen3 model baked) and that packaging the roughly
+47 GiB artifact is a deferred design decision (Task 4.11). **`.env.example` was NOT
+updated: access to that file was denied in this session.** It still needs
+`DENSE_RETRIEVER_MODE=production` (or `dev`); the setting is documented in
+`project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md` and `DEVELOPER_COMMANDS.md`.
+
+Known limitations (unchanged, still true): unscoped dense search about 33 s (local smoke);
+company+year scoped about 61-77 ms and company-only about 82 ms (local smoke, not an SLA);
+the live router passes no CIK/year filters yet (Gate B); CRAG is not live (the 0.5531
+threshold was calibrated on the development corpus, not the 10.49M-row index); no reranker
+(Phase 3 negative result); production rows have NULL `company`, shown as `CIK <n>`.
+
+### Tests
+
+```text
+scripts/dev.py doctor                         PASS
+scripts/dev.py test --portable                2384 passed, 38 deselected
+pytest tests/test_production_retriever.py     36 passed
+pytest -m "not generation_api"                2419 passed, 2 failed, 1 deselected
+```
+
+The 2 failures persist and are NOT fixed: `tests/test_phase3_trusted_baseline.py::
+TestRealCoverageAuditIntegration::test_real_dev_scope_is_nonempty_and_frozen_shape` and
+`tests/test_primary_html_parser.py::test_real_primary_document_structural_parsing`. Both fail
+with `ImportError: DLL load failed while importing testing: An Application Control policy has
+blocked this file` (pandas) - a Windows environment block, unrelated to this change. The
+suite is not fully green.
+
+**Safety**: OpenRouter calls: 0. AWS access: 0. Protected TEST unopened, **0/3**. No
+chunks/embeddings/indexes rebuilt. Group 3 (`RAG-router`, `experiment/group3-router-bakeoff`)
+not touched and not started. Commit "Finalize production dense retrieval integration"
+(hash is reported in the release summary; a commit cannot contain its own hash).

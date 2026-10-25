@@ -31,6 +31,9 @@ tiny) — new code should consume `get_settings()`; `common.py`'s direct
 | `LOG_LEVEL` | `INFO` | No | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` — consumed by `src/logging_utils.py`, see `project_plan/LOGGING.md` |
 | `SEC_USER_AGENT` | (none) | Only for SEC network access | Public contact identity SEC requires in the User-Agent header — not a secret, but keep your real one out of tracked files |
 | `INPUT_GUARD_MAX_LENGTH` | `2000` | No | Task 4.7 — max characters an input-guardrail-checked question may contain; must be a positive integer (`ConfigError` otherwise). See `project_plan/PHASE4_INPUT_GUARDRAILS.md` |
+| `PROMPT_CACHE_ENABLED` | `false` | No | Task 4.14a — LLM prompt-prefix caching master switch (cache-friendly prompt layout + provider-specific request shaping). See `project_plan/PHASE4_PROMPT_CACHING.md` |
+| `PROMPT_CACHE_PROVIDER_MODE` | `auto` | No | `auto` \| `none` \| `automatic` \| `explicit_breakpoints` — `auto` detects by OpenRouter model id; invalid value -> `ConfigError` |
+| `PROMPT_CACHE_METRICS_ENABLED` | `true` | No | Record aggregate prompt-cache counters exposed through `GET /status` |
 
 Nothing is required just to import `src.config` or call `get_settings()` —
 every field has a safe default or resolves to `None`. A field becomes

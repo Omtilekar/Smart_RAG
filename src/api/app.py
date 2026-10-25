@@ -25,9 +25,11 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.config import get_settings
 from src.generation.provider import GenerationError
@@ -37,6 +39,12 @@ from .schemas import HealthResponse, QueryRequest, QueryResponse, StatusResponse
 from .service import handle_query
 
 log = get_logger(__name__)
+
+# Task 4.12 - local project showcase + query UI, served as static files.
+# Resolved relative to this module's own file, never the process's working
+# directory, so `uvicorn src.api.app:create_app` works from any launch
+# directory. Reading this constant performs no filesystem I/O.
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 def create_app(*, dependencies=None, settings=None, request_id_factory=None) -> FastAPI:
@@ -84,7 +92,17 @@ def create_app(*, dependencies=None, settings=None, request_id_factory=None) -> 
         if deps is None:
             return StatusResponse(ready=False, dependencies={}, config={})
         snapshot = deps.status_snapshot()
-        return StatusResponse(ready=True, dependencies=snapshot["dependencies"], config=snapshot["config"])
+        retrieval_cache = snapshot["retrieval_cache"] if "retrieval_cache" in snapshot else None
+        retrieval_security = snapshot["retrieval_security"] if "retrieval_security" in snapshot else None
+        prompt_cache = snapshot["prompt_cache"] if "prompt_cache" in snapshot else None
+        return StatusResponse(
+            ready=True,
+            dependencies=snapshot["dependencies"],
+            config=snapshot["config"],
+            retrieval_cache=retrieval_cache,
+            retrieval_security=retrieval_security,
+            prompt_cache=prompt_cache,
+        )
 
     @app.post("/query", response_model=QueryResponse)
     async def query(request: QueryRequest) -> QueryResponse:
@@ -123,6 +141,33 @@ def create_app(*, dependencies=None, settings=None, request_id_factory=None) -> 
         # safe to log.
         log_event(log, logging.ERROR, "unexpected_error", exception_type=type(exc).__name__)
         return JSONResponse(status_code=500, content={"status": "error", "detail": "internal server error"})
+
+    # Task 4.12b - client-side-routed pages of the same single-page app.
+    # Each of these paths must return the identical index.html shell (the
+    # in-page router in app.js then shows the right view from
+    # location.pathname) so a hard refresh or a shared link to e.g.
+    # /architecture works exactly like navigating there from the sidebar.
+    # include_in_schema=False keeps openapi.json's path set unchanged at
+    # exactly {"/health", "/status", "/query"} - these are not API
+    # endpoints, just alternate entry points into the same static shell.
+    @app.get("/architecture", include_in_schema=False)
+    @app.get("/experiments", include_in_schema=False)
+    @app.get("/data", include_in_schema=False)
+    @app.get("/evaluation", include_in_schema=False)
+    @app.get("/roadmap", include_in_schema=False)
+    async def spa_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html")
+
+    # Mounted LAST, after every API route above (including the SPA page
+    # routes) and after FastAPI's own __init__-time /docs, /redoc,
+    # /openapi.json routes. Starlette matches routes in registration order
+    # and returns the first match, so this catch-all "/" mount can never
+    # shadow an API path or the Swagger/OpenAPI routes - it only ever
+    # serves a request that none of those already claimed. html=True
+    # serves static/index.html for "/" and any other directory-shaped
+    # request, and also serves the real static assets (styles.css, app.js,
+    # project-data.js) by their real filenames.
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
     return app
 

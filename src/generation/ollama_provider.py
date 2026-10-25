@@ -32,6 +32,10 @@ import requests
 
 from src.logging_utils import get_logger, log_event
 
+from .prompt_cache import (
+    DISABLED, CacheUsage, PromptCacheConfig, PromptCacheMetrics, build_messages,
+    prefix_fingerprints, resolve_strategy,
+)
 from .provider import GenerationError, GenerationRequest, ProviderResponse
 
 log = get_logger(__name__)
@@ -51,10 +55,18 @@ class OllamaProvider:
     localhost. Raises GenerationError (never hangs silently) if
     `ollama serve` is not reachable."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, prompt_cache: PromptCacheConfig = DISABLED,
+                 metrics: PromptCacheMetrics | None = None):
         if not model or not model.strip():
             raise ValueError("model must be a non-empty Ollama model tag (e.g. 'gpt-oss:20b')")
         self._model = model
+        # Ollama reuses a shared KV prefix on its own; there is no request
+        # parameter to add, so the payload is identical with caching on or
+        # off. The strategy only labels that the stable-prefix layout is in
+        # use (the layout itself is chosen by MinimalGenerator).
+        self._cache_strategy = resolve_strategy("ollama", model, prompt_cache)
+        self._prompt_cache = prompt_cache
+        self.metrics = metrics if (metrics is not None and prompt_cache.metrics_enabled) else None
 
     def __repr__(self) -> str:
         return f"OllamaProvider(model={self._model!r})"
@@ -62,10 +74,7 @@ class OllamaProvider:
     def generate(self, request: GenerationRequest) -> ProviderResponse:
         payload = {
             "model": self._model,
-            "messages": [
-                {"role": "system", "content": request.system_prompt},
-                {"role": "user", "content": request.user_prompt},
-            ],
+            "messages": build_messages(request, self._cache_strategy),
             "options": {"temperature": request.temperature},
             "stream": False,
         }
@@ -100,6 +109,10 @@ class OllamaProvider:
             else None
         )
 
+        prompt_eval_ns = data.get("prompt_eval_duration")
+        prompt_eval_ms = prompt_eval_ns / 1e6 if isinstance(prompt_eval_ns, (int, float)) else None
+        system_fp, prefix_fp = prefix_fingerprints(request)
+
         # Task 4.6 - "track token usage and request latency" (same
         # convention as src.generation.openrouter.OpenRouterProvider) -
         # never the prompt/answer text.
@@ -108,7 +121,17 @@ class OllamaProvider:
             provider="ollama", requested_model=self._model, response_model=data.get("model"),
             prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
             total_tokens=total_tokens, latency_ms=round(latency_ms, 1),
+            prompt_cache_enabled=self._prompt_cache.enabled, cache_strategy=self._cache_strategy,
+            cached_tokens=None, cache_write_tokens=None, cost_usd=None,
+            prompt_eval_ms=None if prompt_eval_ms is None else round(prompt_eval_ms, 1),
+            system_prompt_fp=system_fp, evidence_prefix_fp=prefix_fp,
         )
+        if self.metrics is not None:
+            # Ollama reports no cached-token count: usage stays unreported.
+            self.metrics.record(
+                strategy=self._cache_strategy, input_tokens=prompt_tokens,
+                output_tokens=completion_tokens, usage=CacheUsage(),
+            )
 
         return ProviderResponse(
             text=text,
@@ -121,4 +144,6 @@ class OllamaProvider:
             total_tokens=total_tokens,
             temperature_requested=request.temperature,
             latency_ms=latency_ms,
+            cache_strategy=self._cache_strategy,
+            prompt_eval_ms=prompt_eval_ms,
         )

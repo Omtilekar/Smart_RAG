@@ -52,6 +52,33 @@ class HealthResponse(BaseModel):
     status: str = "ok"
 
 
+class RetrievalSecurityTelemetryResponse(BaseModel):
+    """Aggregate retrieval-security counters only. Never includes raw
+    user queries or retrieved text."""
+    scans: int
+    candidate_count: int
+    approved_candidates: int
+    suspicious_candidates: int
+    blocked_candidates: int
+    missing_provenance_count: int
+    invalid_source_count: int
+    duplicate_candidates_collapsed: int
+    poison_signal_count: int
+    obfuscation_signal_count: int
+    all_context_blocked_count: int
+
+
+class RetrievalSecurityStatusResponse(BaseModel):
+    """Deterministic query-time retrieval-security status."""
+    enabled: bool
+    mode: str
+    scanner_version: str
+    policy_version: str
+    text_scan_scope: str
+    xbrl_policy: str
+    telemetry: RetrievalSecurityTelemetryResponse
+
+
 class StatusResponse(BaseModel):
     """Readiness + static deployment identity. Never calls OpenRouter/
     Ollama or performs a live retrieval - only inspects already-
@@ -59,3 +86,6 @@ class StatusResponse(BaseModel):
     ready: bool
     dependencies: dict[str, bool]
     config: dict[str, str | int | None]
+    retrieval_cache: dict[str, bool | int | float | str] | None = None
+    retrieval_security: RetrievalSecurityStatusResponse | None = None
+    prompt_cache: dict[str, bool | int | float | str | None] | None = None

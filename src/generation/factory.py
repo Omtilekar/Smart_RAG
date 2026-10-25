@@ -11,6 +11,7 @@ choice" policy, extended here to the provider name too.
 
 from __future__ import annotations
 
+from .prompt_cache import PromptCacheConfig, PromptCacheMetrics
 from .provider import GenerationError, GenerationProvider
 
 KNOWN_PROVIDERS: tuple[str, ...] = ("openrouter", "ollama")
@@ -33,12 +34,16 @@ def get_generation_provider(settings=None) -> GenerationProvider:
     if not model:
         raise GenerationError("GENERATION_MODEL is not set")
 
+    # Task 4.14a - prompt caching is off unless PROMPT_CACHE_ENABLED is set.
+    cache_config = PromptCacheConfig.from_settings(settings)
+    metrics = PromptCacheMetrics()
+
     if provider_name == "openrouter":
         from .openrouter import OpenRouterProvider
-        return OpenRouterProvider(model=model)
+        return OpenRouterProvider(model=model, prompt_cache=cache_config, metrics=metrics)
     if provider_name == "ollama":
         from .ollama_provider import OllamaProvider
-        return OllamaProvider(model=model)
+        return OllamaProvider(model=model, prompt_cache=cache_config, metrics=metrics)
 
     raise GenerationError(
         f"unknown GENERATION_PROVIDER {provider_name!r} - expected one of {KNOWN_PROVIDERS}"

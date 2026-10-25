@@ -4,11 +4,19 @@
 # SERVING_FEASIBILITY.md), so this image deliberately never installs
 # requirements-gpu.txt's CUDA torch build - see requirements-cpu.txt.
 #
-# Runtime scope, honestly stated: the dense route this container serves
-# is wired to the Phase 1 development LanceDB index (162,357 rows,
-# BAAI/bge-small-en-v1.5) per Task 4.10's documented, explicit
-# limitation (src/api/dependencies.py) - NOT the 10,487,096-row
-# full-corpus production index. See project_plan/PHASE4_DEPLOYMENT.md.
+# Runtime scope, honestly stated (updated after Task 4.A): the application
+# now defaults to DENSE_RETRIEVER_MODE=production, i.e. the frozen
+# 10,487,096-row Qwen3-Embedding-0.6B index, and fails closed if that
+# artifact is not mounted. THIS IMAGE DOES NOT YET SUPPORT THAT MODE: it
+# bakes only the BGE-small model below and ships no production index, so a
+# container started as-is will refuse to start. The only mode it can serve
+# today is the explicit DENSE_RETRIEVER_MODE=dev opt-in against a mounted
+# Phase 1 development LanceDB index (162,357 rows, BAAI/bge-small-en-v1.5).
+# Packaging/mounting the production artifact (about 47 GiB) and baking the
+# Qwen3 model is an unresolved deployment-design decision, deferred with
+# Task 4.11 (no cloud deployment is attempted). See
+# project_plan/PHASE4_DEPLOYMENT.md and
+# project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md.
 #
 # Large runtime artifacts (the dev LanceDB index, ~470 MB; data/xbrl.duckdb,
 # ~6.7 GB) are never copied into this image - they are mounted read-only

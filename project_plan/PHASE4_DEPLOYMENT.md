@@ -33,6 +33,16 @@ the one bullet this pass does not satisfy - it requires a real, separately
 reachable deployment, which was deferred. Everything else is addressed
 below to the extent possible without real cloud resources.
 
+## Update (Task 4.A1, 2026-10-25): the dev-index limitation below is historical
+
+Since Task 4.A the application defaults to `DENSE_RETRIEVER_MODE=production`
+(frozen 10,487,096-row Qwen3-Embedding-0.6B index, fail-closed). The container
+image described here still bakes only BGE-small and ships no production index,
+so as built it can serve only the explicit `DENSE_RETRIEVER_MODE=dev` opt-in
+against a mounted dev index. Mounting or packaging the roughly 47 GiB
+production artifact and baking the Qwen3 model is an open deployment-design
+decision, deferred with Task 4.11; no cloud deployment was attempted.
+
 ## Known Task 4.10 limitation (unchanged, still true)
 
 The dense HTTP route (`POST /query`, non-`xbrl_fact` intents) is wired to

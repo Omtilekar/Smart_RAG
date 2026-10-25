@@ -81,6 +81,9 @@ def _fake_settings(device):
         embedding_model="BAAI/bge-small-en-v1.5", device=device,
         generation_provider="openrouter", generation_model="openai/gpt-oss-20b",
         log_level="INFO", sec_user_agent=None, input_guard_max_length=2000,
+        retrieval_cache_enabled=True, retrieval_cache_max_entries=512,
+        retrieval_cache_ttl_seconds=900, retrieval_cache_schema_version="v1",
+        dense_retriever_mode="dev",  # Task 4.A: these tests cover the explicit dev path
     )
 
 
@@ -90,7 +93,7 @@ def _mock_everything_except_load_model_and_device(monkeypatch, deps_module, tmp_
     monkeypatch.setattr(deps_module, "open_chunk_table", lambda db: _FakeTable())
     monkeypatch.setattr(deps_module, "BaselineRetriever", lambda model, table: object())
     monkeypatch.setattr(deps_module, "get_generation_provider", lambda settings: object())
-    monkeypatch.setattr(deps_module, "MinimalGenerator", lambda retriever, provider: object())
+    monkeypatch.setattr(deps_module, "MinimalGenerator", lambda retriever, provider, **kwargs: object())
     monkeypatch.setattr(deps_module, "get_registry", lambda: types.SimpleNamespace(supported_tags=lambda: ()))
     monkeypatch.setattr(deps_module, "build_production_gazetteer", lambda con: object())
     monkeypatch.setattr(deps_module, "XbrlFactIndex", lambda con, tags: object())
@@ -130,3 +133,48 @@ def test_build_production_dependencies_resolves_auto_device_through_resolve_devi
     deps_module.build_production_dependencies(_fake_settings("auto"))
 
     assert recorded["device"] == "resolved-from-auto"
+
+
+def test_build_production_dependencies_wraps_dense_retriever_when_cache_enabled(monkeypatch, tmp_path):
+    import src.api.dependencies as deps_module
+    from src.retrieval.cache import CachedRetriever
+
+    monkeypatch.setattr(deps_module, "load_model", lambda device: object())
+    _mock_everything_except_load_model_and_device(monkeypatch, deps_module, tmp_path)
+
+    built = {}
+    base_retriever = object()
+    monkeypatch.setattr(deps_module, "BaselineRetriever", lambda model, table: base_retriever)
+
+    def fake_generator(retriever, provider, **kwargs):
+        built["retriever"] = retriever
+        return object()
+
+    monkeypatch.setattr(deps_module, "MinimalGenerator", fake_generator)
+
+    deps = deps_module.build_production_dependencies(_fake_settings("cpu"))
+
+    assert isinstance(built["retriever"], CachedRetriever)
+    stats = deps.status_snapshot()["retrieval_cache"]
+    assert stats["enabled"] is True
+    assert stats["backend"] == "memory_lru_ttl"
+    assert stats["max_entries"] == 512
+
+
+def test_build_production_dependencies_leaves_retriever_unwrapped_when_cache_disabled(monkeypatch, tmp_path):
+    import dataclasses
+    import src.api.dependencies as deps_module
+
+    monkeypatch.setattr(deps_module, "load_model", lambda device: object())
+    _mock_everything_except_load_model_and_device(monkeypatch, deps_module, tmp_path)
+
+    settings = dataclasses.replace(_fake_settings("cpu"), retrieval_cache_enabled=False)
+    base_retriever = object()
+    built = {}
+    monkeypatch.setattr(deps_module, "BaselineRetriever", lambda model, table: base_retriever)
+    monkeypatch.setattr(deps_module, "MinimalGenerator", lambda retriever, provider, **kwargs: built.setdefault("retriever", retriever) or object())
+
+    deps = deps_module.build_production_dependencies(settings)
+
+    assert built["retriever"] is base_retriever
+    assert deps.status_snapshot()["retrieval_cache"]["enabled"] is False

@@ -1,0 +1,277 @@
+{
+  "created_at_utc": "2026-10-25T19:34:14+00:00",
+  "safety": {
+    "openrouter_calls": 0,
+    "aws_access": 0,
+    "protected_test_opened": false
+  },
+  "rss_mb_before": 42.9,
+  "index_open_s": 1.437,
+  "table_validation_s": 0.014,
+  "startup_smoke_lookup": {
+    "cik": 1000015,
+    "fiscal_year": 1996,
+    "self_distance": 0.0
+  },
+  "startup_smoke_lookup_s": 0.15,
+  "row_count": 10487096,
+  "model_load_s": 9.77,
+  "device": "cuda",
+  "query_vector": {
+    "dimension": 1024,
+    "dtype": "float32",
+    "l2_norm": 1.0
+  },
+  "query_embedding_warm_ms": 45.5,
+  "probes": {
+    "company_year_scoped": {
+      "filters": {
+        "cik": 1000015,
+        "fiscal_year": 1996
+      },
+      "first_ms": 61.5,
+      "warm_ms": 77.4,
+      "deterministic": true,
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "1000015_1996.txt::chunk000001",
+          "chunk_uid": "e238c530b1df",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.44676,
+          "score": 0.55324
+        },
+        {
+          "rank": 2,
+          "chunk_id": "1000015_1996.txt::chunk000042",
+          "chunk_uid": "a31fdd978eaa",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.53211,
+          "score": 0.46789
+        },
+        {
+          "rank": 3,
+          "chunk_id": "1000015_1996.txt::chunk000019",
+          "chunk_uid": "4be1e05d084d",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.56634,
+          "score": 0.43366
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1000015_1996.txt::chunk000007",
+          "chunk_uid": "e5129bdec856",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.58282,
+          "score": 0.41718
+        },
+        {
+          "rank": 5,
+          "chunk_id": "1000015_1996.txt::chunk000043",
+          "chunk_uid": "d2cc58039288",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.58464,
+          "score": 0.41536
+        }
+      ]
+    },
+    "company_scoped": {
+      "filters": {
+        "cik": 1000015
+      },
+      "ms": 81.9,
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "1000015_1997.txt::chunk000001",
+          "chunk_uid": "6b2d30023f27",
+          "cik": 1000015,
+          "fiscal_year": 1997,
+          "distance": 0.43367,
+          "score": 0.56633
+        },
+        {
+          "rank": 2,
+          "chunk_id": "1000015_1996.txt::chunk000001",
+          "chunk_uid": "e238c530b1df",
+          "cik": 1000015,
+          "fiscal_year": 1996,
+          "distance": 0.44676,
+          "score": 0.55324
+        },
+        {
+          "rank": 3,
+          "chunk_id": "1000015_1998.txt::chunk000001",
+          "chunk_uid": "729d876b9fb2",
+          "cik": 1000015,
+          "fiscal_year": 1998,
+          "distance": 0.48493,
+          "score": 0.51507
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1000015_1999.txt::chunk000001",
+          "chunk_uid": "de286c0a3db9",
+          "cik": 1000015,
+          "fiscal_year": 1999,
+          "distance": 0.49111,
+          "score": 0.50889
+        },
+        {
+          "rank": 5,
+          "chunk_id": "1000015_1998.txt::chunk000053",
+          "chunk_uid": "596c6ac67955",
+          "cik": 1000015,
+          "fiscal_year": 1998,
+          "distance": 0.51668,
+          "score": 0.48332
+        }
+      ]
+    },
+    "unscoped_0": {
+      "question": "What risks do technology research companies describe in their annual reports?",
+      "ms": 33002.1,
+      "result_count": 5,
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "874255_1999.txt::chunk000051",
+          "chunk_uid": "480e180db328",
+          "cik": 874255,
+          "fiscal_year": 1999,
+          "distance": 0.34336,
+          "score": 0.65664
+        },
+        {
+          "rank": 2,
+          "chunk_id": "758830_2000.txt::chunk000052",
+          "chunk_uid": "d6282629b473",
+          "cik": 758830,
+          "fiscal_year": 2000,
+          "distance": 0.36145,
+          "score": 0.63855
+        },
+        {
+          "rank": 3,
+          "chunk_id": "1004989_2016.htm::chunk000017",
+          "chunk_uid": "866ac07bf35b",
+          "cik": 1004989,
+          "fiscal_year": 2016,
+          "distance": 0.36693,
+          "score": 0.63307
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1039101_2018.htm::chunk000162",
+          "chunk_uid": "4fd714813c87",
+          "cik": 1039101,
+          "fiscal_year": 2018,
+          "distance": 0.38132,
+          "score": 0.61868
+        },
+        {
+          "rank": 5,
+          "chunk_id": "1438231_2020.htm::chunk000019",
+          "chunk_uid": "6b2582a43f7e",
+          "cik": 1438231,
+          "fiscal_year": 2020,
+          "distance": 0.39046,
+          "score": 0.60954
+        }
+      ]
+    },
+    "unscoped_1": {
+      "question": "How do companies describe competition in their business sections?",
+      "ms": 33327.2,
+      "result_count": 5,
+      "results": [
+        {
+          "rank": 1,
+          "chunk_id": "804151_1996.txt::chunk000000",
+          "chunk_uid": "d2a4cb526b4f",
+          "cik": 804151,
+          "fiscal_year": 1996,
+          "distance": 0.38591,
+          "score": 0.61409
+        },
+        {
+          "rank": 2,
+          "chunk_id": "33185_1995.txt::chunk000010",
+          "chunk_uid": "a8755b7fab11",
+          "cik": 33185,
+          "fiscal_year": 1995,
+          "distance": 0.4108,
+          "score": 0.5892
+        },
+        {
+          "rank": 3,
+          "chunk_id": "80424_2000.txt::chunk000001",
+          "chunk_uid": "f8980952d6b0",
+          "cik": 80424,
+          "fiscal_year": 2000,
+          "distance": 0.41141,
+          "score": 0.58859
+        },
+        {
+          "rank": 4,
+          "chunk_id": "1355833_2007.htm::chunk000520",
+          "chunk_uid": "186f6b729a9f",
+          "cik": 1355833,
+          "fiscal_year": 2007,
+          "distance": 0.41493,
+          "score": 0.58507
+        },
+        {
+          "rank": 5,
+          "chunk_id": "27419_2000.html::chunk000000",
+          "chunk_uid": "05935fa415e4",
+          "cik": 27419,
+          "fiscal_year": 2000,
+          "distance": 0.41584,
+          "score": 0.58416
+        }
+      ]
+    }
+  },
+  "rss_mb_after": 4320.6,
+  "gpu_allocated_mb_after": 2416.7,
+  "app_startup_s": 27.83,
+  "api_query_ms": 32571.8,
+  "api_status_config": {
+    "generation_provider": "openrouter",
+    "generation_model": "openai/gpt-oss-20b",
+    "dense_retriever_mode": "production",
+    "embedding_model": "Qwen/Qwen3-Embedding-0.6B",
+    "embedding_model_revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+    "embedding_dimension": 1024,
+    "dense_index_row_count": 10487096,
+    "dense_index_identity_hash": "158e6b0605ad483e882bef8611e7c3a3ecafc65100f246ab99e91578048d5501",
+    "artifact_status": "production",
+    "startup_smoke_self_distance": 0
+  },
+  "api_query": {
+    "http": 200,
+    "status": "answered",
+    "route": "dense"
+  },
+  "api_cache_after_query": {
+    "enabled": true,
+    "backend": "memory_lru_ttl",
+    "entries": 1,
+    "max_entries": 512,
+    "ttl_seconds": 900,
+    "hits": 0,
+    "misses": 1,
+    "evictions": 0,
+    "expirations": 0,
+    "stores": 1,
+    "bypasses": 0,
+    "hit_rate": 0.0
+  },
+  "rss_mb_after_app": 4719.4
+}

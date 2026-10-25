@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SEC RAG — Production Retrieval-Augmented Generation over SEC Filings</title>
+<meta name="description" content="An AI assistant and engineering showcase for a retrieval-augmented question-answering system over SEC EDGAR filings and XBRL financial data." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<div class="app-shell">
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+
+  <aside id="sidebar" class="sidebar">
+    <a class="brand" href="/" data-route="/">
+      SEC RAG
+      <span class="brand-sub">Production RAG over SEC filings</span>
+    </a>
+
+    <button id="new-chat-btn" class="btn btn-secondary sidebar-new-chat" type="button">
+      <span aria-hidden="true">+</span> New chat
+    </button>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="/" data-route="/" data-view="chat">Chat</a>
+      <a href="/architecture" data-route="/architecture" data-view="architecture">Architecture</a>
+      <a href="/experiments" data-route="/experiments" data-view="experiments">Experiments</a>
+      <a href="/data" data-route="/data" data-view="data">Data</a>
+      <a href="/evaluation" data-route="/evaluation" data-view="evaluation">Evaluation</a>
+      <a href="/roadmap" data-route="/roadmap" data-view="roadmap">Roadmap</a>
+    </nav>
+
+    <nav class="sidebar-nav sidebar-nav-secondary" aria-label="Secondary">
+      <a href="/docs">API Docs</a>
+      <a href="/status">System Status</a>
+      <a id="sidebar-github-link" href="#" hidden>GitHub</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="sidebar-status" aria-live="polite">
+        <span id="hero-status-dot" class="status-dot" data-state="unknown" aria-hidden="true"></span>
+        <span id="hero-status-label">Checking status…</span>
+      </span>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Toggle theme</button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button id="sidebar-open-btn" class="icon-btn" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5h16M2 10h16M2 15h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <span id="topbar-title" class="topbar-title">Chat</span>
+    </header>
+
+    <main id="main" class="view-scroll">
+
+      <!-- ============================================================ Chat -->
+      <section data-view="chat" class="view view-chat">
+        <div class="chat-column">
+          <div id="chat-messages" class="chat-messages" aria-live="polite">
+            <div id="chat-empty" class="chat-empty">
+              <h1 class="chat-empty-title">SEC RAG</h1>
+              <p class="chat-empty-tagline">Ask questions about SEC filings and financial data.</p>
+              <div class="chat-suggestions" aria-label="Example prompts (click to fill, not auto-submitted)">
+                <button type="button" class="suggestion-chip" data-prompt="What was Apple's revenue in 2020?">What was Apple's revenue in 2020?</button>
+                <button type="button" class="suggestion-chip" data-prompt="Compare Microsoft's assets across two years">Compare Microsoft's assets across two years</button>
+                <button type="button" class="suggestion-chip" data-prompt="Summarize risk factors from a filing">Summarize risk factors from a filing</button>
+                <button type="button" class="suggestion-chip" data-prompt="What was Tesla's operating cash flow?">What was Tesla's operating cash flow?</button>
+                <button type="button" class="suggestion-chip" data-prompt="Find a filing section about cybersecurity risk">Find a filing section about cybersecurity risk</button>
+              </div>
+            </div>
+          </div>
+
+          <form id="chat-form" class="chat-composer-form" data-last-answer="">
+            <div class="chat-composer">
+              <label class="visually-hidden" for="chat-input">Your question</label>
+              <textarea
+                id="chat-input"
+                class="chat-textarea"
+                placeholder="Message SEC RAG…"
+                rows="1"
+                maxlength="2000"
+                required
+                aria-describedby="chat-hint"
+              ></textarea>
+              <button id="chat-send" class="chat-send-btn" type="submit" aria-label="Send message">
+                <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10l15-7-5 7 5 7z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <div class="chat-composer-footer">
+              <span id="chat-hint" class="chat-hint">Enter to send &middot; Shift+Enter for a new line</span>
+              <span id="chat-char-count" class="chat-char-count" hidden></span>
+            </div>
+            <p id="provider-note" class="provider-note" hidden>
+              <span aria-hidden="true">&#9432;</span>
+              <span id="provider-note-text"></span>
+            </p>
+          </form>
+        </div>
+      </section>
+
+      <!-- ====================================================== Architecture -->
+      <section data-view="architecture" class="view" hidden>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">System design</p>
+            <h2 class="section-title">Architecture</h2>
+            <p class="section-lede">
+              The interactive diagram below is the current system architecture, including
+              the retrieval cache, retrieval security and prompt caching. The level-2
+              section further down shows what is live, frozen or planned.
+            </p>
+
+            <p class="arch-frame-note" data-arch-stale-notice>
+              <strong>Diagram refresh pending:</strong> this Archify diagram was generated
+              before Task 4.A and still labels the 162k-row BGE dev index as live. It has not
+              been regenerated (Archify was unavailable). The current live runtime is the
+              Qwen3-Embedding-0.6B production index with 10,487,096 rows, as shown in the
+              level-2 section and the "Live runtime vs. production artifact" cards below.
+            </p>
+            <iframe class="arch-frame" src="/architecture-diagram.html?embed=1" title="SEC RAG system architecture diagram" loading="lazy"></iframe>
+            <p class="arch-frame-note"><a href="/architecture-diagram.html" target="_blank" rel="noopener">Open the full interactive diagram in its own tab</a></p>
+
+            <h3 style="margin-top:var(--space-7);font-size:1.05rem;">Storage &amp; artifact layers</h3>
+            <div class="card-grid" style="margin-top:var(--space-3);">
+              <div class="card">
+                <p class="card-label">Text corpus</p>
+                <p class="card-context">EDGAR-CORPUS filings, normalized to Markdown/YAML frontmatter, then chunked.</p>
+              </div>
+              <div class="card">
+                <p class="card-label">Vector index</p>
+                <p class="card-context">LanceDB, exact cosine search, metadata pre-filtering support.</p>
+              </div>
+              <div class="card">
+                <p class="card-label">Retrieval cache</p>
+                <p class="card-context">Exact-query, in-process LRU + TTL cache for dense retrieval evidence only.</p>
+              </div>
+              <div class="card">
+                <p class="card-label">XBRL store</p>
+                <p class="card-context">DuckDB (<code>data/xbrl.duckdb</code>) holding structured financial facts and submissions.</p>
+              </div>
+              <div class="card">
+                <p class="card-label">Model / provider layer</p>
+                <p class="card-context">Embedding model + a config-driven, provider-neutral generation interface.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">System design, level 2</p>
+            <h2 class="section-title">Deep System Architecture</h2>
+            <p class="deep-arch-intro">
+              The diagram above is the system overview. This section goes one level
+              deeper: how a request is actually validated and routed, how dense and
+              structured retrieval work internally, how the production artifacts
+              were built and chosen, and what is live today versus a frozen
+              artifact versus still planned. Every box below traces to real source
+              code or a committed result file &mdash; click a box for detail where
+              available, or hover/focus it for a quick fact.
+            </p>
+
+            <div class="arch-legend-row" role="note" aria-label="Status color legend">
+              <span class="arch-legend-item"><span class="arch-status-dot" data-status="live" aria-hidden="true"></span> Live &mdash; reachable from the current API</span>
+              <span class="arch-legend-item"><span class="arch-status-dot" data-status="frozen" aria-hidden="true"></span> Frozen production artifact &mdash; built/selected, not yet wired live</span>
+              <span class="arch-legend-item"><span class="arch-status-dot" data-status="planned" aria-hidden="true"></span> Planned &mdash; does not exist yet</span>
+              <span class="arch-legend-item"><span class="arch-status-dot" data-status="not-routed" aria-hidden="true"></span> Implemented, not live-routed</span>
+            </div>
+
+            <div class="tab-list" role="tablist" aria-label="Deep architecture views" id="deep-arch-tablist"></div>
+            <div id="deep-arch-tabpanels"></div>
+
+            <div id="arch-detail-panel" class="arch-detail-panel" hidden>
+              <div class="arch-detail-panel-header">
+                <h3 id="arch-detail-title" class="arch-detail-panel-title"></h3>
+                <button type="button" class="arch-detail-close" id="arch-detail-close" aria-label="Close detail panel">&times;</button>
+              </div>
+              <dl class="arch-detail-grid" id="arch-detail-body"></dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Transparency</p>
+            <h2 class="section-title">Live runtime vs. production artifact</h2>
+            <p class="section-lede">
+              The dense route you can query from Chat now runs against the full
+              production corpus (Qwen3-Embedding-0.6B, 10,487,096 rows). One gap
+              remains and is shown here, not hidden: unscoped searches are slow
+              until the metadata pre-filter is wired into the live router.
+            </p>
+            <div class="card-grid" id="gap-cards-runtime"></div>
+            <h3 style="margin-top:var(--space-6);font-size:0.95rem;color:var(--color-muted-foreground);">What has already been built offline</h3>
+            <div class="card-grid" id="gap-cards-artifact"></div>
+            <p class="section-lede" style="margin-top:var(--space-5);">
+              <strong>Remaining gate:</strong> route company and year filters into the
+              production retriever (unscoped exact search measured about 33 s per
+              query). Real AWS deployment is deferred until this and the rest of the
+              local production-readiness gates pass — see the Roadmap page.
+            </p>
+          </div>
+        </div>
+
+        <footer class="site-footer view-footer">
+          <div class="wrap">
+            <div class="footer-links">
+              <a href="/docs">API docs</a>
+              <a href="/health">Health</a>
+              <a href="/status">Status</a>
+              <a class="view-footer-github-link" href="#" hidden>GitHub repository</a>
+            </div>
+            <p class="footer-note">SEC RAG &middot; local project showcase &middot; &copy; <span class="view-footer-year"></span></p>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ======================================================= Experiments -->
+      <section data-view="experiments" class="view" hidden>
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">How we chose the retrieval stack</p>
+            <h2 class="section-title">Measured, not guessed</h2>
+            <p class="section-lede">
+              Every architectural choice below went through a controlled comparison
+              against frozen development data before being selected. Negative
+              results are shown as plainly as positive ones.
+            </p>
+            <div id="experiments-container"></div>
+          </div>
+        </div>
+
+        <footer class="site-footer view-footer">
+          <div class="wrap">
+            <div class="footer-links">
+              <a href="/docs">API docs</a>
+              <a href="/health">Health</a>
+              <a href="/status">Status</a>
+              <a class="view-footer-github-link" href="#" hidden>GitHub repository</a>
+            </div>
+            <p class="footer-note">SEC RAG &middot; local project showcase &middot; &copy; <span class="view-footer-year"></span></p>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ============================================================== Data -->
+      <section data-view="data" class="view" hidden>
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Data</p>
+            <h2 class="section-title">Dataset at scale</h2>
+            <p class="section-lede">
+              Every figure below is pulled from a committed repository artifact —
+              hover the source line on a card to see exactly where it came from.
+            </p>
+            <div class="card-grid" id="dataset-cards"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Scaling up</p>
+            <h2 class="section-title">Full-corpus production build</h2>
+            <p class="section-lede">Normalize &rarr; Chunk &rarr; Embed &rarr; Index &rarr; Serve.</p>
+            <div class="card-grid" id="build-stage-cards"></div>
+          </div>
+        </div>
+
+        <footer class="site-footer view-footer">
+          <div class="wrap">
+            <div class="footer-links">
+              <a href="/docs">API docs</a>
+              <a href="/health">Health</a>
+              <a href="/status">Status</a>
+              <a class="view-footer-github-link" href="#" hidden>GitHub repository</a>
+            </div>
+            <p class="footer-note">SEC RAG &middot; local project showcase &middot; &copy; <span class="view-footer-year"></span></p>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ======================================================= Evaluation -->
+      <section data-view="evaluation" class="view" hidden>
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Reliability</p>
+            <h2 class="section-title">Guardrails</h2>
+            <p class="section-lede">
+              Retrieved content is always treated as untrusted data, never as
+              instructions. Every guard layer is deterministic and independently
+              tested.
+            </p>
+            <div class="guardrail-grid" id="guardrail-cards"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Engineering results</p>
+            <h2 class="section-title">Evaluation</h2>
+            <p class="section-lede">
+              Frozen evaluation results, historical benchmarks, and current
+              test-suite counts are kept separate below — never combined into one
+              misleading number. Production-readiness gates are detailed on the
+              Architecture page's "Evaluation &amp; Release" tab.
+            </p>
+            <div class="card-grid" id="evaluation-cards"></div>
+          </div>
+        </div>
+
+        <footer class="site-footer view-footer">
+          <div class="wrap">
+            <div class="footer-links">
+              <a href="/docs">API docs</a>
+              <a href="/health">Health</a>
+              <a href="/status">Status</a>
+              <a class="view-footer-github-link" href="#" hidden>GitHub repository</a>
+            </div>
+            <p class="footer-note">SEC RAG &middot; local project showcase &middot; &copy; <span class="view-footer-year"></span></p>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ========================================================== Roadmap -->
+      <section data-view="roadmap" class="view" hidden>
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Process</p>
+            <h2 class="section-title">Project plan &amp; engineering process</h2>
+            <div class="timeline" id="project-timeline"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="wrap">
+            <p class="section-eyebrow">Current status</p>
+            <h2 class="section-title">Status &amp; roadmap</h2>
+            <div class="status-columns">
+              <div class="status-column">
+                <h3><span class="status-dot" data-state="ok" aria-hidden="true"></span> Completed</h3>
+                <ul id="roadmap-complete"></ul>
+              </div>
+              <div class="status-column">
+                <h3><span class="status-dot" data-state="unknown" aria-hidden="true"></span> In progress / integration gap</h3>
+                <ul id="roadmap-progress"></ul>
+              </div>
+              <div class="status-column">
+                <h3><span class="status-dot" aria-hidden="true"></span> Deferred</h3>
+                <ul id="roadmap-deferred"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="site-footer view-footer">
+          <div class="wrap">
+            <div class="footer-links">
+              <a href="/docs">API docs</a>
+              <a href="/health">Health</a>
+              <a href="/status">Status</a>
+              <a class="view-footer-github-link" href="#" hidden>GitHub repository</a>
+            </div>
+            <p class="footer-note">SEC RAG &middot; local project showcase &middot; &copy; <span class="view-footer-year"></span></p>
+          </div>
+        </footer>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

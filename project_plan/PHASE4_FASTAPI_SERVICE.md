@@ -163,7 +163,38 @@ would, and only when `dependencies=None`.
   flags (no live query); `config` exposes non-secret identity strings
   (dev index hash/model, generation provider/model name, dense index row
   count) — never a credential, never a filesystem path beyond what's
-  already public in this repo's own documentation.
+  already public in this repo's own documentation. Task 4.13 additively
+  adds `retrieval_cache`, an aggregate stats object for the exact dense
+  retrieval cache (`enabled`, backend, entries, max entries, TTL, hits,
+  misses, evictions, expirations, stores, bypasses, hit rate). It never
+  exposes raw query text, cached SEC text, vectors, prompts, provider
+  responses, or final answers. Task 4.14 additively adds
+  `retrieval_security`, a deterministic retrieval-security status object
+  (`enabled`, mode, scanner/policy versions, scan scope, XBRL policy, and
+  aggregate counters). It never exposes raw query text, retrieved SEC
+  text, prompts, provider responses, or final answers.
+
+## Task 4.14 retrieval-security integration
+
+The dense route now filters retrieved candidates after retrieval/cache
+and before context construction:
+
+```text
+BaselineRetriever or CachedRetriever
+-> src.security.retrieval_guard.RetrievalSecurityGuard
+-> src.guards.context.check_dense_context
+-> generation provider
+-> src.guards.output.check_dense_output
+```
+
+This preserves Task 4.13's cache contract: cache HITs and MISSes both run
+through the guard, and the cache stores raw retrieval evidence only, not
+security approvals. If every retrieved dense candidate is blocked or
+suspicious, the generator returns the existing context-guard abstention
+and makes no provider call.
+
+Structured XBRL remains deterministic SQL with structured provenance
+validation only; it is not passed through the dense text scanner.
 
 ## Exception mapping
 
@@ -330,3 +361,12 @@ Progress.md                                   (updated)
 ## Next roadmap task
 
 Phase 4, Task 4.11 — Deployment.
+
+## Update (Task 4.A, 2026-10-25): dense route now uses the production index
+
+The "Dense route's index" limitation recorded above is superseded. The live
+dense route now defaults to the frozen 10,487,096-row Qwen3-Embedding-0.6B
+index through `ProductionDenseRetriever`; the Phase 1 dev index (162,357 rows,
+BGE-small) is reachable only with `DENSE_RETRIEVER_MODE=dev`. The historical
+text above is kept unchanged as the record of Task 4.10. See
+`project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md`.

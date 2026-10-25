@@ -115,6 +115,35 @@ class FakeDependencies:
         self.closed = True
 
 
+class FakeDependenciesWithRetrievalSecurity(FakeDependencies):
+    def status_snapshot(self):
+        return {
+            "dependencies": {"fake": True},
+            "config": {"generation_model": "fake/model"},
+            "retrieval_security": {
+                "enabled": True,
+                "mode": "deterministic",
+                "scanner_version": "rag-poison-v1",
+                "policy_version": "retrieval-security-v1",
+                "text_scan_scope": "dense_retrieval_candidates",
+                "xbrl_policy": "structured_provenance_only",
+                "telemetry": {
+                    "scans": 2,
+                    "candidate_count": 10,
+                    "approved_candidates": 8,
+                    "suspicious_candidates": 1,
+                    "blocked_candidates": 1,
+                    "missing_provenance_count": 0,
+                    "invalid_source_count": 0,
+                    "duplicate_candidates_collapsed": 0,
+                    "poison_signal_count": 1,
+                    "obfuscation_signal_count": 0,
+                    "all_context_blocked_count": 0,
+                },
+            },
+        }
+
+
 def _client(deps=None, request_id_factory=None):
     app = create_app(dependencies=deps or FakeDependencies(), request_id_factory=request_id_factory)
     return TestClient(app)
@@ -168,6 +197,19 @@ def test_status_endpoint_reports_ready_with_dependencies():
         body = r.json()
         assert body["ready"] is True
         assert body["dependencies"] == {"fake": True}
+
+
+def test_status_endpoint_reports_safe_retrieval_security_snapshot():
+    with _client(FakeDependenciesWithRetrievalSecurity()) as client:
+        r = client.get("/status")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["retrieval_security"]["enabled"] is True
+        assert body["retrieval_security"]["scanner_version"] == "rag-poison-v1"
+        assert body["retrieval_security"]["telemetry"]["blocked_candidates"] == 1
+        rendered = str(body["retrieval_security"])
+        assert "Revenue was" not in rendered
+        assert "system prompt" not in rendered
 
 
 def test_health_never_touches_dependencies():

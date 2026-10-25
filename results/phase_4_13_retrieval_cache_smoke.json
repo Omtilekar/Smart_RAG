@@ -1,0 +1,44 @@
+{
+  "aws_access": 0,
+  "cache_backend": "memory_lru_ttl",
+  "cache_stats": {
+    "backend": "memory_lru_ttl",
+    "bypasses": 0,
+    "enabled": true,
+    "entries": 2,
+    "evictions": 0,
+    "expirations": 0,
+    "hit_rate": 0.5,
+    "hits": 2,
+    "max_entries": 512,
+    "misses": 2,
+    "stores": 2,
+    "ttl_seconds": 900
+  },
+  "dense_index_row_count": 162357,
+  "measurements": [
+    {
+      "cold_cache_miss_ms": 178.205,
+      "cold_to_warm_speedup": 735.778,
+      "disabled_retrieval_ms": 665.031,
+      "query_label": "hand_written_1",
+      "result_count": 5,
+      "retrieval_contract_equal": true,
+      "warm_cache_hit_ms": 0.242
+    },
+    {
+      "cold_cache_miss_ms": 151.429,
+      "cold_to_warm_speedup": 902.978,
+      "disabled_retrieval_ms": 148.066,
+      "query_label": "hand_written_2",
+      "result_count": 5,
+      "retrieval_contract_equal": true,
+      "warm_cache_hit_ms": 0.168
+    }
+  ],
+  "paid_generation_api_calls": 0,
+  "protected_test_usage": "0/3",
+  "queries": "hand-written non-protected smoke queries",
+  "retrieval_contract_equal": true,
+  "task": "phase_4_13_exact_retrieval_cache"
+}

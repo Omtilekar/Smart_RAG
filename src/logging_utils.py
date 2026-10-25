@@ -36,8 +36,12 @@ from src.config import get_settings
 
 _HANDLER_NAME = "sec_rag_console_handler"
 
+# `token(?!s$)`: a plural trailing "tokens" field name is an LLM usage count
+# (prompt_tokens, cached_tokens, ...), not a credential - without this every
+# token-usage log field was redacted. Singular `token`/`access_token` etc.
+# are still redacted.
 _SECRET_KEY_RE = re.compile(
-    r"(password|secret|api[_-]?key|apikey|token|authoriz|credential)", re.IGNORECASE
+    r"(password|secret|api[_-]?key|apikey|token(?!s$)|authoriz|credential)", re.IGNORECASE
 )
 
 _NEEDS_QUOTING_RE = re.compile(r'[\s"=]')

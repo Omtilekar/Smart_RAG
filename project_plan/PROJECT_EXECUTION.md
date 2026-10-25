@@ -1185,11 +1185,11 @@ wired the FastAPI dense route to the 162,357-row Phase 1 development
 LanceDB index (`BAAI/bge-small-en-v1.5`), not the frozen 10,487,096-row
 Task 4.4 production index (`Qwen/Qwen3-Embedding-0.6B`, 1024-dim,
 `chunk_uid` schema) - `BaselineRetriever`/`RetrievalResult` are
-incompatible with the production schema and no adapter exists yet. Do not
+incompatible with the production schema (an adapter was added by Task 4.A, see Gate A). Do not
 pay for or operationalize cloud infrastructure while this and the other
 gaps below remain open.
 
-- [ ] **Gate A - Full-corpus dense serving integration.** Implement a
+- [x] **Gate A - Full-corpus dense serving integration (COMPLETE 2026-10-25, Task 4.A, `project_plan/TASK_4A_PRODUCTION_DENSE_RETRIEVER.md`; the retriever accepts cik/fiscal_year pre-filters but routing them live remains open under Gate B - unscoped search measured ~33 s).** Implement a
   production-compatible retriever/adapter for the frozen Task 4.4 index;
   consume the real 10,487,096-row index; use the frozen
   Qwen/Qwen3-Embedding-0.6B query-embedding contract; preserve cosine
@@ -1253,7 +1253,128 @@ citations
 errors
 ```
 
-### 4.13 Production performance evaluation
+### 4.13 Exact retrieval cache
+
+**Status (2026-09-18): COMPLETE as a serving optimization.**
+
+Add an exact, deterministic dense-retrieval cache around the live dense
+retriever only. This is not a retrieval-quality experiment and does not
+change routing, ranking, guardrails, citation semantics, generation, XBRL
+lookup behavior, or frozen evaluation results.
+
+- [x] Cache boundary is retrieval evidence only: no final answers, prompts,
+  provider responses, guard decisions, or citations are cached.
+- [x] Backend is process-local memory LRU + TTL, configured by
+  `RETRIEVAL_CACHE_ENABLED`, `RETRIEVAL_CACHE_MAX_ENTRIES`,
+  `RETRIEVAL_CACHE_TTL_SECONDS`, and
+  `RETRIEVAL_CACHE_SCHEMA_VERSION`.
+- [x] Cache keys are SHA-256 digests over canonical JSON including the
+  cache schema version, canonical query, route/retriever kind, k, filters,
+  embedding model identity/revision/dimension, chunk config hash, dense
+  index table/schema/artifact identity/row count, algorithm, similarity
+  metric, and CRAG threshold identity (`null` today because CRAG is not
+  live-routed).
+- [x] Future BGE-dev-index to Qwen-full-corpus migration cannot reuse stale
+  entries because the model/index/schema/artifact identity changes.
+- [x] `/status` exposes aggregate cache statistics only; it never exposes
+  raw query text or cached SEC text.
+- [x] Semantic caching is explicitly deferred as a future experiment because
+  it would introduce a new safety/quality threshold.
+- [x] Local smoke: `scripts/smoke_retrieval_cache.py` measured exact
+  equality between cache-disabled, cold cache-miss, and warm cache-hit
+  retrieval contracts on hand-written non-protected queries. Current dev
+  index measurements: cold misses 178.205 ms / 151.429 ms; warm hits
+  0.242 ms / 0.168 ms; cache stats hits=2, misses=2, stores=2.
+
+Limitations: the cache is per Python process, so future multi-worker/ECS
+deployments will have one independent cache per worker. A shared
+Redis/ElastiCache backend remains a possible later optimization only if
+measurements justify it.
+
+### 4.14 RAG poisoning and indirect prompt-injection defense
+
+**Status (2026-09-18): COMPLETE as deterministic query-time defense-in-depth.**
+
+Add a dedicated dense-retrieval security layer after retrieval/cache and
+before context construction. This task does not change model choice,
+chunking, routing, ranking, CRAG/rerank/hybrid decisions, XBRL SQL
+semantics, or frozen production artifacts.
+
+- [x] New `src/security/` package with typed models, inspection-only
+  normalization, deterministic poisoning scanner, retrieval guard,
+  aggregate telemetry, and synthetic metric helpers.
+- [x] Dense candidates are classified as `approved`, `suspicious`, or
+  `blocked`; only approved candidates enter prompt construction.
+- [x] Missing provenance and untrusted dense sources are blocked before
+  generation. The live dense policy allows `edgar_corpus`.
+- [x] Exact duplicate retrieved text is collapsed while preserving the
+  highest-ranked candidate.
+- [x] Cache HITs and MISSes both run through the retrieval-security guard;
+  the cache still stores raw retrieval evidence only and never stores
+  security approvals.
+- [x] Structured XBRL remains deterministic SQL with structured
+  provenance validation only; it is not forced through dense-text
+  prompt-injection scanning.
+- [x] `/status` additively exposes safe `retrieval_security` aggregate
+  counters. No raw queries, SEC text, prompts, provider responses, or
+  answers are exposed.
+- [x] Synthetic fixtures cover clean financial text, direct instruction
+  injection, indirect prompt injection, role impersonation, prompt
+  exfiltration, tool instruction, Unicode obfuscation, zero-width
+  attacks, hidden markup, exact duplicate poisoning, missing provenance,
+  and clean quoted security-discussion examples.
+- [x] Offline dry-run smoke:
+  `scripts/smoke_retrieval_security.py` ->
+  `results/phase_4_14_retrieval_security_smoke.json`.
+
+Current synthetic metrics:
+
+```text
+cases: 12
+poison_detection_recall: 1.0
+false_positive_rate: 0.0
+malicious_context_acceptance_rate: 0.0
+poison_retrieval_acceptance_rate: 0.0
+clean_candidate_retention_rate: 1.0
+high_confidence_poison_blocked_rate: 1.0
+missing_provenance_blocked_rate: 1.0
+guard overhead p50/p95: 0.1457 ms / 0.1552 ms on synthetic five-candidate lists
+```
+
+Limitations: this is a deterministic scanner validated on synthetic
+fixtures, not a universal proof against every possible poisoning form.
+No full-corpus scan or artifact rebuild was performed.
+
+### 4.14a LLM prompt-prefix caching
+
+**Status (2026-10-14): COMPLETE, opt-in (`PROMPT_CACHE_ENABLED=false` by default).**
+
+Provider-native prompt caching and supported local prefix reuse only. No
+response caching, no new infrastructure, no new dependencies, retrieval
+cache and DuckDB logic untouched. Full account:
+`project_plan/PHASE4_PROMPT_CACHING.md`.
+
+- [x] `src/generation/prompt_cache.py`: strategy resolution
+  (`explicit_breakpoints` for `anthropic/*`, `automatic` for
+  OpenAI/DeepSeek/Grok/Gemini 2.5+/etc., `none` for unknown models,
+  `local_prefix` for Ollama), `cache_control` message building, provider
+  cache-usage extraction, `PromptCacheMetrics`.
+- [x] Cache-friendly prompt layout (system -> evidence -> question) built
+  after the retrieval-security and context guards; legacy layout stays the
+  default and is byte-identical to before.
+- [x] Config: `PROMPT_CACHE_ENABLED`, `PROMPT_CACHE_PROVIDER_MODE`,
+  `PROMPT_CACHE_METRICS_ENABLED`; metrics in `GET /status` as `prompt_cache`;
+  structured per-call logs with cached/write tokens, reported cost, prefix
+  fingerprints.
+- [x] Fixed `log_event()` redacting `*_tokens` count fields.
+- [x] Tests: `tests/test_prompt_cache.py` (45, mocked providers only).
+- [x] Measured (local Ollama, gpt-oss:20b): same-evidence/new-question
+  prompt processing 3.7 s -> 0.22 s; other scenarios unchanged; OpenRouter
+  savings not measured (no paid calls).
+- [ ] Not done: answer-quality evaluation of the evidence-before-question
+  layout; live OpenRouter cache-hit verification (needs authorized paid call).
+
+### 4.15 Production performance evaluation
 
 Measure:
 
@@ -1265,7 +1386,7 @@ Measure:
 - [ ] index build time
 - [ ] query-stage latency breakdown
 
-### 4.14 Run locked TEST milestone
+### 4.16 Run locked TEST milestone
 
 This should be a planned test-set run, not routine development evaluation.
 
@@ -1274,7 +1395,7 @@ This should be a planned test-set run, not routine development evaluation.
 - [ ] Do not tune against individual test failures afterward without treating the run appropriately.
 - [ ] Produce final headline metrics.
 
-### 4.15 Failure analysis
+### 4.17 Failure analysis
 
 Create/update:
 
@@ -1294,7 +1415,7 @@ possible fix
 status
 ```
 
-### 4.16 README / final documentation
+### 4.18 README / final documentation
 
 Document:
 
@@ -1345,8 +1466,8 @@ The full corpus is the most expensive and least essential item here. A
 measured system on a smaller corpus with a documented scaling analysis is a
 stronger result than an unmeasured system on all 91,086 filings.
 
-- **Keep, always**: locked TEST run (4.14), `FAILURES.md` (4.15), README
-  (4.16), citation validation, scope and advice guardrails.
+- **Keep, always**: locked TEST run (4.16), `FAILURES.md` (4.17), README
+  (4.18), citation validation, scope and advice guardrails.
 - **Reduce**: scale to a defensible subset (for example the full 2016–2020
   aligned region) rather than the complete corpus, and state the measured
   chunk count with an extrapolation to full scale.
